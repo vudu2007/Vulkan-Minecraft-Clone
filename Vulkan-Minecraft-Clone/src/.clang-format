@@ -1,0 +1,11 @@
+BasedOnStyle: Microsoft
+
+Cpp11BracedListStyle: false
+SortIncludes: true
+BinPackArguments: false
+BinPackParameters: false
+ExperimentalAutoDetectBinPacking: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Left
+PointerAlignment: Left
