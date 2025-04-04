@@ -104,7 +104,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;$(ProjectDir)\src\external\stb;$(ProjectDir)\src\external\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -121,7 +122,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;$(ProjectDir)\src\external\stb;$(ProjectDir)\src\external\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,10 +135,40 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\renderer\buffer.cpp" />
+    <ClCompile Include="src\engine\renderer\descriptor.cpp" />
+    <ClCompile Include="src\engine\renderer\device.cpp" />
+    <ClCompile Include="src\engine\renderer\model.cpp" />
+    <ClCompile Include="src\engine\renderer\pipeline.cpp" />
+    <ClCompile Include="src\engine\renderer\renderer.cpp" />
+    <ClCompile Include="src\engine\renderer\swapchain.cpp" />
+    <ClCompile Include="src\engine\renderer\texture.cpp" />
+    <ClCompile Include="src\engine\renderer\window.cpp" />
+    <ClCompile Include="src\game.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\.clang-format" />
+    <None Include="src\shaders\compiler\compile.bat" />
+    <None Include="src\shaders\compiler\glslc.exe" />
+    <None Include="src\shaders\tutorial_shader.frag" />
+    <None Include="src\shaders\tutorial_shader.vert" />
+    <None Include="src\shaders\tutorial_shader_frag.spv" />
+    <None Include="src\shaders\tutorial_shader_vert.spv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\engine\renderer\buffer.hpp" />
+    <ClInclude Include="src\engine\renderer\descriptor.hpp" />
+    <ClInclude Include="src\engine\renderer\device.hpp" />
+    <ClInclude Include="src\engine\renderer\model.hpp" />
+    <ClInclude Include="src\engine\renderer\pipeline.hpp" />
+    <ClInclude Include="src\engine\renderer\renderer.hpp" />
+    <ClInclude Include="src\engine\renderer\swapchain.hpp" />
+    <ClInclude Include="src\engine\renderer\texture.hpp" />
+    <ClInclude Include="src\engine\renderer\window.hpp" />
+    <ClInclude Include="src\game.hpp" />
+    <ClInclude Include="src\utility.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
