@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\camera.cpp" />
     <ClCompile Include="src\engine\renderer\buffer.cpp" />
     <ClCompile Include="src\engine\renderer\descriptor.cpp" />
     <ClCompile Include="src\engine\renderer\device.cpp" />
@@ -158,6 +159,7 @@
     <None Include="src\shaders\tutorial_shader_vert.spv" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\camera.hpp" />
     <ClInclude Include="src\engine\renderer\buffer.hpp" />
     <ClInclude Include="src\engine\renderer\descriptor.hpp" />
     <ClInclude Include="src\engine\renderer\device.hpp" />

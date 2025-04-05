@@ -1,6 +1,7 @@
 #ifndef VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 #define VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 
+#include "../camera.hpp"
 #include "buffer.hpp"
 #include "descriptor.hpp"
 #include "device.hpp"
@@ -19,6 +20,7 @@ class Renderer
   private:
     uint32_t currentFrame = 0;
     Window& window;
+    FpsCamera& camera;
 
     Device device;
     Swapchain swapchain;
@@ -60,7 +62,7 @@ class Renderer
     void updateUniformBuffer(const uint32_t current_image);
 
   public:
-    Renderer(Window& window);
+    Renderer(Window& window, FpsCamera& camera);
     Renderer(const Renderer& other) = delete;
     Renderer(Renderer&& other) = delete;
     ~Renderer();

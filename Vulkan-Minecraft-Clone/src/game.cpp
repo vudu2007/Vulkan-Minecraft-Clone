@@ -10,6 +10,7 @@ void Game::run()
 
         // TODO: game logic here
 
+        camera.processInput();
         renderer.drawFrame();
     }
 }

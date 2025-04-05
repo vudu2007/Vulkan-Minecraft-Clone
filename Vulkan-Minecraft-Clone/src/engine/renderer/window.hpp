@@ -4,15 +4,18 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <functional>
 #include <string>
+#include <vector>
 
 class Window
 {
-  private:
+  public:
     static const int DEFAULT_WIDTH = 800;
     static const int DEFAULT_HEIGHT = 600;
     static inline const std::string DEFAULT_TITLE = "GLFW Window";
 
+  private:
     GLFWwindow* pWindow;
 
     int width;
@@ -20,6 +23,9 @@ class Window
     std::string title;
 
   public:
+    std::vector<std::function<void()>> resizeCallbacks;
+    std::vector<std::function<void(int, int, int, int)>> keyCallbacks;
+
     bool resized = false;
 
     Window(
@@ -37,7 +43,18 @@ class Window
 
     void pollEvents() const;
     bool shouldClose() const;
+
     void getFrameBufferSize(int& width, int& height) const;
+    int getKeyboardKey(const int key) const;
+    void getCursorPosition(double& x, double& y) const;
+
+    int getInputMode(const int mode) const;
+    void setInputMode(const int mode, const int value);
+
+    void addResizeCallback(const std::function<void()>& callback);
+    void clearResizeCallbacks();
+    void addKeyCallback(const std::function<void(int, int, int, int)>& callback);
+    void clearKeyCallbacks();
 };
 
 #endif // VMC_SRC_ENGINE_RENDERER_WINDOW_HPP
