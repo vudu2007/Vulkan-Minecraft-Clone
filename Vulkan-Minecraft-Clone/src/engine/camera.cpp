@@ -99,22 +99,22 @@ void FpsCamera::PolledKeyboardControls()
     if (window.getKeyboardKey(GLFW_KEY_W) == GLFW_PRESS)
     {
         const glm::vec3 direction(forward.x, 0.0f, forward.z);
-        translate(direction * speed);
+        translate(glm::normalize(direction) * speed);
     }
     if (window.getKeyboardKey(GLFW_KEY_S) == GLFW_PRESS)
     {
         const glm::vec3 direction(forward.x, 0.0f, forward.z);
-        translate(-direction * speed);
+        translate(-glm::normalize(direction) *speed);
     }
     if (window.getKeyboardKey(GLFW_KEY_A) == GLFW_PRESS)
     {
         const glm::vec3 direction(right.x, 0.0f, right.z);
-        translate(-direction * speed);
+        translate(-glm::normalize(direction) *speed);
     }
     if (window.getKeyboardKey(GLFW_KEY_D) == GLFW_PRESS)
     {
         const glm::vec3 direction(right.x, 0.0f, right.z);
-        translate(direction * speed);
+        translate(glm::normalize(direction) * speed);
     }
     if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
     {
