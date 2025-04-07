@@ -54,3 +54,11 @@ const std::vector<Model::Index>& Model::getIndices() const
 {
     return indices;
 }
+
+void Model::translate(const glm::vec3 units)
+{
+    for (auto& vertex : vertices)
+    {
+        vertex.pos += units;
+    }
+}

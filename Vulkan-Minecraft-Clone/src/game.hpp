@@ -10,7 +10,7 @@ class Game
     Window window;
     FpsCamera camera{
         window,
-        glm::vec3(2, 2, -2),
+        glm::vec3(2, 2, 2),
         glm::vec3(0, 0, 0),
         glm::vec3(0, 1, 0),
         glm::radians(45.0f),

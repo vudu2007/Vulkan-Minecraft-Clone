@@ -3,6 +3,7 @@
 #include "../../utility.hpp"
 
 #include <chrono>
+#include <iostream>
 #include <stdexcept>
 
 void Renderer::createDescriptorSetLayout()
@@ -133,13 +134,26 @@ void Renderer::createGraphicsPipeline()
     dynamic_state.pDynamicStates = dynamic_states.data();
 
     // Describe vertex data.
-    auto binding_description = Model::Vertex::getBindingDescription();
-    auto attribute_descriptions = Model::Vertex::getAttributeDescriptions();
+    std::vector<VkVertexInputBindingDescription> binding_descriptions{
+        Model::Vertex::getBindingDescription(),
+        Model::InstanceData::getBindingDescription(),
+    };
+    const auto& attribute_description_vertex = Model::Vertex::getAttributeDescriptions();
+    const auto& attribute_description_instance_data = Model::InstanceData::getAttributeDescriptions();
+    std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
+    attribute_descriptions.insert(
+        attribute_descriptions.end(),
+        attribute_description_vertex.begin(),
+        attribute_description_vertex.end());
+    attribute_descriptions.insert(
+        attribute_descriptions.end(),
+        attribute_description_instance_data.begin(),
+        attribute_description_instance_data.end());
 
     VkPipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = 1;
-    vertex_input_info.pVertexBindingDescriptions = &binding_description;
+    vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(binding_descriptions.size());
+    vertex_input_info.pVertexBindingDescriptions = binding_descriptions.data();
     vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
     vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
@@ -289,12 +303,12 @@ void Renderer::createGraphicsPipeline()
 
 void Renderer::createTextures()
 {
-    pTexture = std::make_unique<Texture>(device, "src/textures/viking_room.png");
+    pTexture = std::make_unique<Texture>(device, "src/textures/cube_texture.jpg");
 }
 
 void Renderer::loadModel()
 {
-    pModel = std::make_unique<Model>("src/models/viking_room.obj");
+    pModel = std::make_unique<Model>("src/models/cube.obj");
 }
 
 void Renderer::createVertexBuffer()
@@ -347,6 +361,47 @@ void Renderer::createIndexBuffer()
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     pIndexBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     pIndexBuffer->copyFrom(staging_buffer, buffer_size);
+}
+
+void Renderer::generateTerrain()
+{
+    for (int z = 0; z < 64; ++z)
+    {
+        for (int x = 0; x < 64; ++x)
+        {
+            instanceData.emplace_back(glm::vec3(x, 0, z));
+        }
+    }
+    std::cout << instanceData.size() << std::endl;
+}
+
+// TODO
+void Renderer::createInstanceBuffer()
+{
+    generateTerrain();
+
+    const VkDeviceSize buffer_size = sizeof(instanceData[0]) * instanceData.size();
+
+    // Make a staging buffer so that the host can write to it.
+    VkBufferCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = buffer_size;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    Buffer staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    staging_buffer.map();
+    staging_buffer.write(instanceData.data(), buffer_size);
+    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the vertex buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    pInstanceBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    pInstanceBuffer->copyFrom(staging_buffer, buffer_size);
 }
 
 void Renderer::createUniformBuffers()
@@ -457,9 +512,9 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     scissor.extent = swapchain.getExtent();
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    VkBuffer vertex_buffers[] = {pVertexBuffer->getBuffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+    VkBuffer vertex_buffers[] = {pVertexBuffer->getBuffer(), pInstanceBuffer->getBuffer()};
+    VkDeviceSize offsets[] = {0, 0};
+    vkCmdBindVertexBuffers(command_buffer, 0, 2, vertex_buffers, offsets);
 
     vkCmdBindIndexBuffer(command_buffer, pIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -473,7 +528,13 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
         0,
         nullptr);
 
-    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(pModel->getIndices().size()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(
+        command_buffer,
+        static_cast<uint32_t>(pModel->getIndices().size()),
+        static_cast<uint32_t>(instanceData.size()),
+        0,
+        0,
+        0);
 
     vkCmdEndRenderPass(command_buffer);
 
@@ -492,7 +553,8 @@ void Renderer::updateUniformBuffer(const uint32_t current_image)
 
     const VkExtent2D extent = swapchain.getExtent();
     Model::UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.model = glm::identity<glm::mat4>();
+    // glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     ubo.view = camera.viewMatrix();
     ubo.proj = camera.projMatrix();
     ubo.proj[1][1] *= -1;
@@ -511,6 +573,7 @@ Renderer::Renderer(Window& window, FpsCamera& camera)
 
     createVertexBuffer();
     createIndexBuffer();
+    createInstanceBuffer();
     createUniformBuffers();
 
     createDescriptorPool();

@@ -37,6 +37,7 @@ class Renderer
 
     std::unique_ptr<Buffer> pVertexBuffer;
     std::unique_ptr<Buffer> pIndexBuffer;
+    std::unique_ptr<Buffer> pInstanceBuffer;
     std::vector<std::unique_ptr<Buffer>> uniformBufferPtrs;
 
     std::vector<VkCommandBuffer> commandBuffers;
@@ -54,6 +55,9 @@ class Renderer
     void loadModel();
     void createVertexBuffer();
     void createIndexBuffer();
+    std::vector<Model::InstanceData> instanceData;
+    void generateTerrain();
+    void createInstanceBuffer();
     void createUniformBuffers();
     void createCommandBuffers();
     void createSyncObjects();
