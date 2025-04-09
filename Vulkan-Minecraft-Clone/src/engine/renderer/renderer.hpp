@@ -38,7 +38,13 @@ class Renderer
     std::unique_ptr<Buffer> pVertexBuffer;
     std::unique_ptr<Buffer> pIndexBuffer;
     std::unique_ptr<Buffer> pInstanceBuffer;
-    std::vector<std::unique_ptr<Buffer>> uniformBufferPtrs;
+
+    struct UniformBufferInfo
+    {
+        uint32_t binding;
+        std::vector<std::unique_ptr<Buffer>> bufferPtrPerFrame;
+    };
+    std::vector<UniformBufferInfo> uniformBufferPtrs;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -48,7 +54,6 @@ class Renderer
 
     void createDescriptorSetLayout();
     void createDescriptorPool();
-    void createDescriptorSets();
     VkShaderModule createShaderModule(const std::vector<char>& bytecode) const;
     void createGraphicsPipeline();
     void createTextures();
@@ -58,12 +63,10 @@ class Renderer
     std::vector<Model::InstanceData> instanceData;
     void generateTerrain();
     void createInstanceBuffer();
-    void createUniformBuffers();
     void createCommandBuffers();
     void createSyncObjects();
 
     void recordCommandBuffer(const VkCommandBuffer command_buffer, const uint32_t image_index);
-    void updateUniformBuffer(const uint32_t current_image);
 
   public:
     Renderer(Window& window, FpsCamera& camera);
@@ -73,6 +76,11 @@ class Renderer
 
     Renderer& operator=(const Renderer& other) = delete;
     Renderer& operator=(Renderer&& other) = delete;
+
+    void createDescriptorSets();
+
+    unsigned addUniformBuffer(const uint32_t binding, const size_t& byte_size);
+    void updateUniformBuffer(const unsigned index, const void* data, const size_t& byte_size);
 
     void drawFrame();
 };

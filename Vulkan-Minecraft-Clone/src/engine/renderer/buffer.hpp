@@ -13,6 +13,8 @@ class Buffer
 
     void* mappedMemory = nullptr;
 
+    size_t size = 0;
+
   public:
     Buffer(
         const Device& device,
@@ -38,6 +40,7 @@ class Buffer
     void copyToImage(const VkImage dst_image, const uint32_t width, const uint32_t height);
 
     const VkBuffer getBuffer() const;
+    const size_t getSize() const;
 };
 
 #endif // VMC_SRC_ENGINE_RENDERER_BUFFER_HPP

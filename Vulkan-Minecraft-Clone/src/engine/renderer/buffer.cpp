@@ -51,6 +51,8 @@ Buffer::Buffer(
     }
 
     vkBindBufferMemory(device.getLogicalDevice(), buffer, memory, mem_offset);
+
+    size = create_info.size;
 }
 
 Buffer::~Buffer()
@@ -124,4 +126,9 @@ void Buffer::copyToImage(const VkImage dst_image, const uint32_t width, const ui
 const VkBuffer Buffer::getBuffer() const
 {
     return buffer;
+}
+
+const size_t Buffer::getSize() const
+{
+    return size;
 }
