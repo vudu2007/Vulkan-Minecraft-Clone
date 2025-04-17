@@ -1,6 +1,7 @@
 #ifndef VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 #define VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 
+#include "../../noise.hpp"
 #include "../camera.hpp"
 #include "buffer.hpp"
 #include "descriptor.hpp"
@@ -60,8 +61,11 @@ class Renderer
     void loadModel();
     void createVertexBuffer();
     void createIndexBuffer();
+
+    SimplexNoise noise;
     std::vector<Model::InstanceData> instanceData;
     void generateTerrain();
+
     void createInstanceBuffer();
     void createCommandBuffers();
     void createSyncObjects();

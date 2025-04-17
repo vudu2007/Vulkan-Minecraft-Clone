@@ -403,7 +403,8 @@ void Renderer::generateTerrain()
     {
         for (int x = 0; x < 64; ++x)
         {
-            instanceData.emplace_back(glm::vec3(x, 0, z));
+            instanceData.emplace_back(
+                glm::vec3(static_cast<float>(x), noise.getFractal2D(x, z, 2, 10.0f, 0.01f), static_cast<float>(z)));
         }
     }
 }
@@ -652,7 +653,6 @@ void Renderer::drawFrame()
     // 3.
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], image_index);
-
 
     // 4.
     VkSubmitInfo submit_info{};
