@@ -115,6 +115,71 @@ void Renderer::createDescriptorSets()
     }
 }
 
+void Renderer::addVertexBuffer(
+    const void* data,
+    const size_t data_type_size,
+    const size_t count,
+    const void* instance_data,
+    const size_t instance_data_type_size,
+    const size_t instance_count)
+{
+    // Handle per vertex data.
+    size_t num_bytes = data_type_size * count;
+
+    // Make a staging buffer so that the host can write to it.
+    VkBufferCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = num_bytes;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    Buffer staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    staging_buffer.map();
+    staging_buffer.write(data, num_bytes);
+    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the vertex buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    vertexBufferPtrs.push_back(
+        {count, 0, std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), nullptr});
+    vertexBufferPtrs.back().pVertexBuffer->copyFrom(staging_buffer, num_bytes);
+
+    // Check if there is per instance data to handle.
+    if (instance_data == nullptr)
+    {
+        return;
+    }
+
+    // Handle per instance data if it was provided.
+    num_bytes = instance_data_type_size * instance_count;
+
+    // Make a staging buffer so that the host can write to it.
+    create_info.size = num_bytes;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    Buffer instance_staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    instance_staging_buffer.map();
+    instance_staging_buffer.write(instance_data, num_bytes);
+    instance_staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the vertex buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    vertexBufferPtrs.back().instanceCount = instance_count;
+    vertexBufferPtrs.back().pInstanceVertexBuffer =
+        std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vertexBufferPtrs.back().pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
+}
+
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) const
 {
     VkShaderModuleCreateInfo create_info{};
@@ -345,32 +410,6 @@ void Renderer::loadModel()
     pModel = std::make_unique<Model>("src/models/cube.obj");
 }
 
-void Renderer::createVertexBuffer()
-{
-    const VkDeviceSize buffer_size = sizeof(pModel->getVertices()[0]) * pModel->getVertices().size();
-
-    // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = buffer_size;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    Buffer staging_buffer(
-        device,
-        create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    // The host writes to the staging buffer.
-    staging_buffer.map();
-    staging_buffer.write(pModel->getVertices().data(), buffer_size);
-    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
-
-    // Create the vertex buffer and copy the data from the staging buffer into it.
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    pVertexBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    pVertexBuffer->copyFrom(staging_buffer, buffer_size);
-}
-
 void Renderer::createIndexBuffer()
 {
     const VkDeviceSize buffer_size = sizeof(pModel->getIndices()[0]) * pModel->getIndices().size();
@@ -395,47 +434,6 @@ void Renderer::createIndexBuffer()
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     pIndexBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     pIndexBuffer->copyFrom(staging_buffer, buffer_size);
-}
-
-void Renderer::generateTerrain()
-{
-    for (int z = 0; z < 64; ++z)
-    {
-        for (int x = 0; x < 64; ++x)
-        {
-            instanceData.emplace_back(
-                glm::vec3(static_cast<float>(x), noise.getFractal2D(x, z, 2, 10.0f, 0.01f), static_cast<float>(z)));
-        }
-    }
-}
-
-// TODO
-void Renderer::createInstanceBuffer()
-{
-    generateTerrain();
-
-    const VkDeviceSize buffer_size = sizeof(instanceData[0]) * instanceData.size();
-
-    // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = buffer_size;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    Buffer staging_buffer(
-        device,
-        create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-    // The host writes to the staging buffer.
-    staging_buffer.map();
-    staging_buffer.write(instanceData.data(), buffer_size);
-    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
-
-    // Create the vertex buffer and copy the data from the staging buffer into it.
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    pInstanceBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    pInstanceBuffer->copyFrom(staging_buffer, buffer_size);
 }
 
 void Renderer::createCommandBuffers()
@@ -525,9 +523,18 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     scissor.extent = swapchain.getExtent();
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    VkBuffer vertex_buffers[] = {pVertexBuffer->getBuffer(), pInstanceBuffer->getBuffer()};
+    std::vector<VkBuffer> vertex_buffers;
+    for (const auto& bufferPtr : vertexBufferPtrs)
+    {
+        vertex_buffers.push_back(bufferPtr.pVertexBuffer->getBuffer());
+
+        if (bufferPtr.pInstanceVertexBuffer->getBuffer() != nullptr)
+        {
+            vertex_buffers.push_back(bufferPtr.pInstanceVertexBuffer->getBuffer());
+        }
+    }
     VkDeviceSize offsets[] = {0, 0};
-    vkCmdBindVertexBuffers(command_buffer, 0, 2, vertex_buffers, offsets);
+    vkCmdBindVertexBuffers(command_buffer, 0, 2, vertex_buffers.data(), offsets);
 
     vkCmdBindIndexBuffer(command_buffer, pIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -544,7 +551,7 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     vkCmdDrawIndexed(
         command_buffer,
         static_cast<uint32_t>(pModel->getIndices().size()),
-        static_cast<uint32_t>(instanceData.size()),
+        static_cast<uint32_t>(vertexBufferPtrs[0].instanceCount),
         0,
         0,
         0);
@@ -566,9 +573,7 @@ Renderer::Renderer(Window& window, FpsCamera& camera)
     createTextures();
     loadModel();
 
-    createVertexBuffer();
     createIndexBuffer();
-    createInstanceBuffer();
 
     createDescriptorPool();
 

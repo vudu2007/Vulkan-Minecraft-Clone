@@ -34,11 +34,17 @@ class Renderer
     VkPipelineLayout pipelineLayout;
 
     std::unique_ptr<Texture> pTexture;
-    std::unique_ptr<Model> pModel;
 
-    std::unique_ptr<Buffer> pVertexBuffer;
     std::unique_ptr<Buffer> pIndexBuffer;
-    std::unique_ptr<Buffer> pInstanceBuffer;
+
+    struct VertexBufferInfo
+    {
+        size_t vertexCount = 0;
+        size_t instanceCount = 0;
+        std::unique_ptr<Buffer> pVertexBuffer;
+        std::unique_ptr<Buffer> pInstanceVertexBuffer;
+    };
+    std::vector<VertexBufferInfo> vertexBufferPtrs;
 
     struct UniformBufferInfo
     {
@@ -59,14 +65,7 @@ class Renderer
     void createGraphicsPipeline();
     void createTextures();
     void loadModel();
-    void createVertexBuffer();
     void createIndexBuffer();
-
-    SimplexNoise noise;
-    std::vector<Model::InstanceData> instanceData;
-    void generateTerrain();
-
-    void createInstanceBuffer();
     void createCommandBuffers();
     void createSyncObjects();
 
@@ -81,7 +80,16 @@ class Renderer
     Renderer& operator=(const Renderer& other) = delete;
     Renderer& operator=(Renderer&& other) = delete;
 
+    std::unique_ptr<Model> pModel; // TODO: temp
+
     void createDescriptorSets();
+    void addVertexBuffer(
+        const void* data,
+        const size_t data_type_size,
+        const size_t count,
+        const void* instance_data = nullptr,
+        const size_t instance_data_type_size = 0,
+        const size_t instance_count = 0);
 
     unsigned addUniformBuffer(const uint32_t binding, const size_t& byte_size);
     void updateUniformBuffer(const unsigned index, const void* data, const size_t& byte_size);
