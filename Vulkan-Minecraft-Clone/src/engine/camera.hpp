@@ -46,44 +46,27 @@ class Camera
     void translate(const glm::vec3 translation);
     void rotate(const float pitch, const float yaw, const float roll, const bool constrain_x_axis);
 
+    // Translation: free movement.
     void moveForward(const float units);
     void moveBackward(const float units);
     void moveLeft(const float units);
     void moveRight(const float units);
+    void moveUp(const float units);
+    void moveDown(const float units);
+
+    // Translation: move along the XZ-plane.
+    void moveForwardXZ(const float units);
+    void moveBackwardXZ(const float units);
+    void moveLeftXZ(const float units);
+    void moveRightXZ(const float units);
 
     glm::vec3 getEye() const;
+    glm::vec3 getForward() const;
+    glm::vec3 getUp() const;
+    glm::vec3 getRight() const;
 
     glm::mat4 viewMatrix() const;
     glm::mat4 projMatrix() const;
-};
-
-class FpsCamera : public Camera
-{
-  private:
-    float speed;
-
-    // Mouse variables.
-    float mouseSensitivity;
-    float prevX = 0.0f;
-    float prevY = 0.0f;
-
-    void PolledKeyboardControls();
-    void EventKeyboardControls(const int key, const int scancode, const int action, const int mods);
-
-  public:
-    FpsCamera(
-        Window& window,
-        const glm::vec3& eye_world,
-        const glm::vec3& target_world,
-        const glm::vec3& up_world,
-        const float fov,
-        const float aspect,
-        const float z_near,
-        const float z_far,
-        const float speed,
-        const float mouse_sensitivity);
-
-    void processInput();
 };
 
 #endif // VMC_SRC_ENGINE_CAMERA_HPP

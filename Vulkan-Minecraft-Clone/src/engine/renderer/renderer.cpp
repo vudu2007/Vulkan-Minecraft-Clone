@@ -564,8 +564,7 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     }
 }
 
-Renderer::Renderer(Window& window, FpsCamera& camera)
-    : window(window), device(window), swapchain(device), camera(camera)
+Renderer::Renderer(Window& window) : window(window), device(window), swapchain(device)
 {
     createDescriptorSetLayout();
     createGraphicsPipeline();

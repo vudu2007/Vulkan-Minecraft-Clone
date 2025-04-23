@@ -79,9 +79,54 @@ void Camera::moveRight(const float units)
     translate(right * units);
 }
 
+void Camera::moveUp(const float units)
+{
+    translate(up * units);
+}
+
+void Camera::moveDown(const float units)
+{
+    translate(-up * units);
+}
+
+void Camera::moveForwardXZ(const float units)
+{
+    translate(glm ::vec3(forward.x, 0.0f, forward.z) * units);
+}
+
+void Camera::moveBackwardXZ(const float units)
+{
+    translate(-glm ::vec3(forward.x, 0.0f, forward.z) * units);
+}
+
+void Camera::moveLeftXZ(const float units)
+{
+    translate(-glm ::vec3(right.x, 0.0f, right.z) * units);
+}
+
+void Camera::moveRightXZ(const float units)
+{
+    translate(glm ::vec3(right.x, 0.0f, right.z) * units);
+}
+
 glm::vec3 Camera::getEye() const
 {
     return eye;
+}
+
+glm::vec3 Camera::getForward() const
+{
+    return forward;
+}
+
+glm::vec3 Camera::getUp() const
+{
+    return up;
+}
+
+glm::vec3 Camera::getRight() const
+{
+    return right;
 }
 
 glm::mat4 Camera::viewMatrix() const
@@ -92,92 +137,4 @@ glm::mat4 Camera::viewMatrix() const
 glm::mat4 Camera::projMatrix() const
 {
     return glm::perspective(fov, aspect, zNear, zFar);
-}
-
-void FpsCamera::PolledKeyboardControls()
-{
-    if (window.getKeyboardKey(GLFW_KEY_W) == GLFW_PRESS)
-    {
-        const glm::vec3 direction(forward.x, 0.0f, forward.z);
-        translate(glm::normalize(direction) * speed);
-    }
-    if (window.getKeyboardKey(GLFW_KEY_S) == GLFW_PRESS)
-    {
-        const glm::vec3 direction(forward.x, 0.0f, forward.z);
-        translate(-glm::normalize(direction) *speed);
-    }
-    if (window.getKeyboardKey(GLFW_KEY_A) == GLFW_PRESS)
-    {
-        const glm::vec3 direction(right.x, 0.0f, right.z);
-        translate(-glm::normalize(direction) *speed);
-    }
-    if (window.getKeyboardKey(GLFW_KEY_D) == GLFW_PRESS)
-    {
-        const glm::vec3 direction(right.x, 0.0f, right.z);
-        translate(glm::normalize(direction) * speed);
-    }
-    if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
-    {
-        translate(worldUp * speed);
-    }
-    if (window.getKeyboardKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    {
-        translate(-worldUp * speed);
-    }
-}
-
-void FpsCamera::EventKeyboardControls(const int key, const int scancode, const int action, const int mods)
-{
-    if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS)
-    {
-        if (window.getInputMode(GLFW_CURSOR) != GLFW_CURSOR_NORMAL)
-        {
-            window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        else
-        {
-            window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        }
-    }
-}
-
-FpsCamera::FpsCamera(
-    Window& window,
-    const glm::vec3& eye_world,
-    const glm::vec3& target_world,
-    const glm::vec3& up_world,
-    const float fov,
-    const float aspect,
-    const float z_near,
-    const float z_far,
-    const float speed,
-    const float mouse_sensitivity)
-    : Camera(window, eye_world, target_world, up_world, fov, aspect, z_near, z_far), speed(speed),
-      mouseSensitivity(mouse_sensitivity)
-{
-    window.addKeyCallback([this](int key, int scancode, int action, int mods) {
-        this->EventKeyboardControls(key, scancode, action, mods);
-    });
-}
-
-void FpsCamera::processInput()
-{
-    // Keyboard input.
-    PolledKeyboardControls();
-
-    // Mouse input.
-    double x = 0.0, y = 0.0;
-    window.getCursorPosition(x, y);
-    if (window.getInputMode(GLFW_CURSOR) == GLFW_CURSOR_DISABLED)
-    {
-        const float delta_x = (static_cast<float>(x) - prevX) * mouseSensitivity;
-        const float delta_y = -(static_cast<float>(y) - prevY) * mouseSensitivity;
-
-        if (delta_x != 0.0f || delta_y != 0.0f)
-        {
-            rotate(delta_y, delta_x, 0.0f, true);
-        }
-    }
-    prevX = static_cast<float>(x);
-    prevY = static_cast<float>(y);
 }

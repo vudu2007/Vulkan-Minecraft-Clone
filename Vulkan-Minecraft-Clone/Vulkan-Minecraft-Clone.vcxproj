@@ -148,6 +148,7 @@
     <ClCompile Include="src\game.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\noise.cpp" />
+    <ClCompile Include="src\player.cpp" />
     <ClCompile Include="src\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +173,7 @@
     <ClInclude Include="src\engine\renderer\window.hpp" />
     <ClInclude Include="src\game.hpp" />
     <ClInclude Include="src\noise.hpp" />
+    <ClInclude Include="src\player.hpp" />
     <ClInclude Include="src\utility.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

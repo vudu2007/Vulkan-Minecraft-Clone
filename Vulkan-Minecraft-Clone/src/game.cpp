@@ -48,12 +48,12 @@ void Game::run()
         // Update uniforms.
         Model::UniformBufferObject ubo{};
         ubo.model = glm::identity<glm::mat4>();
-        ubo.view = camera.viewMatrix();
-        ubo.proj = camera.projMatrix();
+        ubo.view = player.getCamera().viewMatrix();
+        ubo.proj = player.getCamera().projMatrix();
         ubo.proj[1][1] *= -1;
         renderer.updateUniformBuffer(uniformBufferIndex, &ubo, sizeof(ubo));
 
-        camera.processInput();
+        player.processInput();
         renderer.drawFrame();
     }
 }

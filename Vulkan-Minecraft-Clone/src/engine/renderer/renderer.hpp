@@ -2,7 +2,6 @@
 #define VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 
 #include "../../noise.hpp"
-#include "../camera.hpp"
 #include "buffer.hpp"
 #include "descriptor.hpp"
 #include "device.hpp"
@@ -21,7 +20,6 @@ class Renderer
   private:
     uint32_t currentFrame = 0;
     Window& window;
-    FpsCamera& camera;
 
     Device device;
     Swapchain swapchain;
@@ -72,7 +70,7 @@ class Renderer
     void recordCommandBuffer(const VkCommandBuffer command_buffer, const uint32_t image_index);
 
   public:
-    Renderer(Window& window, FpsCamera& camera);
+    Renderer(Window& window);
     Renderer(const Renderer& other) = delete;
     Renderer(Renderer&& other) = delete;
     ~Renderer();
