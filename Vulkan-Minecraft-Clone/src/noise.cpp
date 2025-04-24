@@ -35,8 +35,8 @@ float SimplexNoise::get2D(const float x, const float y) const
     // Create simplex by inserting skewed coordinates in decreasing order.
     // If x value is larger than y, then we get vertices order (0, 0), (1, 0), (1, 1),
     // otherwise, y is larger than x, so (0, 0), (0, 1), (1, 1).
-    const glm::uvec2 skewed_cell_pos = static_cast<glm::uvec2>(glm::floor(skewed_pos));
-    const glm::vec2 internal_skewed_pos = skewed_pos - static_cast<glm::vec2>(skewed_cell_pos);
+    const glm::vec2 skewed_cell_pos = glm::floor(skewed_pos);
+    const glm::vec2 internal_skewed_pos = skewed_pos - skewed_cell_pos;
 
     const glm::vec2 v_0(0);
     const glm::vec2 v_1 = (internal_skewed_pos.x > internal_skewed_pos.y) ? glm::vec2(1, 0) : glm::vec2(0, 1);
@@ -45,19 +45,19 @@ float SimplexNoise::get2D(const float x, const float y) const
     // 3. Gradient selection.
     const unsigned max_random_value = static_cast<unsigned>(randomValues.size()) - 1;
 
-    const glm::vec2 floor_v_0 = glm::floor(v_0 + static_cast<glm::vec2>(skewed_cell_pos));
-    const glm::vec2 floor_v_1 = glm::floor(v_1 + static_cast<glm::vec2>(skewed_cell_pos));
-    const glm::vec2 floor_v_2 = glm::floor(v_2 + static_cast<glm::vec2>(skewed_cell_pos));
+    const glm::vec2 floor_v_0 = glm::floor(v_0 + skewed_cell_pos);
+    const glm::vec2 floor_v_1 = glm::floor(v_1 + skewed_cell_pos);
+    const glm::vec2 floor_v_2 = glm::floor(v_2 + skewed_cell_pos);
 
     const glm::uvec2 constr_floor_v_0(
-        static_cast<unsigned>(floor_v_0.x) & max_random_value,
-        static_cast<unsigned>(floor_v_0.y) & max_random_value);
+        static_cast<int>(floor_v_0.x) & max_random_value,
+        static_cast<int>(floor_v_0.y) & max_random_value);
     const glm::uvec2 constr_floor_v_1(
-        static_cast<unsigned>(floor_v_1.x) & max_random_value,
-        static_cast<unsigned>(floor_v_1.y) & max_random_value);
+        static_cast<int>(floor_v_1.x) & max_random_value,
+        static_cast<int>(floor_v_1.y) & max_random_value);
     const glm::uvec2 constr_floor_v_2(
-        static_cast<unsigned>(floor_v_2.x) & max_random_value,
-        static_cast<unsigned>(floor_v_2.y) & max_random_value);
+        static_cast<int>(floor_v_2.x) & max_random_value,
+        static_cast<int>(floor_v_2.y) & max_random_value);
 
     std::array<glm::vec2, 3> gradients{};
     gradients[0] =
@@ -71,8 +71,7 @@ float SimplexNoise::get2D(const float x, const float y) const
     // Obtain the unskewed point.
     const float unskew_val = (1.0f - 1.0f / (std::sqrtf(static_cast<float>(n) + 1.0f))) / static_cast<float>(n);
 
-    const glm::vec2 unskewed_cell_pos =
-        static_cast<glm::vec2>(skewed_cell_pos) - ((skewed_cell_pos.x + skewed_cell_pos.y) * unskew_val);
+    const glm::vec2 unskewed_cell_pos = skewed_cell_pos - ((skewed_cell_pos.x + skewed_cell_pos.y) * unskew_val);
 
     std::array<glm::vec2, 3> displacements{};
     displacements[0] = pos - unskewed_cell_pos;
@@ -86,9 +85,10 @@ float SimplexNoise::get2D(const float x, const float y) const
     const float r_squared = radius * radius;
     for (unsigned i = 0; i < 3; ++i)
     {
-        const float d_squared = displacements[i].x * displacements[i].x + displacements[i].y * displacements[i].y;
-        const float t = r_squared - d_squared;
-        total_contrib += std::max(0.0f, t * t * t * t) * glm::dot(displacements[i], gradients[i]);
+        const double d_squared = displacements[i].x * displacements[i].x + displacements[i].y * displacements[i].y;
+        double t = std::max(0.0, r_squared - d_squared);
+        t *= t;
+        total_contrib += t * t * glm::dot(displacements[i], gradients[i]);
     }
 
     // TODO: haven't figured out how the scale (70.0f) was calculated
