@@ -115,21 +115,24 @@ void Renderer::createDescriptorSets()
     }
 }
 
-void Renderer::addVertexBuffer(
+unsigned Renderer::addVertexBuffer(
     const void* data,
     const size_t data_type_size,
     const size_t count,
+    const size_t capacity,
     const void* instance_data,
     const size_t instance_data_type_size,
-    const size_t instance_count)
+    const size_t instance_count,
+    const size_t instance_capacity)
 {
     // Handle per vertex data.
+    size_t num_bytes_capacity = data_type_size * capacity;
     size_t num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
     VkBufferCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes;
+    create_info.size = num_bytes_capacity;
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     Buffer staging_buffer(
@@ -152,14 +155,15 @@ void Renderer::addVertexBuffer(
     // Check if there is per instance data to handle.
     if (instance_data == nullptr)
     {
-        return;
+        return static_cast<unsigned>(vertexBufferPtrs.size() - 1);
     }
 
     // Handle per instance data if it was provided.
+    num_bytes_capacity = instance_data_type_size * instance_capacity;
     num_bytes = instance_data_type_size * instance_count;
 
     // Make a staging buffer so that the host can write to it.
-    create_info.size = num_bytes;
+    create_info.size = num_bytes_capacity;
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     Buffer instance_staging_buffer(
         device,
@@ -178,6 +182,46 @@ void Renderer::addVertexBuffer(
     vertexBufferPtrs.back().pInstanceVertexBuffer =
         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     vertexBufferPtrs.back().pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
+
+    return static_cast<unsigned>(vertexBufferPtrs.size() - 1);
+}
+
+void Renderer::updateVertexBuffer(const unsigned index, const void* data, const size_t num_bytes)
+{
+    throw std::runtime_error("TODO: Renderer::updateVertexBuffer(...) not implemented yet!");
+}
+
+void Renderer::updateInstanceVertexBuffer(
+    const unsigned index,
+    const void* data,
+    const size_t data_type_size,
+    const size_t count)
+{
+    size_t num_bytes = data_type_size * count;
+
+    // Make a staging buffer so that the host can write to it.
+    VkBufferCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = num_bytes;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    Buffer instance_staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    instance_staging_buffer.map();
+    instance_staging_buffer.write(data, num_bytes);
+    instance_staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the vertex buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    // TODO: do double buffering.
+    // TODO: may need synchronization primitive to render only after update
+    vertexBufferPtrs[index].instanceCount = count;
+    vertexBufferPtrs[index].pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
 }
 
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) const
@@ -593,7 +637,7 @@ Renderer::~Renderer()
     }
 }
 
-unsigned Renderer::addUniformBuffer(const uint32_t binding, const size_t& num_bytes)
+unsigned Renderer::addUniformBuffer(const uint32_t binding, const size_t num_bytes)
 {
     VkBufferCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -615,7 +659,7 @@ unsigned Renderer::addUniformBuffer(const uint32_t binding, const size_t& num_by
     return static_cast<unsigned>(uniformBufferPtrs.size() - 1);
 }
 
-void Renderer::updateUniformBuffer(const unsigned index, const void* data, const size_t& num_bytes)
+void Renderer::updateUniformBuffer(const unsigned index, const void* data, const size_t num_bytes)
 {
     uniformBufferPtrs[index].bufferPtrPerFrame[currentFrame]->write(data, num_bytes);
 }

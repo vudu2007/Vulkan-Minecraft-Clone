@@ -81,16 +81,24 @@ class Renderer
     std::unique_ptr<Model> pModel; // TODO: temp
 
     void createDescriptorSets();
-    void addVertexBuffer(
+    unsigned addVertexBuffer(
         const void* data,
         const size_t data_type_size,
         const size_t count,
+        const size_t capacity,
         const void* instance_data = nullptr,
         const size_t instance_data_type_size = 0,
-        const size_t instance_count = 0);
+        const size_t instance_count = 0,
+        const size_t instance_capacity = 0);
+    void updateVertexBuffer(const unsigned index, const void* data, const size_t num_bytes);
+    void updateInstanceVertexBuffer(
+        const unsigned index,
+        const void* data,
+        const size_t data_type_size,
+        const size_t count);
 
-    unsigned addUniformBuffer(const uint32_t binding, const size_t& byte_size);
-    void updateUniformBuffer(const unsigned index, const void* data, const size_t& byte_size);
+    unsigned addUniformBuffer(const uint32_t binding, const size_t byte_size);
+    void updateUniformBuffer(const unsigned index, const void* data, const size_t byte_size);
 
     void drawFrame();
 };

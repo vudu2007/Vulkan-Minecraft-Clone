@@ -23,11 +23,11 @@ void Player::pollKeyboardControls()
     }
     if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        camera.moveUp(speed);
+        camera.moveUpXZ(speed);
     }
     if (window.getKeyboardKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
-        camera.moveDown(speed);
+        camera.moveDownXZ(speed);
     }
 }
 
@@ -47,17 +47,17 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
     }
 }
 
-Player::Player(Window& window, const float speed)
+Player::Player(Window& window, const glm::vec3& pos, const float speed)
     : window(window), camera(
                           window,
-                          glm::vec3(2, 2, 2),
-                          glm::vec3(0, 0, 0),
+                          glm::vec3(0, 2, 0),
+                          glm::vec3(0, 2, -1),
                           glm::vec3(0, 1, 0),
                           glm::radians(45.0f),
                           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
                           0.1f,
-                          100.0f),
-      speed(speed)
+                          1000.0f),
+      position(pos), speed(speed)
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
         this->eventKeyboardControls(key, scancode, action, mods);
@@ -89,4 +89,10 @@ void Player::processInput()
 const Camera& Player::getCamera() const
 {
     return camera;
+}
+
+const glm::vec3 Player::getPosition() const
+{
+    // return position;
+    return camera.getEye();
 }

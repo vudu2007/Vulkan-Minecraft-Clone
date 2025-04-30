@@ -7,12 +7,14 @@ class Player
 {
   private:
     inline static const float DEFAULT_SPEED = 0.1f;
+    inline static const glm::vec3 DEFAULT_POSITION{0.0f};
 
     Window& window;
 
     Camera camera;
 
     // Player attributes.
+    glm::vec3 position;
     float speed;
 
     // Mouse variables.
@@ -24,8 +26,10 @@ class Player
     void eventKeyboardControls(const int key, const int scancode, const int action, const int mods);
 
   public:
-    Player(Window& window, const float speed = DEFAULT_SPEED);
+    Player(Window& window, const glm::vec3& pos = DEFAULT_POSITION, const float speed = DEFAULT_SPEED);
 
     void processInput();
+
     const Camera& getCamera() const;
+    const glm::vec3 getPosition() const;
 };

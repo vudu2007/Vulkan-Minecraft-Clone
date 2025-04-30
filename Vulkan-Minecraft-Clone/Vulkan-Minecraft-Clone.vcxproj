@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\chunk.cpp" />
     <ClCompile Include="src\engine\camera.cpp" />
     <ClCompile Include="src\engine\renderer\buffer.cpp" />
     <ClCompile Include="src\engine\renderer\descriptor.cpp" />
@@ -150,6 +151,7 @@
     <ClCompile Include="src\noise.cpp" />
     <ClCompile Include="src\player.cpp" />
     <ClCompile Include="src\utility.cpp" />
+    <ClCompile Include="src\world.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="src\.clang-format" />
@@ -161,6 +163,7 @@
     <None Include="src\shaders\tutorial_shader_vert.spv" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\chunk.hpp" />
     <ClInclude Include="src\engine\camera.hpp" />
     <ClInclude Include="src\engine\renderer\buffer.hpp" />
     <ClInclude Include="src\engine\renderer\descriptor.hpp" />
@@ -175,6 +178,7 @@
     <ClInclude Include="src\noise.hpp" />
     <ClInclude Include="src\player.hpp" />
     <ClInclude Include="src\utility.hpp" />
+    <ClInclude Include="src\world.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
