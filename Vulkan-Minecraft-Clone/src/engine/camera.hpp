@@ -59,6 +59,8 @@ class Camera
     void moveBackwardXZ(const float units);
     void moveLeftXZ(const float units);
     void moveRightXZ(const float units);
+    void moveUpXZ(const float units);
+    void moveDownXZ(const float units);
 
     glm::vec3 getEye() const;
     glm::vec3 getForward() const;

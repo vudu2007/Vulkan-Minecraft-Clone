@@ -91,22 +91,32 @@ void Camera::moveDown(const float units)
 
 void Camera::moveForwardXZ(const float units)
 {
-    translate(glm ::vec3(forward.x, 0.0f, forward.z) * units);
+    translate(glm::normalize(glm::vec3(forward.x, 0.0f, forward.z)) * units);
 }
 
 void Camera::moveBackwardXZ(const float units)
 {
-    translate(-glm ::vec3(forward.x, 0.0f, forward.z) * units);
+    translate(-glm::normalize(glm::vec3(forward.x, 0.0f, forward.z)) * units);
 }
 
 void Camera::moveLeftXZ(const float units)
 {
-    translate(-glm ::vec3(right.x, 0.0f, right.z) * units);
+    translate(-glm::normalize(glm::vec3(right.x, 0.0f, right.z)) * units);
 }
 
 void Camera::moveRightXZ(const float units)
 {
-    translate(glm ::vec3(right.x, 0.0f, right.z) * units);
+    translate(glm::normalize(glm::vec3(right.x, 0.0f, right.z)) * units);
+}
+
+void Camera::moveUpXZ(const float units)
+{
+    translate(worldUp * units);
+}
+
+void Camera::moveDownXZ(const float units)
+{
+    translate(-worldUp * units);
 }
 
 glm::vec3 Camera::getEye() const
