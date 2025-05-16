@@ -1,6 +1,6 @@
 #include "world.hpp"
 
-#include <iostream>
+#include <unordered_set>
 
 const glm::vec2 World::posToChunkCenter(const glm::vec3 pos) const
 {
@@ -17,30 +17,59 @@ World::World(const unsigned seed, const int chunk_size) : noise(seed), seed(seed
 
 void World::update(const Player& player)
 {
-    activeChunks.clear();
+}
 
+void World::updateChunks(const Player& player)
+{
+    // TODO: change to update in 3D.
     // Load all chunks visible to the player.
-    const glm::vec2 chunk_center = posToChunkCenter(player.getPosition());
-    const ChunkCoord cc = glm::to_string(chunk_center);
-    if (!activeChunks.contains(cc))
+    const int render_distance = player.getRenderDistance();
+    const float offset = static_cast<float>(render_distance * chunkSize);
+
+    std::unordered_set<ChunkCoord> inactive_chunks;
+    for (const auto& entry : activeChunks)
     {
-        if (chunks.contains(cc))
+        inactive_chunks.emplace(entry.first);
+    }
+
+    float x = player.getPosition().x - offset;
+    for (int i = 0; i <= (render_distance * 2); ++i)
+    {
+        float z = player.getPosition().z - offset;
+        for (int j = 0; j <= (render_distance * 2); ++j)
         {
-            activeChunks.emplace(cc, chunks[cc]);
+            const glm::vec2 chunk_center = posToChunkCenter({x, 0.0f, z});
+            const ChunkCoord cc = glm::to_string(chunk_center);
+            inactive_chunks.erase(cc);
+            if (!activeChunks.contains(cc))
+            {
+                if (chunks.contains(cc))
+                {
+                    activeChunks.emplace(cc, chunks[cc]);
+                }
+                else
+                {
+                    activeChunks.emplace(cc, Chunk{noise, chunk_center, chunkSize});
+                }
+            }
+            z += chunkSize;
         }
-        else
-        {
-            activeChunks.emplace(cc, Chunk{noise, chunk_center, chunkSize});
-        }
+        x += chunkSize;
+    }
+
+    // Remove now inactive chunks.
+    for (const auto& cc : inactive_chunks)
+    {
+        activeChunks.erase(cc);
     }
 }
 
 const std::vector<Chunk> World::getActiveChunks() const
 {
     std::vector<Chunk> active_chunks;
-    for (const auto& chunk_info : activeChunks)
+    for (const auto& entry : activeChunks)
     {
-        active_chunks.push_back(chunk_info.second);
+        active_chunks.push_back(entry.second);
     }
     return active_chunks;
 }

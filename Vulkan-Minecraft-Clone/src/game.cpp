@@ -4,13 +4,15 @@
 #include <iostream>
 #include <unordered_map>
 
-const int CHUNK_SIZE = 64;
+const int CHUNK_SIZE = 16;
 
 void Game::run()
 {
     World w{0, CHUNK_SIZE};
-    w.update(player);
+    w.updateChunks(player);
     auto chunks = w.getActiveChunks();
+
+    player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });
 
     auto& height_map = chunks[0].getHeightMap();
     std::vector<Model::InstanceData> terrain;
@@ -26,7 +28,7 @@ void Game::run()
         terrain.data(),
         sizeof(terrain[0]),
         terrain.size(),
-        terrain.size() * 50); // TODO: adjust buffer size based on render distance; currently just a constant
+        terrain.size() * 1024); // TODO: adjust buffer size based on render distance; currently just a constant
 
     const unsigned uniform_buffer_idx = renderer.addUniformBuffer(0, sizeof(Model::UniformBufferObject));
 

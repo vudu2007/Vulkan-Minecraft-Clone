@@ -5,29 +5,44 @@ void Player::pollKeyboardControls()
     const glm::vec3 forward = camera.getForward();
     const glm::vec3 right = camera.getRight();
 
+    bool player_moved = false;
     if (window.getKeyboardKey(GLFW_KEY_W) == GLFW_PRESS)
     {
         camera.moveForwardXZ(speed);
+        player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_S) == GLFW_PRESS)
     {
         camera.moveBackwardXZ(speed);
+        player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_A) == GLFW_PRESS)
     {
         camera.moveLeftXZ(speed);
+        player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_D) == GLFW_PRESS)
     {
         camera.moveRightXZ(speed);
+        player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
     {
         camera.moveUpXZ(speed);
+        player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
         camera.moveDownXZ(speed);
+        player_moved = true;
+    }
+
+    if (player_moved)
+    {
+        for (const auto& callback : moveCallbacks)
+        {
+            callback(*this);
+        }
     }
 }
 
@@ -47,7 +62,7 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
     }
 }
 
-Player::Player(Window& window, const glm::vec3& pos, const float speed)
+Player::Player(Window& window, const glm::vec3& pos, const float speed, const unsigned render_distance)
     : window(window), camera(
                           window,
                           glm::vec3(0, 2, 0),
@@ -57,7 +72,7 @@ Player::Player(Window& window, const glm::vec3& pos, const float speed)
                           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
                           0.1f,
                           1000.0f),
-      position(pos), speed(speed)
+      position(pos), speed(speed), renderDistance(render_distance)
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
         this->eventKeyboardControls(key, scancode, action, mods);
@@ -95,4 +110,19 @@ const glm::vec3 Player::getPosition() const
 {
     // return position;
     return camera.getEye();
+}
+
+const unsigned Player::getRenderDistance() const
+{
+    return renderDistance;
+}
+
+void Player::addMoveCallback(const std::function<void(Player&)>& callback)
+{
+    moveCallbacks.push_back(callback);
+}
+
+void Player::clearMoveCallbacks()
+{
+    moveCallbacks.clear();
 }

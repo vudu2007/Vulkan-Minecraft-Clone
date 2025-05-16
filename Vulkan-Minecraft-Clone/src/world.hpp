@@ -14,7 +14,7 @@ class World
 
     SimplexNoise noise;
     unsigned seed;
-    int chunkSize;
+    int chunkSize; // In blocks.
 
     std::unordered_map<ChunkCoord, Chunk> chunks;
     std::unordered_map<ChunkCoord, Chunk> activeChunks;
@@ -25,6 +25,7 @@ class World
     World(const unsigned seed, const int chunk_size);
 
     void update(const Player& player);
+    void updateChunks(const Player& player);
 
     const std::vector<Chunk> getActiveChunks() const;
 };
