@@ -3,29 +3,38 @@
 #include "chunk.hpp"
 #include "player.hpp"
 
+#include <GLM/gtx/hash.hpp>
+
+#include <mutex>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class World
 {
   private:
-    using ChunkCoord = std::string; // Center position of chunk floored as a string.
+    using ChunkCoord = glm::vec2; // Center position of chunk floored as a string.
+
+    std::mutex addChunkMutex;
+    std::unordered_set<ChunkCoord> chunksToAdd;
 
     SimplexNoise noise;
     unsigned seed;
     int chunkSize; // In blocks.
 
-    std::unordered_map<ChunkCoord, Chunk> chunks;
-    std::unordered_map<ChunkCoord, Chunk> activeChunks;
+    std::unordered_map<ChunkCoord, Chunk*> chunks;
+    std::unordered_map<ChunkCoord, Chunk*> activeChunks;
 
     const glm::vec2 posToChunkCenter(const glm::vec3 pos) const;
 
   public:
     World(const unsigned seed, const int chunk_size);
+    ~World();
 
     void update(const Player& player);
+    void addChunk(const ChunkCoord cc, const glm::vec2 chunk_center);
     void updateChunks(const Player& player);
 
-    const std::vector<Chunk> getActiveChunks() const;
+    const std::vector<const Chunk*> getActiveChunks() const;
 };

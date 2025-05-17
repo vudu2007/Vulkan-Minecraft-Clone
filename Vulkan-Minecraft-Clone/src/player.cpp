@@ -2,38 +2,44 @@
 
 void Player::pollKeyboardControls()
 {
+    float adj_speed = speed;
+    if (window.getKeyboardKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    {
+        adj_speed *= DEFAULT_SPRINT_MULTIPLIER;
+    }
+
     const glm::vec3 forward = camera.getForward();
     const glm::vec3 right = camera.getRight();
 
     bool player_moved = false;
     if (window.getKeyboardKey(GLFW_KEY_W) == GLFW_PRESS)
     {
-        camera.moveForwardXZ(speed);
+        camera.moveForwardXZ(adj_speed);
         player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_S) == GLFW_PRESS)
     {
-        camera.moveBackwardXZ(speed);
+        camera.moveBackwardXZ(adj_speed);
         player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_A) == GLFW_PRESS)
     {
-        camera.moveLeftXZ(speed);
+        camera.moveLeftXZ(adj_speed);
         player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_D) == GLFW_PRESS)
     {
-        camera.moveRightXZ(speed);
+        camera.moveRightXZ(adj_speed);
         player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        camera.moveUpXZ(speed);
+        camera.moveUpXZ(adj_speed);
         player_moved = true;
     }
     if (window.getKeyboardKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
     {
-        camera.moveDownXZ(speed);
+        camera.moveDownXZ(adj_speed);
         player_moved = true;
     }
 

@@ -8,7 +8,8 @@ class Player
   private:
     inline static const float DEFAULT_SPEED = 0.1f;
     inline static const glm::vec3 DEFAULT_POSITION{0.0f};
-    inline static unsigned DEFAULT_RENDER_DISTANCE = 5;
+    inline static unsigned DEFAULT_RENDER_DISTANCE = 1;
+    inline static const float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
 
     Window& window;
 

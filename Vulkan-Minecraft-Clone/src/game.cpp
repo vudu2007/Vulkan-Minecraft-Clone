@@ -2,24 +2,25 @@
 #include "world.hpp"
 
 #include <iostream>
-#include <unordered_map>
 
-const int CHUNK_SIZE = 16;
+const int CHUNK_SIZE = 64;
 
 void Game::run()
 {
     World w{0, CHUNK_SIZE};
     w.updateChunks(player);
+    std::this_thread::sleep_for(std::chrono::seconds(2)); // TODO: temp
     auto chunks = w.getActiveChunks();
 
     player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });
 
-    auto& height_map = chunks[0].getHeightMap();
     std::vector<Model::InstanceData> terrain;
-    for (const auto& val : height_map)
+    auto& blocks = chunks[0]->getVisibleBlocks();
+    for (const auto& block : blocks)
     {
-        terrain.emplace_back(val);
+        terrain.emplace_back(block->position);
     }
+
     const unsigned terrain_v_buffer_idx = renderer.addVertexBuffer(
         renderer.pModel->getVertices().data(),
         sizeof(renderer.pModel->getVertices()[0]),
@@ -28,7 +29,7 @@ void Game::run()
         terrain.data(),
         sizeof(terrain[0]),
         terrain.size(),
-        terrain.size() * 1024); // TODO: adjust buffer size based on render distance; currently just a constant
+        terrain.size() * 10240); // TODO: adjust buffer size based on render distance; currently just a constant
 
     const unsigned uniform_buffer_idx = renderer.addUniformBuffer(0, sizeof(Model::UniformBufferObject));
 
@@ -51,10 +52,10 @@ void Game::run()
         terrain.clear();
         for (const auto& chunk : w.getActiveChunks())
         {
-            auto& height_map = chunk.getHeightMap();
-            for (const auto& val : height_map)
+            auto& blocks = chunk->getVisibleBlocks();
+            for (const auto& block : blocks)
             {
-                terrain.emplace_back(val);
+                terrain.emplace_back(block->position);
             }
         }
         renderer.updateInstanceVertexBuffer(terrain_v_buffer_idx, terrain.data(), sizeof(terrain[0]), terrain.size());
