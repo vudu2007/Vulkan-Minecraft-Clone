@@ -19,9 +19,10 @@ The project has only been tested on Windows using Visual Studio 2022.
 2. Clone the repository.
 3. Open the solution file (`Vulkan-Minecraft-Clone.sln`) in Visual Studio (should work on 2022).
 4. Follow the [Vulkan Tutorial - Development Environment](https://vulkan-tutorial.com/Development_environment) to set up the development environment.
-5. Go to the shaders folder `Vulkan-Minecraft-Clone/src/shaders/compiler/`
-6. Compile the shaders, such as using `glslc` (included in repository as an Windows executable, but can use one in Vulkan SDK if you do not trust the one here); can use the batch file: `Vulkan-Minecraft-Clone/src/shaders/compiler/compile.bat`
-7. Use Visual Studio to build your desired build configuration and run the application.
+5. Make sure you are using a compiler that supports C++20.
+6. Go to the shaders folder `Vulkan-Minecraft-Clone/src/shaders/compiler/`
+7. Compile the shaders, such as using `glslc` (included in repository as an Windows executable, but can use one in Vulkan SDK if you do not trust the one here); can use the batch file: `Vulkan-Minecraft-Clone/src/shaders/compiler/compile.bat`
+8. Use Visual Studio to build your desired build configuration and run the application.
 
 ## Resources
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
