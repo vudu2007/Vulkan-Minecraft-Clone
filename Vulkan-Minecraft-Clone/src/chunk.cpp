@@ -1,45 +1,55 @@
 #include "chunk.hpp"
 
 #include <algorithm>
-#include <thread>
+#include <unordered_set>
 
 Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size) : position(center_pos), size(size)
 {
     const int x_start = static_cast<int>(center_pos.x - (size / static_cast<float>(2)));
     const int z_start = static_cast<int>(center_pos.y - (size / static_cast<float>(2)));
 
-    int min_height = -25; // std::numeric_limits<int>::max(); // TODO
-    for (int z = z_start; z < z_start + size; ++z)
+    int min_height = -500; // std::numeric_limits<int>::max(); // TODO
+
+    // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
+    // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.
+    std::unordered_set<BlockId> block_ids_to_discard;
+
+    // Start at the corner of the chunk and offset it by -1 to figure out the blocks in neighboring chunks.
+    // End at the corner with an offset of +1 or a condition `<=` to reach blocks in neighboring chunks.
+    blockMap = std::make_unique<std::unordered_map<glm::vec3, Block>>();
+    for (int z = z_start - 1; z <= z_start + size; ++z)
     {
-        for (int x = x_start; x < x_start + size; ++x)
+        for (int x = x_start - 1; x <= x_start + size; ++x)
         {
             int max_height = static_cast<int>(
                 std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 10.0f, 0.01f)));
 
             min_height = std::min(min_height, max_height);
 
-            heightMap.emplace_back(glm::vec3(static_cast<float>(x), max_height, static_cast<float>(z)));
-        }
-    }
-
-    blockMap = std::make_unique<std::unordered_map<glm::vec3, Block>>();
-    unsigned counter = 0;
-    for (int z = z_start; z < z_start + size; ++z)
-    {
-        for (int x = x_start; x < x_start + size; ++x)
-        {
-            const int max_height = static_cast<int>(heightMap[counter++].y);
-
             for (int y = min_height; y <= max_height; ++y)
             {
                 const glm::vec3 position(static_cast<float>(x), y, static_cast<float>(z));
-                blockMap->emplace(position, position);
+                const BlockId block_id = position;
+                blockMap->emplace(block_id, position);
+
+                const bool is_z_edge = (z == z_start - 1) || (z == z_start + size);
+                const bool is_x_edge = (x == x_start - 1) || (x == x_start + size);
+                if (is_z_edge || is_x_edge)
+                {
+                    block_ids_to_discard.emplace(block_id);
+                }
             }
         }
     }
 
     for (auto& map : *blockMap)
     {
+        const BlockId& block_id = map.first;
+        if (block_ids_to_discard.contains(block_id))
+        {
+            continue;
+        }
+
         Block& block = map.second;
         const glm::vec3 top = block.position + glm::vec3(0.0f, 1.0f, 0.0f);
         const glm::vec3 bottom = block.position + glm::vec3(0.0f, -1.0f, 0.0f);
@@ -55,6 +65,7 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
         const bool has_front = blockMap->contains(front);
         const bool has_back = blockMap->contains(back);
 
+        // TODO: might use below in the future.
         // if (has_top)
         //{
         //     block.topNeighbor = &((*blockMap)[top]);
@@ -89,60 +100,10 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
             visibleBlocks.push_back(&block);
         }
     }
-}
 
-void Chunk::merge(const std::vector<Chunk*>& others)
-{
-    std::list<std::list<Block*>::iterator> iterators;
-
-    for (auto it = visibleBlocks.begin(); it != visibleBlocks.end(); ++it)
+    for (const auto& block_id : block_ids_to_discard)
     {
-        Block* block = *it;
-        std::vector<glm::vec3> neighbors{
-            (block->position + glm::vec3(0.0f, 1.0f, 0.0f)),  // Top.
-            (block->position + glm::vec3(0.0f, -1.0f, 0.0f)), // Bottom.
-            (block->position + glm::vec3(-1.0f, 0.0f, 0.0f)), // Left.
-            (block->position + glm::vec3(1.0f, 0.0f, 0.0f)),  // Right.
-            (block->position + glm::vec3(0.0f, 0.0f, -1.0f)), // Front.
-            (block->position + glm::vec3(0.0f, 0.0f, 1.0f)),  // Back.
-        };
-
-        bool should_hide = true;
-        for (const auto& neighbor : neighbors)
-        {
-            bool has_neighbor = false;
-
-            // Check if this block has neighbors in other chunks.
-            for (const auto& chunk : others)
-            {
-                if (chunk->blockMap->contains(neighbor))
-                {
-                    has_neighbor = true;
-                    break;
-                }
-            }
-
-            // Check if this block has neighbors in its own chunk.
-            if (has_neighbor || blockMap->contains(neighbor))
-            {
-                continue;
-            }
-
-            // Didn't find any neighbors in own nor neighboring chunks, so this block remains visible.
-            should_hide = false;
-            break;
-        }
-
-        if (should_hide)
-        {
-            hiddenBlocks.push_back(block);
-            iterators.push_back(it);
-        }
-    }
-
-    for (const auto& it : iterators)
-    {
-        visibleBlocks.erase(it);
+        blockMap->erase(block_id);
     }
 }
 
@@ -154,11 +115,6 @@ glm::vec2 Chunk::getPos() const
 std::string Chunk::getPosStr() const
 {
     return glm::to_string(position);
-}
-
-const std::vector<glm::vec3>& Chunk::getHeightMap() const
-{
-    return heightMap;
 }
 
 const std::list<Block*>& Chunk::getVisibleBlocks() const

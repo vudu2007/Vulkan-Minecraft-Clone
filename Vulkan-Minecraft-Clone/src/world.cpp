@@ -72,7 +72,8 @@ void World::updateChunks(const Player& player)
                     if (!chunksToAdd.contains(cc))
                     {
                         chunksToAdd.emplace(cc);
-                        // TODO: use thread pool to avoid overhead of creating a thread again and again.
+                        // TODO: use thread pool to avoid overhead of creating a thread again and again;
+                        // could do some kind of batching to avoid using a thread per chunk.
                         std::thread(&World::addChunk, this, cc, chunk_center).detach();
                     }
                 }
@@ -94,37 +95,6 @@ void World::updateChunks(const Player& player)
         {
             activeChunks.erase(cc);
         }
-
-        // TODO: merge on a separate thread or something since it's expensive. Or find a new way to merge.
-        //// Merge active chunks.
-        // if (active_chunks_changed)
-        //{
-        //     for (auto& entry : activeChunks)
-        //     {
-        //         const ChunkCoord& cc = entry.first;
-        //         Chunk& chunk = *(entry.second);
-        //
-        //         // Merge with neighboring chunks.
-        //         std::vector<glm::vec2> neighbor_ccs{
-        //             (cc + glm::vec2(-1.0f, 0.0f)), // Left.
-        //             (cc + glm::vec2(1.0f, 0.0f)),  // Right.
-        //             (cc + glm::vec2(0.0f, -1.0f)), // Front.
-        //             (cc + glm::vec2(0.0f, 1.0f)),  // Back.
-        //         };
-        //         std::vector<Chunk*> neighbor_chunks;
-        //         neighbor_chunks.reserve(neighbor_ccs.size());
-        //
-        //         for (const auto& neighbor_cc : neighbor_ccs)
-        //         {
-        //             if (activeChunks.contains(neighbor_cc))
-        //             {
-        //                 neighbor_chunks.push_back(activeChunks[neighbor_cc]);
-        //             }
-        //         }
-        //
-        //         chunk.merge(neighbor_chunks);
-        //     }
-        // }
     }
 }
 

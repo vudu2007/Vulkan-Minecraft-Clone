@@ -9,7 +9,7 @@ void Game::run()
 {
     World w{0, CHUNK_SIZE};
     w.updateChunks(player);
-    std::this_thread::sleep_for(std::chrono::seconds(2)); // TODO: temp
+    std::this_thread::sleep_for(std::chrono::seconds(20)); // TODO: temp
     auto chunks = w.getActiveChunks();
 
     player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });
