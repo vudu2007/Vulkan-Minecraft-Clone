@@ -8,7 +8,7 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     const int x_start = static_cast<int>(center_pos.x - (size / static_cast<float>(2)));
     const int z_start = static_cast<int>(center_pos.y - (size / static_cast<float>(2)));
 
-    int min_height = -500; // std::numeric_limits<int>::max(); // TODO
+    int min_height = -100; // std::numeric_limits<int>::max(); // TODO
 
     // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
     // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.

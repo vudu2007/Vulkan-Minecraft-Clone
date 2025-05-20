@@ -33,7 +33,7 @@ class World
     ~World();
 
     void update(const Player& player);
-    void addChunk(const ChunkCoord cc, const glm::vec2 chunk_center);
+    void addChunk(const std::vector<glm::vec2> chunk_center);
     void updateChunks(const Player& player);
 
     const std::vector<const Chunk*> getActiveChunks() const;

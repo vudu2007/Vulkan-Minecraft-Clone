@@ -3,13 +3,13 @@
 
 #include <iostream>
 
-const int CHUNK_SIZE = 64;
+const int CHUNK_SIZE = 16;
 
 void Game::run()
 {
     World w{0, CHUNK_SIZE};
     w.updateChunks(player);
-    std::this_thread::sleep_for(std::chrono::seconds(20)); // TODO: temp
+    std::this_thread::sleep_for(std::chrono::seconds(15)); // TODO: temp
     auto chunks = w.getActiveChunks();
 
     player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });

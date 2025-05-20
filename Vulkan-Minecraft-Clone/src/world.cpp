@@ -28,15 +28,19 @@ void World::update(const Player& player)
 {
 }
 
-void World::addChunk(const ChunkCoord cc, const glm::vec2 chunk_center)
+void World::addChunk(const std::vector<glm::vec2> chunk_centers)
 {
-    Chunk* chunk = new Chunk{noise, chunk_center, chunkSize};
-
+    for (const auto& chunk_center : chunk_centers)
     {
-        std::lock_guard<std::mutex> lock(addChunkMutex);
-        chunks.emplace(cc, chunk);
-        activeChunks.emplace(cc, chunks[cc]);
-        chunksToAdd.erase(cc);
+        Chunk* chunk = new Chunk{noise, chunk_center, chunkSize};
+        const ChunkCoord cc = chunk_center / static_cast<float>(chunkSize);
+
+        {
+            std::lock_guard<std::mutex> lock(addChunkMutex);
+            chunks.emplace(cc, chunk);
+            activeChunks.emplace(cc, chunks[cc]);
+            chunksToAdd.erase(cc);
+        }
     }
 }
 
@@ -53,7 +57,9 @@ void World::updateChunks(const Player& player)
         inactive_chunks.emplace(entry.first);
     }
 
-    bool active_chunks_changed = false;
+    std::vector<glm::vec2> chunk_centers;
+    bool add_chunks = false;
+
     float x = player.getPosition().x - offset;
     for (int i = 0; i <= (render_distance * 2); ++i)
     {
@@ -65,16 +71,14 @@ void World::updateChunks(const Player& player)
             inactive_chunks.erase(cc);
             if (!activeChunks.contains(cc))
             {
-                active_chunks_changed = true;
                 if (!chunks.contains(cc))
                 {
                     // Create the chunk asynchrounously and add it later.
                     if (!chunksToAdd.contains(cc))
                     {
                         chunksToAdd.emplace(cc);
-                        // TODO: use thread pool to avoid overhead of creating a thread again and again;
-                        // could do some kind of batching to avoid using a thread per chunk.
-                        std::thread(&World::addChunk, this, cc, chunk_center).detach();
+                        chunk_centers.emplace_back(chunk_center);
+                        add_chunks = true;
                     }
                 }
                 else
@@ -85,6 +89,12 @@ void World::updateChunks(const Player& player)
             z += chunkSize;
         }
         x += chunkSize;
+    }
+
+    if (add_chunks)
+    {
+        // TODO: use thread pool to avoid overhead of creating a thread again and again.
+        std::thread(&World::addChunk, this, chunk_centers).detach();
     }
 
     {
