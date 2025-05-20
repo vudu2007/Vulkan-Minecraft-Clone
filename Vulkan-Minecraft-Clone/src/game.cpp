@@ -7,15 +7,12 @@ const int CHUNK_SIZE = 16;
 
 void Game::run()
 {
-    World w{0, CHUNK_SIZE};
-    w.updateChunks(player);
-    std::this_thread::sleep_for(std::chrono::seconds(15)); // TODO: temp
-    auto chunks = w.getActiveChunks();
+    World w{0, CHUNK_SIZE, player};
 
     player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });
 
     std::vector<Model::InstanceData> terrain;
-    auto& blocks = chunks[0]->getVisibleBlocks();
+    auto& blocks = (w.getActiveChunks())[0]->getVisibleBlocks();
     for (const auto& block : blocks)
     {
         terrain.emplace_back(block->position);

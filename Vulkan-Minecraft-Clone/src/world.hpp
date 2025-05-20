@@ -29,12 +29,12 @@ class World
     const glm::vec2 posToChunkCenter(const glm::vec3 pos) const;
 
   public:
-    World(const unsigned seed, const int chunk_size);
+    World(const unsigned seed, const int chunk_size, const Player& player);
     ~World();
 
     void update(const Player& player);
     void addChunk(const std::vector<glm::vec2> chunk_center);
-    void updateChunks(const Player& player);
+    unsigned updateChunks(const Player& player);
 
     const std::vector<const Chunk*> getActiveChunks() const;
 };

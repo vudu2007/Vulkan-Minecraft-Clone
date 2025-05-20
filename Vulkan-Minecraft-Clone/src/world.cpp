@@ -1,5 +1,6 @@
 #include "world.hpp"
 
+#include <iostream>
 #include <thread>
 #include <unordered_set>
 
@@ -12,8 +13,26 @@ const glm::vec2 World::posToChunkCenter(const glm::vec3 pos) const
     return glm::vec2(x, z);
 }
 
-World::World(const unsigned seed, const int chunk_size) : noise(seed), seed(seed), chunkSize(chunk_size)
+World::World(const unsigned seed, const int chunk_size, const Player& player)
+    : noise(seed), seed(seed), chunkSize(chunk_size)
 {
+    std::cout << ">>> Loading world..." << std::endl;
+
+    const unsigned total_num_chunks = updateChunks(player);
+
+    // TODO: main thread provides updates to user here.
+    // Report an update every second.
+    do
+    {
+        std::cout << "  Loaded " << (total_num_chunks - chunksToAdd.size()) << "/" << total_num_chunks << " chunks."
+                  << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    } while (!chunksToAdd.empty());
+
+    std::cout << "  Loaded " << (total_num_chunks - chunksToAdd.size()) << "/" << total_num_chunks << " chunks."
+              << std::endl;
+
+    std::cout << ">>> Finished loading world!" << std::endl;
 }
 
 World::~World()
@@ -44,7 +63,7 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
     }
 }
 
-void World::updateChunks(const Player& player)
+unsigned World::updateChunks(const Player& player)
 {
     // TODO: change to update in 3D.
     // Load all chunks visible to the player.
@@ -106,6 +125,8 @@ void World::updateChunks(const Player& player)
             activeChunks.erase(cc);
         }
     }
+
+    return chunk_centers.size();
 }
 
 const std::vector<const Chunk*> World::getActiveChunks() const
