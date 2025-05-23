@@ -24,17 +24,27 @@ class Renderer
     Device device;
     Swapchain swapchain;
 
+    // Descriptors.
     std::unique_ptr<DescriptorSetLayout> pDescriptorSetLayout;
+    std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings;
     std::unique_ptr<DescriptorPool> pDescriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
+    // Pipelines.
     std::unique_ptr<GraphicsPipeline> pGraphicsPipeline;
     VkPipelineLayout pipelineLayout;
 
-    std::unique_ptr<Texture> pTexture;
+    // Buffers.
+    struct IndexBufferInfo
+    {
+        unsigned vertexBufferIdx; // Associated vertex buffer information for these indices.
+        size_t count = 0;
+        std::unique_ptr<Buffer> pBuffer;
+        VkIndexType type = VK_INDEX_TYPE_UINT32; // TODO
+    };
+    std::vector<IndexBufferInfo> indexBuffers;
 
-    std::unique_ptr<Buffer> pIndexBuffer;
-
+    // TODO: need a away to allow for drawing vertices without indicies if not specified.
     struct VertexBufferInfo
     {
         size_t vertexCount = 0;
@@ -42,28 +52,31 @@ class Renderer
         std::unique_ptr<Buffer> pVertexBuffer;
         std::unique_ptr<Buffer> pInstanceVertexBuffer;
     };
-    std::vector<VertexBufferInfo> vertexBufferPtrs;
+    std::vector<VertexBufferInfo> vertexBuffers;
 
     struct UniformBufferInfo
     {
         uint32_t binding;
         std::vector<std::unique_ptr<Buffer>> bufferPtrPerFrame;
     };
-    std::vector<UniformBufferInfo> uniformBufferPtrs;
+    std::vector<UniformBufferInfo> uniformBuffers;
+
+    struct CombinedImageSamplerInfo
+    {
+        uint32_t binding;
+        const Texture* texture;
+    };
+    std::vector<CombinedImageSamplerInfo> combinedImageSamplers;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
+    // Synchronization primitives.
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
-    void createDescriptorSetLayout();
-    void createDescriptorPool();
     VkShaderModule createShaderModule(const std::vector<char>& bytecode) const;
-    void createGraphicsPipeline();
-    void createTextures();
-    void loadModel();
-    void createIndexBuffer();
+    void createDescriptorPool();
     void createCommandBuffers();
     void createSyncObjects();
 
@@ -78,9 +91,12 @@ class Renderer
     Renderer& operator=(const Renderer& other) = delete;
     Renderer& operator=(Renderer&& other) = delete;
 
-    std::unique_ptr<Model> pModel; // TODO: temp
+    [[nodiscard]] Texture* createTexture(const std::string& path) const;
 
+    void createDescriptorSetLayout();
+    void createGraphicsPipeline();
     void createDescriptorSets();
+
     unsigned addVertexBuffer(
         const void* data,
         const size_t data_type_size,
@@ -97,8 +113,27 @@ class Renderer
         const size_t data_type_size,
         const size_t count);
 
-    unsigned addUniformBuffer(const uint32_t binding, const size_t byte_size);
+    void createIndexBuffer(
+        const unsigned vertex_buffer_index,
+        const void* data,
+        const size_t data_type_size,
+        const size_t count);
+
+    // unsigned addUniformBufferArray();
+    unsigned addUniformBuffer(
+        const uint32_t binding,
+        const size_t byte_size,
+        const VkShaderStageFlagBits stage_flags,
+        const uint32_t array_size = 1);
     void updateUniformBuffer(const unsigned index, const void* data, const size_t byte_size);
+
+    // void addCombinedImageSamplerArray();
+    void addCombinedImageSampler(
+        const uint32_t binding,
+        const Texture* texture,
+        const VkShaderStageFlagBits stage_flags,
+        const uint32_t array_size = 1,
+        const VkSampler* immutable_samplers = nullptr);
 
     void drawFrame();
 };

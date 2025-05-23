@@ -1,3 +1,3 @@
-glslc.exe ../tutorial_shader.vert -o ../tutorial_shader_vert.spv
-glslc.exe ../tutorial_shader.frag -o ../tutorial_shader_frag.spv
+glslc.exe ../shader_block.vert -o ../shader_block_vert.spv
+glslc.exe ../shader_block.frag -o ../shader_block_frag.spv
 pause

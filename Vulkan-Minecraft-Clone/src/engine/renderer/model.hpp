@@ -20,12 +20,13 @@ class Model
         static const uint32_t BINDING = 0;
 
         glm::vec3 pos;
+        glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
 
         bool operator==(const Vertex& other) const
         {
-            return pos == other.pos && color == other.color && texCoord == other.texCoord;
+            return pos == other.pos && normal == other.normal && color == other.color && texCoord == other.texCoord;
         }
 
         static VkVertexInputBindingDescription getBindingDescription()
@@ -38,9 +39,9 @@ class Model
             return binding_description;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
         {
-            std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions{};
+            std::array<VkVertexInputAttributeDescription, 4> attribute_descriptions{};
 
             attribute_descriptions[0].binding = BINDING;
             attribute_descriptions[0].location = 0;
@@ -50,12 +51,17 @@ class Model
             attribute_descriptions[1].binding = BINDING;
             attribute_descriptions[1].location = 1;
             attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attribute_descriptions[1].offset = offsetof(Vertex, color);
+            attribute_descriptions[1].offset = offsetof(Vertex, normal);
 
             attribute_descriptions[2].binding = BINDING;
             attribute_descriptions[2].location = 2;
-            attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-            attribute_descriptions[2].offset = offsetof(Vertex, texCoord);
+            attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+            attribute_descriptions[2].offset = offsetof(Vertex, color);
+
+            attribute_descriptions[3].binding = BINDING;
+            attribute_descriptions[3].location = 3;
+            attribute_descriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+            attribute_descriptions[3].offset = offsetof(Vertex, texCoord);
 
             return attribute_descriptions;
         }
@@ -82,7 +88,7 @@ class Model
             std::array<VkVertexInputAttributeDescription, 1> attribute_descriptions{};
 
             attribute_descriptions[0].binding = BINDING;
-            attribute_descriptions[0].location = 3;
+            attribute_descriptions[0].location = 4;
             attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
             attribute_descriptions[0].offset = offsetof(InstanceData, pos);
 
@@ -102,9 +108,10 @@ class Model
   private:
     std::vector<Vertex> vertices;
     std::vector<Index> indices;
+    std::vector<glm::vec3> normals;
 
   public:
-    Model(const std::string model_file_path);
+    Model(const std::string model_file_path, const float scale = 1.0f);
     Model(const std::vector<Vertex>& vertices, const std::vector<Index>& indices);
 
     const std::vector<Vertex>& getVertices() const;

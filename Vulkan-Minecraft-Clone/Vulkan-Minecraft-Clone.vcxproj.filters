@@ -78,8 +78,8 @@
     <None Include="src\shaders\compiler\glslc.exe" />
     <None Include="src\shaders\tutorial_shader.frag" />
     <None Include="src\shaders\tutorial_shader.vert" />
-    <None Include="src\shaders\tutorial_shader_frag.spv" />
-    <None Include="src\shaders\tutorial_shader_vert.spv" />
+    <None Include="src\shaders\shader_block.vert" />
+    <None Include="src\shaders\shader_block.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\game.hpp">

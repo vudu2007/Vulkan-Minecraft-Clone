@@ -22,7 +22,7 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
         for (int x = x_start - 1; x <= x_start + size; ++x)
         {
             int max_height = static_cast<int>(
-                std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 10.0f, 0.01f)));
+                std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 20.0f, 0.0035f)));
 
             min_height = std::min(min_height, max_height);
 
@@ -93,7 +93,14 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
 
         if (has_top && has_bottom && has_left && has_right && has_front && has_back)
         {
-            hiddenBlocks.push_back(&block);
+            //  TODO: might not be necessary to store hidden blocks for now;
+            //  a potential idea is to generate the blocks after the player
+            //  modifies the world (place/break blocks) so that a chunk
+            //  takes less memory.
+            // Currnetly, will delete hidden blocks after figuring out neighbors!
+            hiddenBlocks.push_back(block_id);
+
+            // hiddenBlocks.push_back(&block);
         }
         else
         {
@@ -105,6 +112,13 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     {
         blockMap->erase(block_id);
     }
+
+    // TODO: currently, delete hidden blocks to save memory.
+    for (const auto& block_id : hiddenBlocks)
+    {
+        blockMap->erase(block_id);
+    }
+    hiddenBlocks.clear();
 }
 
 glm::vec2 Chunk::getPos() const

@@ -21,7 +21,8 @@ class Chunk
 
     std::unique_ptr<std::unordered_map<BlockId, Block>> blockMap;
     std::list<Block*> visibleBlocks;
-    std::list<Block*> hiddenBlocks;
+    //std::list<Block*> hiddenBlocks;
+    std::list<BlockId> hiddenBlocks;
 
   public:
     Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size);

@@ -8,30 +8,13 @@
 
 void Renderer::createDescriptorSetLayout()
 {
-    // TODO: will need to test
-    // TODO: should be defined somewhere else; user needs to define it; need to make sure layout matches with buffers
-    VkDescriptorSetLayoutBinding ubo_layout_binding{};
-    ubo_layout_binding.binding = 0;
-    ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    ubo_layout_binding.descriptorCount = 1;
-    ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    ubo_layout_binding.pImmutableSamplers = nullptr; // Optional.
-
-    VkDescriptorSetLayoutBinding sampler_layout_binding{};
-    sampler_layout_binding.binding = 1;
-    sampler_layout_binding.descriptorCount = 1;
-    sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    sampler_layout_binding.pImmutableSamplers = nullptr;
-
-    std::vector<VkDescriptorSetLayoutBinding> bindings = {ubo_layout_binding, sampler_layout_binding};
-    pDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(device, bindings);
+    pDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(device, descriptorSetLayoutBindings);
 }
 
 void Renderer::createDescriptorPool()
 {
     // TODO: will need to test
-    const size_t num_buffers = uniformBufferPtrs.size();
+    const size_t num_buffers = uniformBuffers.size();
     const size_t num_samplers = 1;
 
     std::vector<VkDescriptorPoolSize> pool_sizes;
@@ -50,6 +33,9 @@ void Renderer::createDescriptorPool()
 
 void Renderer::createDescriptorSets()
 {
+    // Create the descriptor pool to allocate the sets.
+    createDescriptorPool();
+
     // TODO: will need to test
     std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pDescriptorSetLayout->getLayout());
     VkDescriptorSetAllocateInfo alloc_info{};
@@ -60,43 +46,60 @@ void Renderer::createDescriptorSets()
 
     descriptorSets = pDescriptorPool->allocateDescriptorSets(*pDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT);
 
-    const size_t num_buffers = uniformBufferPtrs.size();
+    const size_t num_buffers = uniformBuffers.size();
     std::vector<std::pair<uint32_t, std::vector<VkDescriptorBufferInfo>>> buffer_infos;
 
     // Uniform buffers.
-    for (size_t i = 0; i < uniformBufferPtrs.size(); ++i)
+    for (size_t i = 0; i < uniformBuffers.size(); ++i)
     {
         std::vector<VkDescriptorBufferInfo> buffer_infos_per_frame;
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
         {
             VkDescriptorBufferInfo buffer_info_per_frame{};
-            buffer_info_per_frame.buffer = uniformBufferPtrs[i].bufferPtrPerFrame[j]->getBuffer();
-            buffer_info_per_frame.range = uniformBufferPtrs[i].bufferPtrPerFrame[j]->getSize();
+            buffer_info_per_frame.buffer = uniformBuffers[i].bufferPtrPerFrame[j]->getBuffer();
+            buffer_info_per_frame.range = uniformBuffers[i].bufferPtrPerFrame[j]->getSize();
             buffer_infos_per_frame.push_back(buffer_info_per_frame);
         }
-        buffer_infos.push_back(std::make_pair(uniformBufferPtrs[i].binding, buffer_infos_per_frame));
+        buffer_infos.push_back(std::make_pair(uniformBuffers[i].binding, buffer_infos_per_frame));
+    }
+
+    const size_t num_images = combinedImageSamplers.size();
+    std::vector<std::pair<uint32_t, std::vector<VkDescriptorImageInfo>>> image_infos;
+
+    // Combined Image Samplers.
+    for (size_t i = 0; i < combinedImageSamplers.size(); ++i)
+    {
+        std::vector<VkDescriptorImageInfo> image_infos_per_frame{};
+        for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
+        {
+            VkDescriptorImageInfo image_info{};
+            image_info.sampler = combinedImageSamplers[i].texture->getSampler();
+            image_info.imageView = combinedImageSamplers[i].texture->getImageView();
+            image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            image_infos_per_frame.push_back(image_info);
+        }
+        image_infos.push_back(std::make_pair(combinedImageSamplers[i].binding, image_infos_per_frame));
     }
 
     // Update the descriptor sets.
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
         unsigned offset = 0;
-        std::vector<VkWriteDescriptorSet> descriptor_writes(1 + num_buffers);
+        std::vector<VkWriteDescriptorSet> descriptor_writes(num_images + num_buffers);
 
-        VkDescriptorImageInfo image_info{};
-        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        image_info.imageView = pTexture->getImageView();
-        image_info.sampler = pTexture->getSampler();
-
-        descriptor_writes[offset].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptor_writes[offset].dstSet = descriptorSets[i];
-        descriptor_writes[offset].dstBinding = 1;
-        descriptor_writes[offset].dstArrayElement = 0;
-        descriptor_writes[offset].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptor_writes[offset].descriptorCount = 1;
-        descriptor_writes[offset].pImageInfo = &image_info;
-
-        ++offset;
+        for (size_t j = 0; j < image_infos.size(); ++j)
+        {
+            const auto binding = image_infos[j].first;
+            const auto& sampler_info = image_infos[j].second[i];
+            descriptor_writes[j + offset].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptor_writes[j + offset].dstSet = descriptorSets[i];
+            descriptor_writes[j + offset].dstBinding = binding;
+            descriptor_writes[j + offset].dstArrayElement = 0;
+            descriptor_writes[j + offset].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptor_writes[j + offset].descriptorCount = 1;
+            descriptor_writes[j + offset].pImageInfo = &sampler_info;
+        }
+        offset += image_infos.size();
 
         for (size_t j = 0; j < buffer_infos.size(); ++j)
         {
@@ -110,6 +113,7 @@ void Renderer::createDescriptorSets()
             descriptor_writes[j + offset].descriptorCount = 1;
             descriptor_writes[j + offset].pBufferInfo = &buffer_info;
         }
+        offset += buffer_infos.size();
 
         pDescriptorPool->updateDescriptorSets(descriptor_writes);
     }
@@ -148,14 +152,14 @@ unsigned Renderer::addVertexBuffer(
     // Create the vertex buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-    vertexBufferPtrs.push_back(
+    vertexBuffers.push_back(
         {count, 0, std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), nullptr});
-    vertexBufferPtrs.back().pVertexBuffer->copyFrom(staging_buffer, num_bytes);
+    vertexBuffers.back().pVertexBuffer->copyFrom(staging_buffer, num_bytes);
 
     // Check if there is per instance data to handle.
     if (instance_data == nullptr)
     {
-        return static_cast<unsigned>(vertexBufferPtrs.size() - 1);
+        return static_cast<unsigned>(vertexBuffers.size() - 1);
     }
 
     // Handle per instance data if it was provided.
@@ -178,12 +182,12 @@ unsigned Renderer::addVertexBuffer(
     // Create the vertex buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-    vertexBufferPtrs.back().instanceCount = instance_count;
-    vertexBufferPtrs.back().pInstanceVertexBuffer =
+    vertexBuffers.back().instanceCount = instance_count;
+    vertexBuffers.back().pInstanceVertexBuffer =
         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    vertexBufferPtrs.back().pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
+    vertexBuffers.back().pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
 
-    return static_cast<unsigned>(vertexBufferPtrs.size() - 1);
+    return static_cast<unsigned>(vertexBuffers.size() - 1);
 }
 
 void Renderer::updateVertexBuffer(const unsigned index, const void* data, const size_t num_bytes)
@@ -220,8 +224,8 @@ void Renderer::updateInstanceVertexBuffer(
 
     // TODO: do double buffering.
     // TODO: may need synchronization primitive to render only after update
-    vertexBufferPtrs[index].instanceCount = count;
-    vertexBufferPtrs[index].pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
+    vertexBuffers[index].instanceCount = count;
+    vertexBuffers[index].pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
 }
 
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) const
@@ -243,8 +247,8 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) c
 void Renderer::createGraphicsPipeline()
 {
     // Load the shaders.
-    auto vert_shader_code = VmcUtility::readFile("src/shaders/tutorial_shader_vert.spv");
-    auto frag_shader_code = VmcUtility::readFile("src/shaders/tutorial_shader_frag.spv");
+    auto vert_shader_code = VmcUtility::readFile("src/shaders/shader_block_vert.spv");
+    auto frag_shader_code = VmcUtility::readFile("src/shaders/shader_block_frag.spv");
     VkShaderModule vert_shader_module = createShaderModule(vert_shader_code);
     VkShaderModule frag_shader_module = createShaderModule(frag_shader_code);
 
@@ -444,24 +448,23 @@ void Renderer::createGraphicsPipeline()
     vkDestroyShaderModule(device.getLogicalDevice(), vert_shader_module, nullptr);
 }
 
-void Renderer::createTextures()
+[[nodiscard]] Texture* Renderer::createTexture(const std::string& path) const
 {
-    pTexture = std::make_unique<Texture>(device, "src/textures/cube_texture.jpg");
+    return new Texture(device, path);
 }
 
-void Renderer::loadModel()
+void Renderer::createIndexBuffer(
+    const unsigned vertex_buffer_index,
+    const void* data,
+    const size_t data_type_size,
+    const size_t count)
 {
-    pModel = std::make_unique<Model>("src/models/cube.obj");
-}
-
-void Renderer::createIndexBuffer()
-{
-    const VkDeviceSize buffer_size = sizeof(pModel->getIndices()[0]) * pModel->getIndices().size();
+    const VkDeviceSize num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
     VkBufferCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = buffer_size;
+    create_info.size = num_bytes;
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     Buffer staging_buffer(
@@ -471,13 +474,16 @@ void Renderer::createIndexBuffer()
 
     // The host writes to the staging buffer.
     staging_buffer.map();
-    staging_buffer.write(pModel->getIndices().data(), buffer_size);
+    staging_buffer.write(data, num_bytes);
     staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
 
     // Create the index buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    pIndexBuffer = std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    pIndexBuffer->copyFrom(staging_buffer, buffer_size);
+    indexBuffers.push_back(
+        {vertex_buffer_index,
+         count,
+         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)});
+    indexBuffers.back().pBuffer->copyFrom(staging_buffer, num_bytes);
 }
 
 void Renderer::createCommandBuffers()
@@ -543,7 +549,7 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
 
     std::array<VkClearValue, 2> clear_values{};
     clear_values[0].color = {
-        {0.0f, 0.0f, 0.0f, 1.0f}
+        {0.43f, 0.7f, 0.92f, 1.0f}
     };
     clear_values[1].depthStencil = {1.0f, 0};
     render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
@@ -567,38 +573,40 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     scissor.extent = swapchain.getExtent();
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-    std::vector<VkBuffer> vertex_buffers;
-    for (const auto& bufferPtr : vertexBufferPtrs)
+    for (const auto& index_buffer : indexBuffers)
     {
-        vertex_buffers.push_back(bufferPtr.pVertexBuffer->getBuffer());
-
-        if (bufferPtr.pInstanceVertexBuffer->getBuffer() != nullptr)
+        const auto& vertex_buffer = vertexBuffers[index_buffer.vertexBufferIdx];
+        std::vector<VkBuffer> vertex_buffers = {vertex_buffer.pVertexBuffer->getBuffer()};
+        std::vector<VkDeviceSize> offsets = {0};
+        uint32_t num_bindings = 1;
+        if (vertex_buffer.pInstanceVertexBuffer != nullptr)
         {
-            vertex_buffers.push_back(bufferPtr.pInstanceVertexBuffer->getBuffer());
+            vertex_buffers.push_back(vertex_buffer.pInstanceVertexBuffer->getBuffer());
+            offsets.push_back(0);
+            ++num_bindings;
         }
+        vkCmdBindVertexBuffers(command_buffer, 0, num_bindings, vertex_buffers.data(), offsets.data());
+
+        vkCmdBindIndexBuffer(command_buffer, index_buffer.pBuffer->getBuffer(), 0, index_buffer.type);
+
+        vkCmdBindDescriptorSets(
+            command_buffer,
+            VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipelineLayout,
+            0,
+            1,
+            &descriptorSets[currentFrame],
+            0,
+            nullptr);
+
+        vkCmdDrawIndexed(
+            command_buffer,
+            static_cast<uint32_t>(index_buffer.count),
+            static_cast<uint32_t>(vertex_buffer.instanceCount),
+            0,
+            0,
+            0);
     }
-    VkDeviceSize offsets[] = {0, 0};
-    vkCmdBindVertexBuffers(command_buffer, 0, 2, vertex_buffers.data(), offsets);
-
-    vkCmdBindIndexBuffer(command_buffer, pIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdBindDescriptorSets(
-        command_buffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipelineLayout,
-        0,
-        1,
-        &descriptorSets[currentFrame],
-        0,
-        nullptr);
-
-    vkCmdDrawIndexed(
-        command_buffer,
-        static_cast<uint32_t>(pModel->getIndices().size()),
-        static_cast<uint32_t>(vertexBufferPtrs[0].instanceCount),
-        0,
-        0,
-        0);
 
     vkCmdEndRenderPass(command_buffer);
 
@@ -610,18 +618,7 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
 
 Renderer::Renderer(Window& window) : window(window), device(window), swapchain(device)
 {
-    createDescriptorSetLayout();
-    createGraphicsPipeline();
-
-    createTextures();
-    loadModel();
-
-    createIndexBuffer();
-
-    createDescriptorPool();
-
     createCommandBuffers();
-
     createSyncObjects();
 }
 
@@ -637,8 +634,21 @@ Renderer::~Renderer()
     }
 }
 
-unsigned Renderer::addUniformBuffer(const uint32_t binding, const size_t num_bytes)
+unsigned Renderer::addUniformBuffer(
+    const uint32_t binding,
+    const size_t num_bytes,
+    const VkShaderStageFlagBits stage_flags,
+    const uint32_t array_size)
 {
+    // 1. Create descriptor set layout binding.
+    VkDescriptorSetLayoutBinding layout_binding{};
+    layout_binding.binding = binding;
+    layout_binding.descriptorCount = array_size;
+    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    layout_binding.stageFlags = stage_flags;
+    descriptorSetLayoutBindings.push_back(layout_binding);
+
+    // 2. Create buffer.
     VkBufferCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     create_info.size = num_bytes;
@@ -654,14 +664,34 @@ unsigned Renderer::addUniformBuffer(const uint32_t binding, const size_t num_byt
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         bufferPtrsPerFrame[i]->map();
     }
-    uniformBufferPtrs.emplace_back(binding, std::move(bufferPtrsPerFrame));
+    uniformBuffers.emplace_back(binding, std::move(bufferPtrsPerFrame));
 
-    return static_cast<unsigned>(uniformBufferPtrs.size() - 1);
+    return static_cast<unsigned>(uniformBuffers.size() - 1);
 }
 
 void Renderer::updateUniformBuffer(const unsigned index, const void* data, const size_t num_bytes)
 {
-    uniformBufferPtrs[index].bufferPtrPerFrame[currentFrame]->write(data, num_bytes);
+    uniformBuffers[index].bufferPtrPerFrame[currentFrame]->write(data, num_bytes);
+}
+
+void Renderer::addCombinedImageSampler(
+    const uint32_t binding,
+    const Texture* texture,
+    const VkShaderStageFlagBits stage_flags,
+    const uint32_t array_size,
+    const VkSampler* immutable_samplers)
+{
+    // 1. Create descriptor set layout binding.
+    VkDescriptorSetLayoutBinding layout_binding{};
+    layout_binding.binding = binding;
+    layout_binding.descriptorCount = array_size;
+    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    layout_binding.stageFlags = stage_flags;
+    layout_binding.pImmutableSamplers = immutable_samplers;
+    descriptorSetLayoutBindings.push_back(layout_binding);
+
+    // 2. Save texture for creating descriptor sets.
+    combinedImageSamplers.push_back({binding, texture});
 }
 
 void Renderer::drawFrame()

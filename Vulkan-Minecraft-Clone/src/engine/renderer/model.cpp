@@ -3,7 +3,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-Model::Model(const std::string model_file_path)
+Model::Model(const std::string model_file_path, const float scale)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -22,13 +22,24 @@ Model::Model(const std::string model_file_path)
         {
             Vertex vertex{};
             vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]};
+                attrib.vertices[3 * index.vertex_index + 0] * scale,
+                attrib.vertices[3 * index.vertex_index + 1] * scale,
+                attrib.vertices[3 * index.vertex_index + 2] * scale,
+            };
             vertex.texCoord = {
                 attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]};
-            vertex.color = {1.0f, 1.0f, 1.0f};
+                1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
+            };
+            vertex.color = {
+                1.0f,
+                1.0f,
+                1.0f,
+            };
+            vertex.normal = {
+                attrib.normals[3 * index.normal_index + 0],
+                attrib.normals[3 * index.normal_index + 1],
+                attrib.normals[3 * index.normal_index + 2],
+            };
 
             if (unique_vertices.count(vertex) == 0)
             {

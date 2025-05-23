@@ -16,7 +16,7 @@ const glm::vec2 World::posToChunkCenter(const glm::vec3 pos) const
 World::World(const unsigned seed, const int chunk_size, const Player& player)
     : noise(seed), seed(seed), chunkSize(chunk_size)
 {
-    std::cout << ">>> Loading world..." << std::endl;
+    std::cout << ">>> Loading world with seed (" << seed << ")..." << std::endl;
 
     const unsigned total_num_chunks = updateChunks(player);
 

@@ -23,6 +23,9 @@ class World
     unsigned seed;
     int chunkSize; // In blocks.
 
+    // TODO: currently, a cache of chunks; will probably need an eviction policy to save memory;
+    // maybe don't cache chunks at all and store world data in persistant memory and load them when needed;
+    // maybe use a combination where inactive cached chunks are written to persistant memory.
     std::unordered_map<ChunkCoord, Chunk*> chunks;
     std::unordered_map<ChunkCoord, Chunk*> activeChunks;
 
