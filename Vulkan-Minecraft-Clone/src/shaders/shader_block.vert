@@ -24,7 +24,19 @@ void main()
 {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPos + inInstancePos, 1.0);
     
-    outFragColor = inColor;
+    // TODO: temp; this is for visible chunk borders.
+    if (mod(inInstancePos.x, 16) == 8 || 
+        mod(inInstancePos.z, 16) == 8 ||
+        mod(inInstancePos.x, 16) == 7 || 
+        mod(inInstancePos.z, 16) == 7)
+    {
+        outFragColor = inColor * 0.2;
+    }
+    else
+    {
+        outFragColor = inColor;
+    }
+    
     outfragTexCoord = inTexCoord;
     outNormal = mat3(transpose(inverse(ubo.model))) * inNormal;  
     outFragPos = vec3(ubo.model * vec4(inPos + inInstancePos, 1.0));

@@ -97,9 +97,9 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     hiddenBlocks.clear();
 }
 
-const Block* Chunk::getBlockInReach(const Player& player) const
+const Block* Chunk::getReachableBlock(const Ray& ray) const
 {
-    const Block* res = nullptr;
+    const Block* reachable_block = nullptr;
 
     // Find which block the player can reach.
     // TODO: reduce the visible blocks to check by using the player's reach and position in this chunk instead of
@@ -108,17 +108,16 @@ const Block* Chunk::getBlockInReach(const Player& player) const
     for (const auto& block : visibleBlocks)
     {
         float t_min = min_dist; // Can be any value; it will be modified by the intersection test.
-        const bool intersected =
-            CollisionHandler::rayShapeIntersect(player.getRay(), block->getCollisionShape(), &t_min);
+        const bool intersected = CollisionHandler::rayShapeIntersect(ray, block->getCollisionShape(), &t_min);
 
         if (intersected && (t_min < min_dist))
         {
-            res = block;
+            reachable_block = block;
             min_dist = t_min;
         }
     }
 
-    return res;
+    return reachable_block;
 }
 
 glm::vec2 Chunk::getPos() const

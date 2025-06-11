@@ -4,16 +4,16 @@
 #include "engine/camera.hpp"
 #include "engine/physics/ray/ray.hpp"
 #include "engine/renderer/window.hpp"
+#include "world.hpp"
 
 class Player
 {
   private:
-    inline static const float DEFAULT_SPEED = 0.1f;
-    inline static const glm::vec3 DEFAULT_POSITION{0.0f};
-    inline static unsigned DEFAULT_RENDER_DISTANCE = 1;
     inline static const float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
 
     Window& window;
+
+    World& world;
 
     Camera camera;
     Ray reach;
@@ -33,17 +33,10 @@ class Player
 
     void eventMouseControls(const int button, const int action, const int mods);
 
-    // Event handling.
-    std::vector<std::function<void(Player&)>> moveCallbacks;
-
   public:
     const Block* activeBlock = nullptr;
 
-    Player(
-        Window& window,
-        const glm::vec3& pos = DEFAULT_POSITION,
-        const float speed = DEFAULT_SPEED,
-        const unsigned render_distance = DEFAULT_RENDER_DISTANCE);
+    Player(Window& window, World& world, const glm::vec3& pos, const float speed, const unsigned render_distance);
 
     void processInput();
 
@@ -51,7 +44,4 @@ class Player
     const glm::vec3 getPosition() const;
     const unsigned getRenderDistance() const;
     const Ray& getRay() const;
-
-    void addMoveCallback(const std::function<void(Player&)>& callback);
-    void clearMoveCallbacks();
 };

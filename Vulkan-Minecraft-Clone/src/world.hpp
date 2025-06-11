@@ -1,7 +1,6 @@
 #pragma once
 
 #include "chunk.hpp"
-#include "player.hpp"
 
 #include <GLM/gtx/hash.hpp>
 
@@ -34,15 +33,13 @@ class World
     const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
   public:
-    World(const unsigned seed, const int chunk_size, const Player& player);
+    World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const float radius);
     ~World();
 
-    void update(Player& player);
-    void addChunk(const std::vector<glm::vec2> chunk_center);
-    unsigned updateChunks(const Player& player);
+    const Block* getReachableBlock(const Ray& ray);
 
-    void removeBlock();
-    void addBlock();
+    void addChunk(const std::vector<glm::vec2> chunk_center);
+    unsigned updateChunks(const glm::vec3& origin, const float radius);
 
     const std::vector<const Chunk*> getActiveChunks() const;
 };

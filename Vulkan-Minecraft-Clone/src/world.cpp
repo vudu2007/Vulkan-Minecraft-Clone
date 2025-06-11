@@ -14,19 +14,18 @@ const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
 {
     const float fp_chunk_size = static_cast<float>(chunkSize);
     const float stride = fp_chunk_size;
-    const float x = std::floor((pos.x / fp_chunk_size + 0.5f)) * stride;
-    const float z = std::floor((pos.z / fp_chunk_size + 0.5f)) * stride;
+    const float x = std::floorf(((pos.x + 0.5f) / fp_chunk_size + 0.5f)) * stride;
+    const float z = std::floorf(((pos.z + 0.5f) / fp_chunk_size + 0.5f)) * stride;
     return World::ChunkCenter(x, z);
 }
 
-World::World(const unsigned seed, const int chunk_size, const Player& player)
+World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const float radius)
     : noise(seed), seed(seed), chunkSize(chunk_size)
 {
     std::cout << ">>> Loading world with seed (" << seed << ")..." << std::endl;
 
-    const unsigned total_num_chunks = updateChunks(player);
+    const unsigned total_num_chunks = updateChunks(origin, radius);
 
-    // TODO: main thread provides updates to user here.
     // Report an update every second.
     do
     {
@@ -49,24 +48,32 @@ World::~World()
     }
 }
 
-void World::update(Player& player)
+const Block* World::getReachableBlock(const Ray& ray)
 {
-    // Update what is in the player's reach.
-    // TODO: make sure to check all chunks that are within the palyer's reach.
-    const glm::vec2 chunk_center = posToChunkCenter(player.getPosition());
-    const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-    assert(activeChunks.contains(cc));
-    const Chunk* chunk = activeChunks[cc];
-    player.activeBlock = chunk->getBlockInReach(player);
-    if (player.activeBlock != nullptr)
+    const Block* reachable_block = nullptr;
+
+    // Under the assumption that the player's reach is never infinity.
+
+    // Check the chunk that contains the ray's origin (the player's position).
+    const ChunkCenter chunk_center = posToChunkCenter(ray.getOrigin());
+    std::cout << "\r" << glm::to_string(chunk_center);
+    ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+    reachable_block = activeChunks[cc]->getReachableBlock(ray);
+    if (reachable_block != nullptr)
     {
-        std::cout << "\r" << "block in reach at position: (" << player.activeBlock->position.x << ", "
-                  << player.activeBlock->position.y << ", " << player.activeBlock->position.z << ")";
+        return reachable_block;
     }
-    else
+
+    // Check the chunk that contains the ray's direction at its max distance (where the player is looking).
+    const ChunkCenter next_chunk_center = posToChunkCenter(ray.getOrigin() + ray.getDirection() * ray.getMax());
+    if (next_chunk_center == chunk_center)
     {
-        std::cout << "\x1b[2K\rno block in reach";
+        return reachable_block;
     }
+    cc = chunkCenterToChunkCoord(next_chunk_center);
+    reachable_block = activeChunks[cc]->getReachableBlock(ray);
+
+    return reachable_block;
 }
 
 void World::addChunk(const std::vector<glm::vec2> chunk_centers)
@@ -85,11 +92,11 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
     }
 }
 
-unsigned World::updateChunks(const Player& player)
+unsigned World::updateChunks(const glm::vec3& origin, const float radius)
 {
     // TODO: change to update in 3D.
     // Load all chunks visible to the player.
-    const int render_distance = player.getRenderDistance();
+    const int render_distance = radius;
     const float offset = static_cast<float>(render_distance * chunkSize);
 
     std::unordered_set<ChunkCoord> inactive_chunks;
@@ -101,10 +108,10 @@ unsigned World::updateChunks(const Player& player)
     std::vector<glm::vec2> chunk_centers;
     bool add_chunks = false;
 
-    float x = player.getPosition().x - offset;
+    float x = origin.x - offset;
     for (int i = 0; i <= (render_distance * 2); ++i)
     {
-        float z = player.getPosition().z - offset;
+        float z = origin.z - offset;
         for (int j = 0; j <= (render_distance * 2); ++j)
         {
             const ChunkCenter chunk_center = posToChunkCenter({x, 0.0f, z});

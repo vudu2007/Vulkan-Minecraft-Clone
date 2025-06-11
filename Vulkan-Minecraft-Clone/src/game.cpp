@@ -3,8 +3,6 @@
 
 #include <iostream>
 
-const int CHUNK_SIZE = 16;
-
 struct LightingInfo
 {
     alignas(16) glm::vec3 lightDir;
@@ -40,13 +38,8 @@ void Game::run()
     Texture* block_texture_ptr = renderer.createTexture("src/textures/cube_texture.jpg");
     Model block_model("src/models/cube.obj");
 
-    const unsigned seed = 727;
-    World w{seed, CHUNK_SIZE, player};
-
-    player.addMoveCallback([&w](const Player& p) { w.updateChunks(p); });
-
     std::vector<Model::InstanceData> terrain;
-    auto& blocks = (w.getActiveChunks())[0]->getVisibleBlocks();
+    auto& blocks = (world.getActiveChunks())[0]->getVisibleBlocks();
     for (const auto& block : blocks)
     {
         terrain.emplace_back(block->position);
@@ -89,7 +82,6 @@ void Game::run()
         window.pollEvents();
 
         // TODO: game logic here
-        w.update(player);
 
         // Update uniforms.
         Model::UniformBufferObject ubo{};
@@ -104,7 +96,7 @@ void Game::run()
 
         // Update instance data.
         terrain.clear();
-        for (const auto& chunk : w.getActiveChunks())
+        for (const auto& chunk : world.getActiveChunks())
         {
             auto& blocks = chunk->getVisibleBlocks();
             for (const auto& block : blocks)

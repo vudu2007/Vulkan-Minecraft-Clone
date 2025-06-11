@@ -1,5 +1,7 @@
 #include "player.hpp"
 
+#include <iostream>
+
 void Player::pollKeyboardControls()
 {
     float adj_speed = speed;
@@ -45,11 +47,7 @@ void Player::pollKeyboardControls()
 
     if (player_moved)
     {
-        for (const auto& callback : moveCallbacks)
-        {
-            callback(*this);
-        }
-
+        world.updateChunks(getPosition(), getRenderDistance());
         reach.setOrigin(position + camera.getEye()); // TODO:
     }
 }
@@ -75,18 +73,19 @@ void Player::eventMouseControls(const int button, const int action, const int mo
     // TODO: add something for attacking mobs.
 }
 
-Player::Player(Window& window, const glm::vec3& pos, const float speed, const unsigned render_distance)
-    : window(window), camera(
-                          window,
-                          glm::vec3(0, 2, 0),
-                          glm::vec3(0, 2, -1),
-                          glm::vec3(0, 1, 0),
-                          glm::radians(45.0f),
-                          (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
-                          0.1f,
-                          1000.0f),
+Player::Player(Window& window, World& world, const glm::vec3& pos, const float speed, const unsigned render_distance)
+    : window(window), world(world),
+      camera(
+          window,
+          glm::vec3(0, 2, 0),
+          glm::vec3(0, 2, -1),
+          glm::vec3(0, 1, 0),
+          glm::radians(45.0f),
+          (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
+          0.1f,
+          1000.0f),
       position(pos), speed(speed), renderDistance(render_distance),
-      reach(pos + camera.getEye(), camera.getForward(), 0.0f, 1.0f)
+      reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f)
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
         this->eventKeyboardControls(key, scancode, action, mods);
@@ -117,6 +116,17 @@ void Player::processInput()
     cursorPrevX = static_cast<float>(x);
     cursorPrevY = static_cast<float>(y);
 
+    const Block* block = world.getReachableBlock(reach);
+    if (block != nullptr)
+    {
+        std::cout << "\r" << "player at " << glm::to_string(getPosition()) << " --- block in reach at position: ("
+                  << block->position.x << ", " << block->position.y << ", " << block->position.z << ")";
+    }
+    else
+    {
+        std::cout << "\x1b[2K\rplayer at " << glm::to_string(getPosition()) << " --- no block in reach";
+    }
+
     if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
         if (activeBlock != nullptr)
@@ -146,14 +156,4 @@ const unsigned Player::getRenderDistance() const
 const Ray& Player::getRay() const
 {
     return reach;
-}
-
-void Player::addMoveCallback(const std::function<void(Player&)>& callback)
-{
-    moveCallbacks.push_back(callback);
-}
-
-void Player::clearMoveCallbacks()
-{
-    moveCallbacks.clear();
 }

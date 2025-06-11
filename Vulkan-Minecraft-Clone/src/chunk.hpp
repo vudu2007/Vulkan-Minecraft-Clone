@@ -1,8 +1,8 @@
 #pragma once
 
 #include "block.hpp"
+#include "engine/physics/ray/ray.hpp"
 #include "noise.hpp"
-#include "player.hpp"
 
 #include <GLM/gtx/hash.hpp>
 
@@ -28,7 +28,7 @@ class Chunk
   public:
     Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size);
 
-    const Block* getBlockInReach(const Player& player) const;
+    const Block* getReachableBlock(const Ray& ray) const;
 
     glm::vec2 getPos() const;
     std::string getPosStr() const;
