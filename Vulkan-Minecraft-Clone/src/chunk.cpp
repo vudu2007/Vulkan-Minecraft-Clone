@@ -1,5 +1,7 @@
 #include "chunk.hpp"
 
+#include "engine/physics/collision-handler.hpp"
+
 #include <algorithm>
 #include <unordered_set>
 
@@ -65,32 +67,6 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
         const bool has_front = blockMap->contains(front);
         const bool has_back = blockMap->contains(back);
 
-        // TODO: might use below in the future.
-        // if (has_top)
-        //{
-        //     block.topNeighbor = &((*blockMap)[top]);
-        // }
-        // if (has_bottom)
-        //{
-        //     block.topNeighbor = &(*blockMap)[bottom];
-        // }
-        // if (has_left)
-        //{
-        //     block.topNeighbor = &(*blockMap)[left];
-        // }
-        // if (has_right)
-        //{
-        //     block.topNeighbor = &(*blockMap)[right];
-        // }
-        // if (has_front)
-        //{
-        //     block.topNeighbor = &(*blockMap)[front];
-        // }
-        // if (has_back)
-        //{
-        //     block.topNeighbor = &(*blockMap)[back];
-        // }
-
         if (has_top && has_bottom && has_left && has_right && has_front && has_back)
         {
             //  TODO: might not be necessary to store hidden blocks for now;
@@ -119,6 +95,30 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
         blockMap->erase(block_id);
     }
     hiddenBlocks.clear();
+}
+
+const Block* Chunk::getBlockInReach(const Player& player) const
+{
+    const Block* res = nullptr;
+
+    // Find which block the player can reach.
+    // TODO: reduce the visible blocks to check by using the player's reach and position in this chunk instead of
+    // evaluating all visible blocks in the chunk.
+    float min_dist = std::numeric_limits<float>::infinity();
+    for (const auto& block : visibleBlocks)
+    {
+        float t_min = min_dist; // Can be any value; it will be modified by the intersection test.
+        const bool intersected =
+            CollisionHandler::rayShapeIntersect(player.getRay(), block->getCollisionShape(), &t_min);
+
+        if (intersected && (t_min < min_dist))
+        {
+            res = block;
+            min_dist = t_min;
+        }
+    }
+
+    return res;
 }
 
 glm::vec2 Chunk::getPos() const

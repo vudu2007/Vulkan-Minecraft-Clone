@@ -1,16 +1,22 @@
 #include "world.hpp"
 
+#include <cassert>
 #include <iostream>
 #include <thread>
 #include <unordered_set>
 
-const glm::vec2 World::posToChunkCenter(const glm::vec3 pos) const
+const World::ChunkCoord World::chunkCenterToChunkCoord(const ChunkCenter& chunk_center) const
+{
+    return chunk_center / static_cast<float>(chunkSize);
+}
+
+const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
 {
     const float fp_chunk_size = static_cast<float>(chunkSize);
     const float stride = fp_chunk_size;
     const float x = std::floor((pos.x / fp_chunk_size + 0.5f)) * stride;
     const float z = std::floor((pos.z / fp_chunk_size + 0.5f)) * stride;
-    return glm::vec2(x, z);
+    return World::ChunkCenter(x, z);
 }
 
 World::World(const unsigned seed, const int chunk_size, const Player& player)
@@ -43,8 +49,24 @@ World::~World()
     }
 }
 
-void World::update(const Player& player)
+void World::update(Player& player)
 {
+    // Update what is in the player's reach.
+    // TODO: make sure to check all chunks that are within the palyer's reach.
+    const glm::vec2 chunk_center = posToChunkCenter(player.getPosition());
+    const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+    assert(activeChunks.contains(cc));
+    const Chunk* chunk = activeChunks[cc];
+    player.activeBlock = chunk->getBlockInReach(player);
+    if (player.activeBlock != nullptr)
+    {
+        std::cout << "\r" << "block in reach at position: (" << player.activeBlock->position.x << ", "
+                  << player.activeBlock->position.y << ", " << player.activeBlock->position.z << ")";
+    }
+    else
+    {
+        std::cout << "\x1b[2K\rno block in reach";
+    }
 }
 
 void World::addChunk(const std::vector<glm::vec2> chunk_centers)
@@ -52,7 +74,7 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
     for (const auto& chunk_center : chunk_centers)
     {
         Chunk* chunk = new Chunk{noise, chunk_center, chunkSize};
-        const ChunkCoord cc = chunk_center / static_cast<float>(chunkSize);
+        const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
 
         {
             std::lock_guard<std::mutex> lock(addChunkMutex);
@@ -85,8 +107,8 @@ unsigned World::updateChunks(const Player& player)
         float z = player.getPosition().z - offset;
         for (int j = 0; j <= (render_distance * 2); ++j)
         {
-            const glm::vec2 chunk_center = posToChunkCenter({x, 0.0f, z});
-            const ChunkCoord cc = chunk_center / static_cast<float>(chunkSize);
+            const ChunkCenter chunk_center = posToChunkCenter({x, 0.0f, z});
+            const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
             inactive_chunks.erase(cc);
             if (!activeChunks.contains(cc))
             {

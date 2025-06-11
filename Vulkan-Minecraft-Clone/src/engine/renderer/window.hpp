@@ -25,6 +25,7 @@ class Window
   public:
     std::vector<std::function<void()>> resizeCallbacks;
     std::vector<std::function<void(int, int, int, int)>> keyCallbacks;
+    std::vector<std::function<void(int, int, int)>> mouseButtonCallbacks;
 
     bool resized = false;
 
@@ -46,6 +47,7 @@ class Window
 
     void getFrameBufferSize(int& width, int& height) const;
     int getKeyboardKey(const int key) const;
+    int getMouseButtonState(const int button) const;
     void getCursorPosition(double& x, double& y) const;
 
     int getInputMode(const int mode) const;
@@ -55,6 +57,8 @@ class Window
     void clearResizeCallbacks();
     void addKeyCallback(const std::function<void(int, int, int, int)>& callback);
     void clearKeyCallbacks();
+    void addMouseButtonCallback(const std::function<void(int, int, int)>& callback);
+    void clearMouseButtonCallbacks();
 };
 
 #endif // VMC_SRC_ENGINE_RENDERER_WINDOW_HPP

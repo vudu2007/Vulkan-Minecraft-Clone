@@ -1,18 +1,15 @@
 #pragma once
 
+#include "engine/physics/shapes/box.hpp"
+
 #include "global.hpp"
 
 struct Block
 {
     glm::vec3 position;
-
-    //Block* topNeighbor = nullptr;
-    //Block* bottomNeighbor = nullptr;
-    //Block* leftNeighbor = nullptr;
-    //Block* rightNeighbor = nullptr;
-    //Block* frontNeighbor = nullptr;
-    //Block* backNeighbor = nullptr;
-    //Block() = default;
+    Box3d collisionShape;
 
     Block(const glm::vec3 position);
+
+    const Box3d& getCollisionShape() const;
 };

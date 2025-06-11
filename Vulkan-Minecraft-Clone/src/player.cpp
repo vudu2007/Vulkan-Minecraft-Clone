@@ -49,6 +49,8 @@ void Player::pollKeyboardControls()
         {
             callback(*this);
         }
+
+        reach.setOrigin(position + camera.getEye()); // TODO:
     }
 }
 
@@ -68,6 +70,11 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
     }
 }
 
+void Player::eventMouseControls(const int button, const int action, const int mods)
+{
+    // TODO: add something for attacking mobs.
+}
+
 Player::Player(Window& window, const glm::vec3& pos, const float speed, const unsigned render_distance)
     : window(window), camera(
                           window,
@@ -78,11 +85,14 @@ Player::Player(Window& window, const glm::vec3& pos, const float speed, const un
                           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
                           0.1f,
                           1000.0f),
-      position(pos), speed(speed), renderDistance(render_distance)
+      position(pos), speed(speed), renderDistance(render_distance),
+      reach(pos + camera.getEye(), camera.getForward(), 0.0f, 1.0f)
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
         this->eventKeyboardControls(key, scancode, action, mods);
     });
+    window.addMouseButtonCallback(
+        [this](int button, int action, int mods) { this->eventMouseControls(button, action, mods); });
 }
 
 void Player::processInput()
@@ -101,10 +111,19 @@ void Player::processInput()
         if (delta_x != 0.0f || delta_y != 0.0f)
         {
             camera.rotate(delta_y, delta_x, 0.0f, true);
+            reach.setDirection(camera.getForward());
         }
     }
     cursorPrevX = static_cast<float>(x);
     cursorPrevY = static_cast<float>(y);
+
+    if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    {
+        if (activeBlock != nullptr)
+        {
+            // TODO: handle block deletion.
+        }
+    }
 }
 
 const Camera& Player::getCamera() const
@@ -114,6 +133,7 @@ const Camera& Player::getCamera() const
 
 const glm::vec3 Player::getPosition() const
 {
+    // TODO:
     // return position;
     return camera.getEye();
 }
@@ -121,6 +141,11 @@ const glm::vec3 Player::getPosition() const
 const unsigned Player::getRenderDistance() const
 {
     return renderDistance;
+}
+
+const Ray& Player::getRay() const
+{
+    return reach;
 }
 
 void Player::addMoveCallback(const std::function<void(Player&)>& callback)

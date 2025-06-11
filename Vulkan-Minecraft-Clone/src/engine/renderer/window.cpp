@@ -21,6 +21,15 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
     }
 }
 
+static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    for (const auto& callback : container->mouseButtonCallbacks)
+    {
+        callback(button, action, mods);
+    }
+}
+
 Window::Window(const int width, const int height, const std::string& title) : width(width), height(height), title(title)
 {
     glfwInit();
@@ -36,6 +45,7 @@ Window::Window(const int width, const int height, const std::string& title) : wi
     glfwSetWindowUserPointer(pWindow, this);
     glfwSetFramebufferSizeCallback(pWindow, framebufferResizeCallback);
     glfwSetKeyCallback(pWindow, keyCallback);
+    glfwSetMouseButtonCallback(pWindow, mouseButtonCallback);
 }
 
 Window::~Window()
@@ -74,6 +84,11 @@ int Window::getKeyboardKey(const int key) const
     return glfwGetKey(pWindow, key);
 }
 
+int Window::getMouseButtonState(const int button) const
+{
+    return glfwGetMouseButton(pWindow, button);
+}
+
 void Window::getCursorPosition(double& x, double& y) const
 {
     glfwGetCursorPos(pWindow, &x, &y);
@@ -107,4 +122,14 @@ void Window::addKeyCallback(const std::function<void(int, int, int, int)>& callb
 void Window::clearKeyCallbacks()
 {
     keyCallbacks.clear();
+}
+
+void Window::addMouseButtonCallback(const std::function<void(int, int, int)>& callback)
+{
+    mouseButtonCallbacks.push_back(callback);
+}
+
+void Window::clearMouseButtonCallbacks()
+{
+    mouseButtonCallbacks.clear();
 }
