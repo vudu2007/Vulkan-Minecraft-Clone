@@ -48,32 +48,31 @@ World::~World()
     }
 }
 
-const Block* World::getReachableBlock(const Ray& ray)
+std::optional<glm::vec3> World::getReachableBlock(const Ray& ray)
 {
-    const Block* reachable_block = nullptr;
+    std::optional<glm::vec3> reachable_block_pos;
 
     // Under the assumption that the player's reach is never infinity.
 
     // Check the chunk that contains the ray's origin (the player's position).
     const ChunkCenter chunk_center = posToChunkCenter(ray.getOrigin());
-    std::cout << "\r" << glm::to_string(chunk_center);
     ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-    reachable_block = activeChunks[cc]->getReachableBlock(ray);
-    if (reachable_block != nullptr)
+    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray);
+    if (reachable_block_pos.has_value())
     {
-        return reachable_block;
+        return reachable_block_pos;
     }
 
     // Check the chunk that contains the ray's direction at its max distance (where the player is looking).
     const ChunkCenter next_chunk_center = posToChunkCenter(ray.getOrigin() + ray.getDirection() * ray.getMax());
     if (next_chunk_center == chunk_center)
     {
-        return reachable_block;
+        return reachable_block_pos;
     }
     cc = chunkCenterToChunkCoord(next_chunk_center);
-    reachable_block = activeChunks[cc]->getReachableBlock(ray);
+    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray);
 
-    return reachable_block;
+    return reachable_block_pos;
 }
 
 void World::addChunk(const std::vector<glm::vec2> chunk_centers)
@@ -156,6 +155,27 @@ unsigned World::updateChunks(const glm::vec3& origin, const float radius)
     }
 
     return chunk_centers.size();
+}
+
+void World::removeBlock(const glm::vec3 block_pos)
+{
+    const ChunkCenter chunk_center = posToChunkCenter(block_pos); // ID is currently the block's position.
+    ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+    activeChunks[cc]->removeBlock(block_pos);
+
+    // Try it on neighboring chunks.
+    std::vector<glm::vec3> neighbors = {
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(-1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
+    };
+    for (const auto& offset : neighbors)
+    {
+        const ChunkCenter chunk_center = posToChunkCenter(block_pos + offset);
+        ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+        activeChunks[cc]->removeBlock(block_pos);
+    }
 }
 
 const std::vector<const Chunk*> World::getActiveChunks() const

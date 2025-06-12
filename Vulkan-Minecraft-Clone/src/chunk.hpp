@@ -8,30 +8,31 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 class Chunk
 {
   private:
-    using BlockId = glm::vec3;
-
     glm::vec2 position;
     int size;
 
-    std::unique_ptr<std::unordered_map<BlockId, Block>> blockMap;
-    std::list<Block*> visibleBlocks;
-    // std::list<Block*> hiddenBlocks; // TODO
-    std::list<BlockId> hiddenBlocks;
+    std::unique_ptr<std::unordered_map<glm::vec3, Block>> blockMap;
+    std::unordered_set<glm::vec3> visibleBlocks;
+    std::list<glm::vec3> hiddenBlocks;
 
   public:
     Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size);
 
-    const Block* getReachableBlock(const Ray& ray) const;
+    void removeBlock(const glm::vec3 block_pos);
+
+    const std::optional<glm::vec3> getReachableBlock(const Ray& ray) const;
 
     glm::vec2 getPos() const;
     std::string getPosStr() const;
 
-    const std::list<Block*>& getVisibleBlocks() const;
+    const std::list<glm::vec3> getVisibleBlockPositions() const;
 };

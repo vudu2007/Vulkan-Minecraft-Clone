@@ -14,7 +14,7 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
 
     // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
     // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.
-    std::unordered_set<BlockId> block_ids_to_discard;
+    std::unordered_set<glm::vec3> block_pos_to_discard;
 
     // Start at the corner of the chunk and offset it by -1 to figure out the blocks in neighboring chunks.
     // End at the corner with an offset of +1 or a condition `<=` to reach blocks in neighboring chunks.
@@ -31,14 +31,13 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
             for (int y = min_height; y <= max_height; ++y)
             {
                 const glm::vec3 position(static_cast<float>(x), y, static_cast<float>(z));
-                const BlockId block_id = position;
-                blockMap->emplace(block_id, position);
+                blockMap->emplace(position, position);
 
                 const bool is_z_edge = (z == z_start - 1) || (z == z_start + size);
                 const bool is_x_edge = (x == x_start - 1) || (x == x_start + size);
                 if (is_z_edge || is_x_edge)
                 {
-                    block_ids_to_discard.emplace(block_id);
+                    block_pos_to_discard.emplace(position);
                 }
             }
         }
@@ -46,8 +45,8 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
 
     for (auto& map : *blockMap)
     {
-        const BlockId& block_id = map.first;
-        if (block_ids_to_discard.contains(block_id))
+        const glm::vec3& block_pos = map.first;
+        if (block_pos_to_discard.contains(block_pos))
         {
             continue;
         }
@@ -69,55 +68,83 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
 
         if (has_top && has_bottom && has_left && has_right && has_front && has_back)
         {
-            //  TODO: might not be necessary to store hidden blocks for now;
-            //  a potential idea is to generate the blocks after the player
-            //  modifies the world (place/break blocks) so that a chunk
-            //  takes less memory.
-            // Currnetly, will delete hidden blocks after figuring out neighbors!
-            hiddenBlocks.push_back(block_id);
-
-            // hiddenBlocks.push_back(&block);
+            //  TODO: potential idea to save memory is to generate the blocks after the player
+            //  modifies the world (place/break blocks).
+            hiddenBlocks.push_back(block_pos);
         }
         else
         {
-            visibleBlocks.push_back(&block);
+            visibleBlocks.emplace(block_pos);
         }
     }
 
-    for (const auto& block_id : block_ids_to_discard)
+    for (const auto& block_pos : block_pos_to_discard)
     {
-        blockMap->erase(block_id);
+        blockMap->erase(block_pos);
     }
-
-    // TODO: currently, delete hidden blocks to save memory.
-    for (const auto& block_id : hiddenBlocks)
-    {
-        blockMap->erase(block_id);
-    }
-    hiddenBlocks.clear();
 }
 
-const Block* Chunk::getReachableBlock(const Ray& ray) const
+void Chunk::removeBlock(const glm::vec3 block_pos)
 {
-    const Block* reachable_block = nullptr;
+    // Add new visible blocks.
+    const glm::vec3 pos_y = block_pos + glm::vec3(0.0f, 1.0f, 0.0f);
+    const glm::vec3 neg_y = block_pos + glm::vec3(0.0f, -1.0f, 0.0f);
+    const glm::vec3 pos_x = block_pos + glm::vec3(1.0f, 0.0f, 0.0f);
+    const glm::vec3 neg_x = block_pos + glm::vec3(-1.0f, 0.0f, 0.0f);
+    const glm::vec3 pos_z = block_pos + glm::vec3(0.0f, 0.0f, 1.0f);
+    const glm::vec3 neg_z = block_pos + glm::vec3(0.0f, 0.0f, -1.0f);
+    if ((*blockMap).contains(pos_y))
+    {
+        visibleBlocks.emplace(pos_y);
+    }
+    if ((*blockMap).contains(neg_y))
+    {
+        visibleBlocks.emplace(neg_y);
+    }
+    if ((*blockMap).contains(pos_x))
+    {
+        visibleBlocks.emplace(pos_x);
+    }
+    if ((*blockMap).contains(neg_x))
+    {
+        visibleBlocks.emplace(neg_x);
+    }
+    if ((*blockMap).contains(pos_z))
+    {
+        visibleBlocks.emplace(pos_z);
+    }
+    if ((*blockMap).contains(neg_z))
+    {
+        visibleBlocks.emplace(neg_z);
+    }
+
+    // Delete the block.
+    visibleBlocks.erase(block_pos);
+    blockMap->erase(block_pos);
+}
+
+const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray) const
+{
+    std::optional<glm::vec3> reachable_block_pos;
 
     // Find which block the player can reach.
     // TODO: reduce the visible blocks to check by using the player's reach and position in this chunk instead of
     // evaluating all visible blocks in the chunk.
     float min_dist = std::numeric_limits<float>::infinity();
-    for (const auto& block : visibleBlocks)
+    for (const auto& block_pos : visibleBlocks)
     {
         float t_min = min_dist; // Can be any value; it will be modified by the intersection test.
-        const bool intersected = CollisionHandler::rayShapeIntersect(ray, block->getCollisionShape(), &t_min);
+        const bool intersected =
+            CollisionHandler::rayShapeIntersect(ray, ((*blockMap)[block_pos]).getCollisionShape(), &t_min);
 
         if (intersected && (t_min < min_dist))
         {
-            reachable_block = block;
+            reachable_block_pos = block_pos;
             min_dist = t_min;
         }
     }
 
-    return reachable_block;
+    return reachable_block_pos;
 }
 
 glm::vec2 Chunk::getPos() const
@@ -130,7 +157,12 @@ std::string Chunk::getPosStr() const
     return glm::to_string(position);
 }
 
-const std::list<Block*>& Chunk::getVisibleBlocks() const
+const std::list<glm::vec3> Chunk::getVisibleBlockPositions() const
 {
-    return visibleBlocks;
+    std::list<glm::vec3> positions;
+    for (const auto& block_pos : visibleBlocks)
+    {
+        positions.push_back(((*blockMap)[block_pos]).position);
+    }
+    return positions;
 }

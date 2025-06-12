@@ -39,10 +39,10 @@ void Game::run()
     Model block_model("src/models/cube.obj");
 
     std::vector<Model::InstanceData> terrain;
-    auto& blocks = (world.getActiveChunks())[0]->getVisibleBlocks();
-    for (const auto& block : blocks)
+    auto& blockPositions = (world.getActiveChunks())[0]->getVisibleBlockPositions();
+    for (const auto& positions : blockPositions)
     {
-        terrain.emplace_back(block->position);
+        terrain.emplace_back(positions);
     }
 
     const unsigned terrain_v_buffer_idx = renderer.addVertexBuffer(
@@ -98,10 +98,10 @@ void Game::run()
         terrain.clear();
         for (const auto& chunk : world.getActiveChunks())
         {
-            auto& blocks = chunk->getVisibleBlocks();
-            for (const auto& block : blocks)
+            auto& blockPositions = chunk->getVisibleBlockPositions();
+            for (const auto& position : blockPositions)
             {
-                terrain.emplace_back(block->position);
+                terrain.emplace_back(position);
             }
         }
         renderer.updateInstanceVertexBuffer(terrain_v_buffer_idx, terrain.data(), sizeof(terrain[0]), terrain.size());

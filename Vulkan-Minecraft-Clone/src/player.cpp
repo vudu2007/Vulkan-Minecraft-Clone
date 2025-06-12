@@ -116,22 +116,13 @@ void Player::processInput()
     cursorPrevX = static_cast<float>(x);
     cursorPrevY = static_cast<float>(y);
 
-    const Block* block = world.getReachableBlock(reach);
-    if (block != nullptr)
-    {
-        std::cout << "\r" << "player at " << glm::to_string(getPosition()) << " --- block in reach at position: ("
-                  << block->position.x << ", " << block->position.y << ", " << block->position.z << ")";
-    }
-    else
-    {
-        std::cout << "\x1b[2K\rplayer at " << glm::to_string(getPosition()) << " --- no block in reach";
-    }
-
+    std::optional<glm::vec3> block_pos = world.getReachableBlock(reach);
     if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
-        if (activeBlock != nullptr)
+        if (block_pos.has_value())
         {
             // TODO: handle block deletion.
+            world.removeBlock(block_pos.value());
         }
     }
 }
