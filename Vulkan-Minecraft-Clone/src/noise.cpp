@@ -85,8 +85,8 @@ float SimplexNoise::get2D(const float x, const float y) const
     const float r_squared = radius * radius;
     for (unsigned i = 0; i < 3; ++i)
     {
-        const double d_squared = displacements[i].x * displacements[i].x + displacements[i].y * displacements[i].y;
-        double t = std::max(0.0, r_squared - d_squared);
+        const float d_squared = displacements[i].x * displacements[i].x + displacements[i].y * displacements[i].y;
+        float t = std::max(0.0f, r_squared - d_squared);
         t *= t;
         total_contrib += t * t * glm::dot(displacements[i], gradients[i]);
     }
@@ -106,7 +106,7 @@ float SimplexNoise::getFractal2D(
 {
     float result = 0.0f;
 
-    for (int i = 0; i < octaves; ++i)
+    for (unsigned i = 0; i < octaves; ++i)
     {
         result += amplitude * get2D(x * frequency, y * frequency);
         amplitude *= amplitude_mult;

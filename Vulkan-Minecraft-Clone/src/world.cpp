@@ -19,7 +19,7 @@ const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
     return World::ChunkCenter(x, z);
 }
 
-World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const float radius)
+World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
     : noise(seed), seed(seed), chunkSize(chunk_size)
 {
     std::cout << ">>> Loading world with seed (" << seed << ")..." << std::endl;
@@ -91,11 +91,11 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
     }
 }
 
-unsigned World::updateChunks(const glm::vec3& origin, const float radius)
+unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
 {
     // TODO: change to update in 3D.
     // Load all chunks visible to the player.
-    const int render_distance = radius;
+    const int render_distance = static_cast<int>(radius);
     const float offset = static_cast<float>(render_distance * chunkSize);
 
     std::unordered_set<ChunkCoord> inactive_chunks;
@@ -154,7 +154,7 @@ unsigned World::updateChunks(const glm::vec3& origin, const float radius)
         }
     }
 
-    return chunk_centers.size();
+    return static_cast<unsigned>(chunk_centers.size());
 }
 
 void World::removeBlock(const glm::vec3 block_pos)

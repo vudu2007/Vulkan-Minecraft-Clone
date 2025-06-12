@@ -33,13 +33,13 @@ class World
     const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
   public:
-    World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const float radius);
+    World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius);
     ~World();
 
     std::optional<glm::vec3> getReachableBlock(const Ray& ray);
 
     void addChunk(const std::vector<glm::vec2> chunk_center);
-    unsigned updateChunks(const glm::vec3& origin, const float radius);
+    unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
 
     // void addBlock();
     void removeBlock(const glm::vec3 block_pos);

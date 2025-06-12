@@ -84,7 +84,7 @@ void Renderer::createDescriptorSets()
     // Update the descriptor sets.
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        unsigned offset = 0;
+        size_t offset = 0;
         std::vector<VkWriteDescriptorSet> descriptor_writes(num_images + num_buffers);
 
         for (size_t j = 0; j < image_infos.size(); ++j)
