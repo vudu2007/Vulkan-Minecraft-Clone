@@ -80,7 +80,7 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
           glm::vec3(0, 2, 0),
           glm::vec3(0, 2, -1),
           glm::vec3(0, 1, 0),
-          glm::radians(45.0f),
+          glm::radians(70.0f),
           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
           0.1f,
           1000.0f),
@@ -116,10 +116,16 @@ void Player::processInput()
     cursorPrevX = static_cast<float>(x);
     cursorPrevY = static_cast<float>(y);
 
-    std::optional<glm::vec3> block_pos = world.getReachableBlock(reach);
-    if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    glm::ivec3 face_entered{};
+    std::optional<glm::vec3> block_pos = world.getReachableBlock(reach, &face_entered);
+    if (block_pos.has_value())
     {
-        if (block_pos.has_value())
+        if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
+        {
+            // TODO: handle block addition.
+            world.addBlock(block_pos.value() + static_cast<glm::vec3>(face_entered));
+        }
+        else if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
         {
             // TODO: handle block deletion.
             world.removeBlock(block_pos.value());

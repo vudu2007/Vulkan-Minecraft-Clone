@@ -36,13 +36,13 @@ class World
     World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius);
     ~World();
 
-    std::optional<glm::vec3> getReachableBlock(const Ray& ray);
+    std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
 
     void addChunk(const std::vector<glm::vec2> chunk_center);
     unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
 
-    // void addBlock();
+    void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
 
-    const std::vector<const Chunk*> getActiveChunks() const;
+    const std::unordered_map<ChunkCoord, Chunk*>& getActiveChunks() const;
 };

@@ -16,6 +16,11 @@ class Game
     World world{727, CHUNK_SIZE, DEFAULT_PLAYER_POS, DEFAULT_PLAYER_RENDER_DISTANCE};
     Player player{window, world, DEFAULT_PLAYER_POS, 0.1f, DEFAULT_PLAYER_RENDER_DISTANCE};
 
+    std::vector<Model::InstanceData> terrain;
+    unsigned terrainVBufferIdx;
+    void generateTerrain();
+    void updateTerrain();
+
   public:
     void run();
 };

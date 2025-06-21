@@ -48,7 +48,7 @@ World::~World()
     }
 }
 
-std::optional<glm::vec3> World::getReachableBlock(const Ray& ray)
+std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* face_entered)
 {
     std::optional<glm::vec3> reachable_block_pos;
 
@@ -57,7 +57,7 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray)
     // Check the chunk that contains the ray's origin (the player's position).
     const ChunkCenter chunk_center = posToChunkCenter(ray.getOrigin());
     ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray);
+    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
     if (reachable_block_pos.has_value())
     {
         return reachable_block_pos;
@@ -70,7 +70,7 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray)
         return reachable_block_pos;
     }
     cc = chunkCenterToChunkCoord(next_chunk_center);
-    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray);
+    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
 
     return reachable_block_pos;
 }
@@ -157,20 +157,33 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
     return static_cast<unsigned>(chunk_centers.size());
 }
 
-void World::removeBlock(const glm::vec3 block_pos)
+void World::addBlock(const glm::vec3 block_pos)
 {
-    const ChunkCenter chunk_center = posToChunkCenter(block_pos); // ID is currently the block's position.
-    ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-    activeChunks[cc]->removeBlock(block_pos);
-
-    // Try it on neighboring chunks.
-    std::vector<glm::vec3> neighbors = {
+    std::vector<glm::vec3> offsets = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(-1.0f, 0.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
     };
-    for (const auto& offset : neighbors)
+    for (const auto& offset : offsets)
+    {
+        const ChunkCenter chunk_center = posToChunkCenter(block_pos + offset);
+        ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+        activeChunks[cc]->addBlock(block_pos);
+    }
+}
+
+void World::removeBlock(const glm::vec3 block_pos)
+{
+    std::vector<glm::vec3> offsets = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(-1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
+    };
+    for (const auto& offset : offsets)
     {
         const ChunkCenter chunk_center = posToChunkCenter(block_pos + offset);
         ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
@@ -178,12 +191,7 @@ void World::removeBlock(const glm::vec3 block_pos)
     }
 }
 
-const std::vector<const Chunk*> World::getActiveChunks() const
+const std::unordered_map<World::ChunkCoord, Chunk*>& World::getActiveChunks() const
 {
-    std::vector<const Chunk*> active_chunks;
-    for (const auto& entry : activeChunks)
-    {
-        active_chunks.push_back(entry.second);
-    }
-    return active_chunks;
+    return activeChunks;
 }

@@ -10,42 +10,36 @@ struct LightingInfo
     alignas(16) glm::vec3 viewPos;
 };
 
+void Game::generateTerrain()
+{
+    for (const auto& chunk : world.getActiveChunks())
+    {
+        auto& blockPositions = chunk.second->getVisibleBlockPositions();
+        for (const auto& position : blockPositions)
+        {
+            terrain.emplace_back(position);
+        }
+    }
+}
+
+void Game::updateTerrain()
+{
+    terrain.clear();
+    generateTerrain();
+    renderer.updateInstanceVertexBuffer(terrainVBufferIdx, terrain.data(), sizeof(terrain[0]), terrain.size());
+}
+
 void Game::run()
 {
-    Texture* viking_texture_ptr = renderer.createTexture("src/textures/viking_room.png");
-    Model viking_model("src/models/viking_room.obj", 5.0f);
-
-    std::vector<Model::InstanceData> viking_instance_data;
-    viking_instance_data.emplace_back(glm::vec3(0.0f, 15.0f, 0.0f));
-    const unsigned viking_v_buffer_idx = renderer.addVertexBuffer(
-        viking_model.getVertices().data(),
-        sizeof(viking_model.getVertices()[0]),
-        viking_model.getVertices().size(),
-        viking_model.getVertices().size(),
-        viking_instance_data.data(),
-        sizeof(viking_instance_data[0]),
-        viking_instance_data.size(),
-        viking_instance_data.size());
-
-    renderer.createIndexBuffer(
-        viking_v_buffer_idx,
-        viking_model.getIndices().data(),
-        sizeof(viking_model.getIndices()[0]),
-        viking_model.getIndices().size());
-
-    //////////////////////////////
-
     Texture* block_texture_ptr = renderer.createTexture("src/textures/cube_texture.jpg");
     Model block_model("src/models/cube.obj");
 
-    std::vector<Model::InstanceData> terrain;
-    auto& blockPositions = (world.getActiveChunks())[0]->getVisibleBlockPositions();
-    for (const auto& positions : blockPositions)
+    while (world.getActiveChunks().empty())
     {
-        terrain.emplace_back(positions);
     }
+    generateTerrain();
 
-    const unsigned terrain_v_buffer_idx = renderer.addVertexBuffer(
+    terrainVBufferIdx = renderer.addVertexBuffer(
         block_model.getVertices().data(),
         sizeof(block_model.getVertices()[0]),
         block_model.getVertices().size(),
@@ -53,10 +47,10 @@ void Game::run()
         terrain.data(),
         sizeof(terrain[0]),
         terrain.size(),
-        terrain.size() * 10240); // TODO: adjust buffer size based on render distance; currently just a constant
+        terrain.size() * 1024); // TODO: adjust buffer size based on render distance; currently just a constant
 
     renderer.createIndexBuffer(
-        terrain_v_buffer_idx,
+        terrainVBufferIdx,
         block_model.getIndices().data(),
         sizeof(block_model.getIndices()[0]),
         block_model.getIndices().size());
@@ -95,21 +89,11 @@ void Game::run()
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
         // Update instance data.
-        terrain.clear();
-        for (const auto& chunk : world.getActiveChunks())
-        {
-            auto& blockPositions = chunk->getVisibleBlockPositions();
-            for (const auto& position : blockPositions)
-            {
-                terrain.emplace_back(position);
-            }
-        }
-        renderer.updateInstanceVertexBuffer(terrain_v_buffer_idx, terrain.data(), sizeof(terrain[0]), terrain.size());
+        updateTerrain();
 
         player.processInput();
         renderer.drawFrame();
     }
 
     delete block_texture_ptr;
-    delete viking_texture_ptr;
 }

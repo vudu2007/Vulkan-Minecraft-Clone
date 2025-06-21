@@ -3,8 +3,19 @@
 #include <limits>
 #include <stdexcept>
 
-bool CollisionHandler::rayBox3dIntersect(const Ray& ray, const Box3d& box, float* out_t_min, float* out_t_max)
+bool CollisionHandler::rayBox3dIntersect(
+    const Ray& ray,
+    const Box3d& box,
+    float* out_t_min,
+    float* out_t_max,
+    glm::ivec3* out_face_enter,
+    glm::ivec3* out_face_exit)
 {
+    if (out_face_enter != nullptr)
+    {
+        *out_face_enter = glm::ivec3(0);
+    }
+
     const glm::vec3 ray_o = ray.getOrigin();
     const glm::vec3 ray_d = ray.getDirection();
     const glm::vec3 min_bounds = box.getMinBounds();
@@ -32,8 +43,16 @@ bool CollisionHandler::rayBox3dIntersect(const Ray& ray, const Box3d& box, float
             next_t_max = (min_bounds[i] - ray_o[i]) * inv_ray_d_component;
         }
 
-        t_min = std::max(t_min, next_t_min);
         t_max = std::min(t_max, next_t_max);
+        if (next_t_min > t_min)
+        {
+            if (out_face_enter != nullptr)
+            {
+                *out_face_enter = glm::ivec3(0);
+                (*out_face_enter)[i] = (inv_ray_d_component < 0) ? 1 : -1;
+            }
+            t_min = next_t_min;
+        }
 
         if (t_min > t_max)
         {
@@ -60,32 +79,29 @@ bool CollisionHandler::rayBox3dIntersect(const Ray& ray, const Box3d& box, float
     return true;
 }
 
-bool CollisionHandler::rayShapeIntersect(const Ray& ray, const Shape& shape, float* out_t_min, float* out_t_max)
+bool CollisionHandler::rayShapeIntersect(
+    const Ray& ray,
+    const Shape& shape,
+    float* out_t_min,
+    float* out_t_max,
+    glm::ivec3* out_face_enter,
+    glm::ivec3* out_face_exit)
 {
     switch (shape.getShapeType())
     {
     case Shape::Type::BOX_3D:
-        return rayBox3dIntersect(ray, static_cast<const Box3d&>(shape), out_t_min, out_t_max);
+        return rayBox3dIntersect(
+            ray,
+            static_cast<const Box3d&>(shape),
+            out_t_min,
+            out_t_max,
+            out_face_enter,
+            out_face_exit);
     default:
         throw std::runtime_error(
             "Unsupported shape for a shape-ray intersection test: " + Shape::toString(shape.getShapeType()));
     }
     return false;
-}
-
-bool CollisionHandler::rayShapeIntersect(const Shape& shape, const Ray& ray, float* out_t_min, float* out_t_max)
-{
-    return shapeRayIntersect(ray, shape, out_t_min, out_t_max);
-}
-
-bool CollisionHandler::shapeRayIntersect(const Shape& shape, const Ray& ray, float* out_t_min, float* out_t_max)
-{
-    return rayShapeIntersect(ray, shape, out_t_min, out_t_max);
-}
-
-bool CollisionHandler::shapeRayIntersect(const Ray& ray, const Shape& shape, float* out_t_min, float* out_t_max)
-{
-    return rayShapeIntersect(ray, shape, out_t_min, out_t_max);
 }
 
 bool CollisionHandler::shapeIntersect(const Shape& one, const Shape& two)
