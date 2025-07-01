@@ -5,7 +5,6 @@ layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec2 inTexCoord;
-layout(location = 4) in vec3 inInstancePos;
 
 // Outputs.
 layout(location = 0) out vec3 outFragColor;
@@ -22,13 +21,10 @@ layout(binding = 0) uniform UniformBufferObject
 
 void main()
 {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPos + inInstancePos, 1.0);
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPos, 1.0);
     
     // TODO: temp; this is for visible chunk borders.
-    if (mod(inInstancePos.x, 16) == 8 || 
-        mod(inInstancePos.z, 16) == 8 ||
-        mod(inInstancePos.x, 16) == 7 || 
-        mod(inInstancePos.z, 16) == 7)
+    if (mod(inPos.x, 16.0) == 7.5 || mod(inPos.z, 16.0) == 7.5)
     {
         outFragColor = inColor * 0.2;
     }
@@ -39,5 +35,5 @@ void main()
     
     outfragTexCoord = inTexCoord;
     outNormal = mat3(transpose(inverse(ubo.model))) * inNormal;  
-    outFragPos = vec3(ubo.model * vec4(inPos + inInstancePos, 1.0));
+    outFragPos = vec3(ubo.model * vec4(inPos, 1.0));
 }

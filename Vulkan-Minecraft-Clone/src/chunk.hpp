@@ -2,6 +2,7 @@
 
 #include "block.hpp"
 #include "engine/physics/ray/ray.hpp"
+#include "engine/renderer/model.hpp"
 #include "noise.hpp"
 
 #include <GLM/gtx/hash.hpp>
@@ -22,6 +23,10 @@ class Chunk
     glm::vec2 x_bounds;
     glm::vec2 z_bounds;
 
+    // Mesh info.
+    std::vector<Model::Vertex> vertices;
+    std::vector<Model::Index> indices;
+
     // Contains blocks in this chunk and edge blocks of neighboring chunks.
     std::unique_ptr<std::unordered_map<glm::vec3, Block>> blockMap;
 
@@ -31,6 +36,8 @@ class Chunk
     bool checkBlockHidden(const glm::vec3& block_pos) const;
     bool checkInChunkBounds(const glm::vec3& block_pos) const;
     bool checkInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
+
+    void generateMesh();
 
   public:
     Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size);
@@ -44,4 +51,6 @@ class Chunk
     std::string getPosStr() const;
 
     const std::list<glm::vec3> getVisibleBlockPositions() const;
+    const std::vector<Model::Vertex> getVertices() const;
+    const std::vector<Model::Index> getIndices() const;
 };

@@ -16,7 +16,7 @@ class World
     using ChunkCoord = glm::vec2; // Center position of chunk floored as a string.
     using ChunkCenter = glm::vec2;
 
-    std::mutex addChunkMutex;
+    std::mutex activeChunksMutex;
     std::unordered_set<ChunkCoord> chunksToAdd;
 
     SimplexNoise noise;
@@ -44,5 +44,6 @@ class World
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
 
-    const std::unordered_map<ChunkCoord, Chunk*>& getActiveChunks() const;
+    const std::vector<Chunk*> getActiveChunks() const;
+    const Model getModel() const;
 };

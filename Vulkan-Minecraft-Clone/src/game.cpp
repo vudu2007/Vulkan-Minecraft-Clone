@@ -10,23 +10,18 @@ struct LightingInfo
     alignas(16) glm::vec3 viewPos;
 };
 
-void Game::generateTerrain()
-{
-    for (const auto& chunk : world.getActiveChunks())
-    {
-        auto& blockPositions = chunk.second->getVisibleBlockPositions();
-        for (const auto& position : blockPositions)
-        {
-            terrain.emplace_back(position);
-        }
-    }
-}
-
 void Game::updateTerrain()
 {
-    terrain.clear();
-    generateTerrain();
-    renderer.updateInstanceVertexBuffer(terrainVBufferIdx, terrain.data(), sizeof(terrain[0]), terrain.size());
+    const auto world_model = world.getModel();
+    const auto& world_vertices = world_model.getVertices();
+    const auto& world_indices = world_model.getIndices();
+    renderer.updateVertexBuffer(
+        terrainVertBufferIdx,
+        world_vertices.data(),
+        sizeof(world_vertices[0]),
+        world_vertices.size());
+    renderer
+        .updateIndexBuffer(terrainVertBufferIdx, world_indices.data(), sizeof(world_indices[0]), world_indices.size());
 }
 
 void Game::run()
@@ -37,23 +32,21 @@ void Game::run()
     while (world.getActiveChunks().empty())
     {
     }
-    generateTerrain();
 
-    terrainVBufferIdx = renderer.addVertexBuffer(
-        block_model.getVertices().data(),
-        sizeof(block_model.getVertices()[0]),
-        block_model.getVertices().size(),
-        block_model.getVertices().size(),
-        terrain.data(),
-        sizeof(terrain[0]),
-        terrain.size(),
-        terrain.size() * 1024); // TODO: adjust buffer size based on render distance; currently just a constant
-
+    const auto world_model = world.getModel();
+    const auto& world_vertices = world_model.getVertices();
+    const auto& world_indices = world_model.getIndices();
+    terrainVertBufferIdx = renderer.addVertexBuffer(
+        world_vertices.data(),
+        sizeof(world_vertices[0]),
+        world_vertices.size(),
+        world_vertices.size() * 1024); // TODO
     renderer.createIndexBuffer(
-        terrainVBufferIdx,
-        block_model.getIndices().data(),
-        sizeof(block_model.getIndices()[0]),
-        block_model.getIndices().size());
+        terrainVertBufferIdx,
+        world_indices.data(),
+        sizeof(world_indices[0]),
+        world_indices.size(),
+        world_indices.size() * 1024); // TODO
 
     const unsigned ubo_idx_transforms =
         renderer.addUniformBuffer(0, sizeof(Model::UniformBufferObject), VK_SHADER_STAGE_VERTEX_BIT);

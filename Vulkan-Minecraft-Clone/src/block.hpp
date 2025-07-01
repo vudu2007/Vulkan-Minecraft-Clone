@@ -7,9 +7,12 @@
 struct Block
 {
     glm::vec3 position;
+    glm::vec3 color;
     Box3d collisionShape;
 
-    Block(const glm::vec3 position = glm::vec3(std::numeric_limits<float>::infinity()));
+    Block(
+        const glm::vec3 position = glm::vec3(std::numeric_limits<float>::infinity()),
+        const glm::vec3 color = glm::vec3(0.0f));
 
     const Box3d& getCollisionShape() const;
 };

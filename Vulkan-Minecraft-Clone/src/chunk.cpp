@@ -40,8 +40,122 @@ bool Chunk::checkInEdgeBounds(const glm::vec3& block_pos) const
     return in_x_bounds && in_z_bounds;
 }
 
+void Chunk::generateMesh()
+{
+    vertices.clear();
+    indices.clear();
+
+    // Iterate through the visible blocks to generate visible faces.
+    for (const auto& block_pos : visibleBlocks)
+    {
+        // Find the visible faces and generate vertices for the faces.
+        unsigned face_index = 0;
+        const std::vector<glm::vec3> offsets = {
+            glm::vec3(0.0f, 1.0f, 0.0f),  // +y
+            glm::vec3(0.0f, -1.0f, 0.0f), // -y
+            glm::vec3(1.0f, 0.0f, 0.0f),  // +x
+            glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+            glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+            glm::vec3(0.0f, 0.0f, -1.0f), // -z
+        };
+        for (const auto& offset : offsets)
+        {
+            const glm::vec3 neighbor = block_pos + offset;
+
+            // Determine if this face should be visible and generate it.
+            const bool neighbor_exist = (*blockMap).contains(neighbor);
+            if (!neighbor_exist)
+            {
+                const glm::vec3 offset_to_face = offset / 2.0f; // Face is inbetween current and neighbor.
+                glm::vec3 v_0_offset;
+                glm::vec3 v_1_offset;
+                glm::vec3 v_2_offset;
+                glm::vec3 v_3_offset;
+                glm::vec3 normal;
+
+                // Generating counter-clockwise.
+                switch (face_index)
+                {
+                case 0: { // +y
+                    v_0_offset = glm::vec3(-0.5f, 0.0f, -0.5f);
+                    v_1_offset = glm::vec3(-0.5f, 0.0f, 0.5f);
+                    v_2_offset = glm::vec3(0.5f, 0.0f, 0.5f);
+                    v_3_offset = glm::vec3(0.5f, 0.0f, -0.5f);
+                    normal = glm::vec3(0.0f, 1.0f, 0.0f);
+                    break;
+                }
+                case 1: { // -y
+                    v_0_offset = glm::vec3(-0.5f, 0.0f, -0.5f);
+                    v_1_offset = glm::vec3(0.5f, 0.0f, -0.5f);
+                    v_2_offset = glm::vec3(0.5f, 0.0f, 0.5f);
+                    v_3_offset = glm::vec3(-0.5f, 0.0f, 0.5f);
+                    normal = glm::vec3(0.0f, -1.0f, 0.0f);
+                    break;
+                }
+                case 2: { // +x
+                    v_0_offset = glm::vec3(0.0f, 0.5f, -0.5f);
+                    v_1_offset = glm::vec3(0.0f, 0.5f, 0.5f);
+                    v_2_offset = glm::vec3(0.0f, -0.5f, 0.5f);
+                    v_3_offset = glm::vec3(0.0f, -0.5f, -0.5f);
+                    normal = glm::vec3(1.0f, 0.0f, 0.0f);
+                    break;
+                }
+                case 3: { // -x
+                    v_0_offset = glm::vec3(0.0f, 0.5f, -0.5f);
+                    v_1_offset = glm::vec3(0.0f, -0.5f, -0.5f);
+                    v_2_offset = glm::vec3(0.0f, -0.5f, 0.5f);
+                    v_3_offset = glm::vec3(0.0f, 0.5f, 0.5f);
+                    normal = glm::vec3(-1.0f, 0.0f, 0.0f);
+                    break;
+                }
+                case 4: { // +z
+                    v_0_offset = glm::vec3(-0.5f, 0.5f, 0.0f);
+                    v_1_offset = glm::vec3(-0.5f, -0.5f, 0.0f);
+                    v_2_offset = glm::vec3(0.5f, -0.5f, 0.0f);
+                    v_3_offset = glm::vec3(0.5f, 0.5f, 0.0f);
+                    normal = glm::vec3(0.0f, 0.0f, 1.0f);
+                    break;
+                }
+                case 5: { // -z
+                    v_0_offset = glm::vec3(-0.5f, 0.5f, 0.0f);
+                    v_1_offset = glm::vec3(0.5f, 0.5f, 0.0f);
+                    v_2_offset = glm::vec3(0.5f, -0.5f, 0.0f);
+                    v_3_offset = glm::vec3(-0.5f, -0.5f, 0.0f);
+                    normal = glm::vec3(0.0f, 0.0f, -1.0f);
+                    break;
+                }
+                }
+
+                const glm::vec3 color = (*blockMap)[block_pos].color;
+                const glm::vec3 face_pos = block_pos + offset_to_face;
+                vertices.emplace_back(face_pos + v_0_offset, normal, color, glm::vec2(0.0f, 0.0f));
+                vertices.emplace_back(face_pos + v_1_offset, normal, color, glm::vec2(1.0f, 0.0f));
+                vertices.emplace_back(face_pos + v_2_offset, normal, color, glm::vec2(1.0f, 1.0f));
+                vertices.emplace_back(face_pos + v_3_offset, normal, color, glm::vec2(0.0f, 1.0f));
+            }
+
+            ++face_index;
+        }
+    }
+
+    // Vertices are in a specific order so indicies will be in increasing order.
+    for (size_t i = 0; i < vertices.size(); i += 4)
+    {
+        indices.emplace_back(i);
+        indices.emplace_back(i + 1);
+        indices.emplace_back(i + 2);
+        indices.emplace_back(i + 2);
+        indices.emplace_back(i + 3);
+        indices.emplace_back(i);
+    }
+}
+
 Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size) : position(center_pos), size(size)
 {
+    const glm::vec3 color_grass(0.349f, 0.651f, 0.290f);
+    const glm::vec3 color_dirt(0.396f, 0.263f, 0.129f);
+    const glm::vec3 color_stone(0.439f, 0.502f, 0.565f);
+
     const float half_size = (size / static_cast<float>(2));
 
     const int x_start = static_cast<int>(center_pos.x - half_size);
@@ -50,7 +164,7 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     x_bounds = glm::vec2(center_pos.x - half_size, center_pos.x + half_size);
     z_bounds = glm::vec2(center_pos.y - half_size, center_pos.y + half_size);
 
-    int min_height = -100; // std::numeric_limits<int>::max(); // TODO
+    int min_height = -50; // std::numeric_limits<int>::max(); // TODO
 
     // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
     // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.
@@ -64,14 +178,25 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
         for (int x = x_start - 2; x < x_start + size + 2; ++x)
         {
             int max_height = static_cast<int>(
-                std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 20.0f, 0.0035f)));
+                std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 10.0f, 0.0075f)));
 
             min_height = std::min(min_height, max_height);
 
             for (int y = min_height; y <= max_height; ++y)
             {
                 const glm::vec3 position(static_cast<float>(x), y, static_cast<float>(z));
-                blockMap->emplace(position, position);
+
+                glm::vec3 block_color = color_grass;
+                if (y < max_height - 3)
+                {
+                    block_color = color_stone;
+                }
+                else if (y < max_height)
+                {
+                    block_color = color_dirt;
+                }
+
+                blockMap->emplace(position, Block(position, block_color));
 
                 const bool is_z_edge =
                     (z == z_start - 2) || (z == z_start - 1) || (z == z_start + size) || (z == z_start + size + 1);
@@ -99,45 +224,58 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
             visibleBlocks.emplace(block_pos);
         }
     }
+
+    generateMesh();
 }
 
 void Chunk::addBlock(const glm::vec3 block_pos)
 {
     // Ignore if it isn't in edge bounds or if it already exist.
-    if (checkInEdgeBounds(block_pos) && !blockMap->contains(block_pos))
+    if (!checkInEdgeBounds(block_pos) || blockMap->contains(block_pos))
     {
-        // Add the block.
-        blockMap->emplace(block_pos, block_pos);
+        return;
+    }
 
-        // Update neighboring blocks.
-        // Check if the neighbors are now fully enclosed.
-        const std::vector<glm::vec3> offsets = {
-            glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-            glm::vec3(0.0f, -1.0f, 0.0f), // -y
-            glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-            glm::vec3(-1.0f, 0.0f, 0.0f), // -x
-            glm::vec3(0.0f, 0.0f, 1.0f),  // +z
-            glm::vec3(0.0f, 0.0f, -1.0f), // -z
-        };
-        for (const auto& offset : offsets)
-        {
-            const glm::vec3 neighbor = block_pos + offset;
-            if ((*blockMap).contains(neighbor) && checkBlockHidden(neighbor))
-            {
-                visibleBlocks.erase(neighbor);
-            }
-        }
+    // Add the block.
+    blockMap->emplace(block_pos, block_pos);
 
-        // Add it to visible if it's within chunk bounds and is not enclosed.
-        if (checkInChunkBounds(block_pos) && !checkBlockHidden(block_pos))
+    // Update neighboring blocks.
+    // Check if the neighbors are now fully enclosed.
+    const std::vector<glm::vec3> offsets = {
+        glm::vec3(0.0f, 1.0f, 0.0f),  // +y
+        glm::vec3(0.0f, -1.0f, 0.0f), // -y
+        glm::vec3(1.0f, 0.0f, 0.0f),  // +x
+        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+        glm::vec3(0.0f, 0.0f, -1.0f), // -z
+    };
+    for (const auto& offset : offsets)
+    {
+        const glm::vec3 neighbor = block_pos + offset;
+        if ((*blockMap).contains(neighbor) && checkBlockHidden(neighbor))
         {
-            visibleBlocks.emplace(block_pos);
+            visibleBlocks.erase(neighbor);
         }
     }
+
+    // Add it to visible if it's within chunk bounds and is not enclosed.
+    if (checkInChunkBounds(block_pos) && !checkBlockHidden(block_pos))
+    {
+        visibleBlocks.emplace(block_pos);
+    }
+
+    // TODO: utilize block pos to redo mesh.
+    generateMesh();
 }
 
 void Chunk::removeBlock(const glm::vec3 block_pos)
 {
+    // Ignore if it doesn't exist in this chunk.
+    if (!(*blockMap).contains(block_pos))
+    {
+        return;
+    }
+
     // Add new visible blocks.
     const std::vector<glm::vec3> offsets = {
         glm::vec3(0.0f, 1.0f, 0.0f),  // +y
@@ -160,6 +298,9 @@ void Chunk::removeBlock(const glm::vec3 block_pos)
     // Delete the block.
     visibleBlocks.erase(block_pos);
     blockMap->erase(block_pos);
+
+    // TODO: utilize block pos to redo mesh.
+    generateMesh();
 }
 
 const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ivec3* face_entered) const
@@ -218,4 +359,14 @@ const std::list<glm::vec3> Chunk::getVisibleBlockPositions() const
         positions.push_back(((*blockMap)[block_pos]).position);
     }
     return positions;
+}
+
+const std::vector<Model::Vertex> Chunk::getVertices() const
+{
+    return vertices;
+}
+
+const std::vector<Model::Index> Chunk::getIndices() const
+{
+    return indices;
 }

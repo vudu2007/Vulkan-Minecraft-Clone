@@ -1,7 +1,7 @@
 #include "block.hpp"
 
-Block::Block(const glm::vec3 position)
-    : position(position), collisionShape(position + glm::vec3(-0.5f), position + glm::vec3(0.5f))
+Block::Block(const glm::vec3 position, const glm::vec3 color)
+    : position(position), color(color), collisionShape(position + glm::vec3(-0.5f), position + glm::vec3(0.5f))
 {
 }
 
