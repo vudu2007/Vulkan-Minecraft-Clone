@@ -224,7 +224,7 @@ static bool isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device)
     // Check for supported features.
     VkPhysicalDeviceFeatures supported_features;
     vkGetPhysicalDeviceFeatures(device, &supported_features);
-    const bool features_supported = supported_features.samplerAnisotropy;
+    const bool features_supported = supported_features.samplerAnisotropy && supported_features.fillModeNonSolid;
 
     return (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) && indices.isComplete() &&
            extensions_supported && swap_chain_adequate && features_supported;
@@ -381,6 +381,7 @@ void Device::createLogicalDevice()
     VkPhysicalDeviceFeatures device_features{};
     device_features.samplerAnisotropy = VK_TRUE;
     device_features.sampleRateShading = VK_FALSE;
+    device_features.fillModeNonSolid = VK_TRUE;
 
     // Create the logical device.
     VkDeviceCreateInfo create_info{};

@@ -153,7 +153,10 @@ unsigned Renderer::addVertexBuffer(
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
     vertexBuffers.push_back(
-        {count, 0, std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT), nullptr});
+        {count,
+         instance_count,
+         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+         nullptr});
     vertexBuffers.back().pVertexBuffer->copyFrom(staging_buffer, num_bytes);
 
     // Check if there is per instance data to handle.
@@ -190,9 +193,37 @@ unsigned Renderer::addVertexBuffer(
     return static_cast<unsigned>(vertexBuffers.size() - 1);
 }
 
-void Renderer::updateVertexBuffer(const unsigned index, const void* data, const size_t num_bytes)
+void Renderer::updateVertexBuffer(
+    const unsigned index,
+    const void* data,
+    const size_t data_type_size,
+    const size_t count)
 {
-    throw std::runtime_error("TODO: Renderer::updateVertexBuffer(...) not implemented yet!");
+    size_t num_bytes = data_type_size * count;
+
+    // Make a staging buffer so that the host can write to it.
+    VkBufferCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = num_bytes;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    Buffer staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    staging_buffer.map();
+    staging_buffer.write(data, num_bytes);
+    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the vertex buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+    // TODO: do double buffering.
+    // TODO: may need synchronization primitive to render only after update
+    vertexBuffers[index].vertexCount = count;
+    vertexBuffers[index].pVertexBuffer->copyFrom(staging_buffer, num_bytes);
 }
 
 void Renderer::updateInstanceVertexBuffer(
@@ -283,19 +314,13 @@ void Renderer::createGraphicsPipeline()
     // Describe vertex data.
     std::vector<VkVertexInputBindingDescription> binding_descriptions{
         Model::Vertex::getBindingDescription(),
-        Model::InstanceData::getBindingDescription(),
     };
     const auto& attribute_description_vertex = Model::Vertex::getAttributeDescriptions();
-    const auto& attribute_description_instance_data = Model::InstanceData::getAttributeDescriptions();
     std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
     attribute_descriptions.insert(
         attribute_descriptions.end(),
         attribute_description_vertex.begin(),
         attribute_description_vertex.end());
-    attribute_descriptions.insert(
-        attribute_descriptions.end(),
-        attribute_description_instance_data.begin(),
-        attribute_description_instance_data.end());
 
     VkPipelineVertexInputStateCreateInfo vertex_input_info{};
     vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -457,6 +482,41 @@ void Renderer::createIndexBuffer(
     const unsigned vertex_buffer_index,
     const void* data,
     const size_t data_type_size,
+    const size_t count,
+    const size_t capacity)
+{
+    const size_t num_bytes_capacity = data_type_size * capacity;
+    const VkDeviceSize num_bytes = data_type_size * count;
+
+    // Make a staging buffer so that the host can write to it.
+    VkBufferCreateInfo create_info{};
+    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    create_info.size = num_bytes_capacity;
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    Buffer staging_buffer(
+        device,
+        create_info,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    // The host writes to the staging buffer.
+    staging_buffer.map();
+    staging_buffer.write(data, num_bytes);
+    staging_buffer.unmap(); // Unmap since host no longer needs to edit it.
+
+    // Create the index buffer and copy the data from the staging buffer into it.
+    create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    indexBuffers.push_back(
+        {vertex_buffer_index,
+         count,
+         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)});
+    indexBuffers.back().pBuffer->copyFrom(staging_buffer, num_bytes);
+}
+
+void Renderer::updateIndexBuffer(
+    const unsigned vertex_buffer_index,
+    const void* data,
+    const size_t data_type_size,
     const size_t count)
 {
     const VkDeviceSize num_bytes = data_type_size * count;
@@ -479,11 +539,8 @@ void Renderer::createIndexBuffer(
 
     // Create the index buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    indexBuffers.push_back(
-        {vertex_buffer_index,
-         count,
-         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)});
-    indexBuffers.back().pBuffer->copyFrom(staging_buffer, num_bytes);
+    indexBuffers[vertex_buffer_index].count = count;
+    indexBuffers[vertex_buffer_index].pBuffer->copyFrom(staging_buffer, num_bytes);
 }
 
 void Renderer::createCommandBuffers()
@@ -579,7 +636,8 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
         std::vector<VkBuffer> vertex_buffers = {vertex_buffer.pVertexBuffer->getBuffer()};
         std::vector<VkDeviceSize> offsets = {0};
         uint32_t num_bindings = 1;
-        if (vertex_buffer.pInstanceVertexBuffer != nullptr)
+        const bool use_instancing = (vertex_buffer.pInstanceVertexBuffer != nullptr);
+        if (use_instancing)
         {
             vertex_buffers.push_back(vertex_buffer.pInstanceVertexBuffer->getBuffer());
             offsets.push_back(0);

@@ -44,11 +44,11 @@ class Renderer
     };
     std::vector<IndexBufferInfo> indexBuffers;
 
-    // TODO: need a away to allow for drawing vertices without indicies if not specified.
+    // TODO: need a away to allow for drawing vertices without indices if not specified.
     struct VertexBufferInfo
     {
         size_t vertexCount = 0;
-        size_t instanceCount = 0;
+        size_t instanceCount = 1;
         std::unique_ptr<Buffer> pVertexBuffer;
         std::unique_ptr<Buffer> pInstanceVertexBuffer;
     };
@@ -104,9 +104,9 @@ class Renderer
         const size_t capacity,
         const void* instance_data = nullptr,
         const size_t instance_data_type_size = 0,
-        const size_t instance_count = 0,
+        const size_t instance_count = 1,
         const size_t instance_capacity = 0);
-    void updateVertexBuffer(const unsigned index, const void* data, const size_t num_bytes);
+    void updateVertexBuffer(const unsigned index, const void* data, const size_t data_type_size, const size_t count);
     void updateInstanceVertexBuffer(
         const unsigned index,
         const void* data,
@@ -114,6 +114,12 @@ class Renderer
         const size_t count);
 
     void createIndexBuffer(
+        const unsigned vertex_buffer_index,
+        const void* data,
+        const size_t data_type_size,
+        const size_t count,
+        const size_t capacity);
+    void updateIndexBuffer(
         const unsigned vertex_buffer_index,
         const void* data,
         const size_t data_type_size,
