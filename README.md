@@ -9,10 +9,15 @@ The project has only been tested on Windows using Visual Studio 2022.
 - Hold `Left-Control` to speed up.
 - `Left-Alt` to toggle the cursor.
 
-## Dependencies
-- Vulkan (TODO: put tested version here)
+## Dependencies to install
+- Vulkan (tested with v.1.4.303)
 - GLFW (TODO)
 - GLM (TODO)
+
+## External
+- FastNoiseLite (v.1.1.1)
+- stb_image (v.2.30)
+- tinyobjloader (v.2.0.0)
 
 ## Build and Run
 1. Download dependencies and keep track of the paths to them.
@@ -27,3 +32,4 @@ The project has only been tested on Windows using Visual Studio 2022.
 ## Resources
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
 - [Learn OpenGL](https://learnopengl.com/)
+- [Brendan Galea Vulkan (c++) Game Engine Tutorials Playlist](https://youtube.com/playlist?list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&si=4Qpm8svqKWqGVDzK)
