@@ -20,8 +20,14 @@ const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
 }
 
 World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
-    : noise(seed), seed(seed), chunkSize(chunk_size)
+    : terrainHeightNoise(seed), seed(seed), chunkSize(chunk_size)
 {
+    // Set up noises.
+    terrainHeightNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+    terrainHeightNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
+    terrainHeightNoise.SetFractalOctaves(5);
+    terrainHeightNoise.SetFractalWeightedStrength(1.5f);
+
     std::cout << ">>> Loading world with seed (" << seed << ")..." << std::endl;
 
     const unsigned total_num_chunks = updateChunks(origin, radius);
@@ -89,12 +95,7 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
             continue;
         }
 
-        noise = FastNoiseLite(seed); // Reset the noise by creating a fresh generator.
-        noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
-        noise.SetFractalType(FastNoiseLite::FractalType_FBm);
-        noise.SetFractalOctaves(5);
-        noise.SetFractalWeightedStrength(1.5f);
-        Chunk* chunk = new Chunk{noise, chunk_center, chunkSize};
+        Chunk* chunk = new Chunk{terrainHeightNoise, chunk_center, chunkSize};
 
         {
             std::lock_guard<std::mutex> lock(activeChunksMutex);

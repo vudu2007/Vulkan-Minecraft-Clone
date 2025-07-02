@@ -19,7 +19,7 @@ class World
     std::mutex activeChunksMutex;
     std::unordered_set<ChunkCoord> chunksToAdd;
 
-    FastNoiseLite noise;
+    FastNoiseLite terrainHeightNoise;
     unsigned seed;
     int chunkSize; // In blocks.
 
