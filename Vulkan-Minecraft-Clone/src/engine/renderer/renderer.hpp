@@ -1,7 +1,6 @@
 #ifndef VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 #define VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
 
-#include "../../noise.hpp"
 #include "buffer.hpp"
 #include "descriptor.hpp"
 #include "device.hpp"

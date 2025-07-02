@@ -3,8 +3,8 @@
 #include "block.hpp"
 #include "engine/physics/ray/ray.hpp"
 #include "engine/renderer/model.hpp"
-#include "noise.hpp"
 
+#include "FastNoiseLite.h"
 #include <GLM/gtx/hash.hpp>
 
 #include <list>
@@ -40,7 +40,7 @@ class Chunk
     void generateMesh();
 
   public:
-    Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size);
+    Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, const int size);
 
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);

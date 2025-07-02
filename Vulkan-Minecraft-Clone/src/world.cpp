@@ -89,6 +89,11 @@ void World::addChunk(const std::vector<glm::vec2> chunk_centers)
             continue;
         }
 
+        noise = FastNoiseLite(seed); // Reset the noise by creating a fresh generator.
+        noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
+        noise.SetFractalType(FastNoiseLite::FractalType_FBm);
+        noise.SetFractalOctaves(5);
+        noise.SetFractalWeightedStrength(1.5f);
         Chunk* chunk = new Chunk{noise, chunk_center, chunkSize};
 
         {

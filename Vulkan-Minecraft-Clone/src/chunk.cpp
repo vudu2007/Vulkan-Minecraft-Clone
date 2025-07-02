@@ -150,11 +150,13 @@ void Chunk::generateMesh()
     }
 }
 
-Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int size) : position(center_pos), size(size)
+Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, const int size)
+    : position(center_pos), size(size)
 {
     const glm::vec3 color_grass(0.349f, 0.651f, 0.290f);
     const glm::vec3 color_dirt(0.396f, 0.263f, 0.129f);
     const glm::vec3 color_stone(0.439f, 0.502f, 0.565f);
+    const glm::vec3 color_sand(0.96f, 0.87f, 0.70f);
 
     const float half_size = (size / static_cast<float>(2));
 
@@ -164,7 +166,11 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     x_bounds = glm::vec2(center_pos.x - half_size, center_pos.x + half_size);
     z_bounds = glm::vec2(center_pos.y - half_size, center_pos.y + half_size);
 
+    const int SEA_LEVEL = 0;
+    const int MAX_HEIGHT = 50;
     int min_height = -50; // std::numeric_limits<int>::max(); // TODO
+    const int HEIGHT_RANGE = MAX_HEIGHT - min_height;
+    assert(HEIGHT_RANGE > 0);
 
     // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
     // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.
@@ -177,21 +183,29 @@ Chunk::Chunk(const SimplexNoise& noise, const glm::vec2& center_pos, const int s
     {
         for (int x = x_start - 2; x < x_start + size + 2; ++x)
         {
-            int max_height = static_cast<int>(
-                std::floorf(noise.getFractal2D(static_cast<float>(x), static_cast<float>(z), 5, 10.0f, 0.0075f)));
+            const float noise_val = (height_noise.GetNoise(static_cast<float>(x), static_cast<float>(z)) + 1.0f) * 0.5f;
+            int height = static_cast<int>(std::floorf(noise_val * HEIGHT_RANGE));
+            if (min_height < 0)
+            {
+                height += min_height;
+            }
 
-            min_height = std::min(min_height, max_height);
+            min_height = std::min(min_height, height);
 
-            for (int y = min_height; y <= max_height; ++y)
+            for (int y = min_height; y <= height; ++y)
             {
                 const glm::vec3 position(static_cast<float>(x), y, static_cast<float>(z));
 
                 glm::vec3 block_color = color_grass;
-                if (y < max_height - 3)
+                if (y < height - 3)
                 {
                     block_color = color_stone;
                 }
-                else if (y < max_height)
+                else if (y <= SEA_LEVEL && height <= SEA_LEVEL)
+                {
+                    block_color = color_sand;
+                }
+                else if (y < height)
                 {
                     block_color = color_dirt;
                 }

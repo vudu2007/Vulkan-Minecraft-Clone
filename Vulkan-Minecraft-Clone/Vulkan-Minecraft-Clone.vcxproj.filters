@@ -54,7 +54,7 @@
     <ClCompile Include="src\engine\camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\noise.cpp">
+    <ClCompile Include="src\old\noise.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\player.cpp">
@@ -130,7 +130,7 @@
     <ClInclude Include="src\engine\camera.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\noise.hpp">
+    <ClInclude Include="src\old\noise.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\player.hpp">

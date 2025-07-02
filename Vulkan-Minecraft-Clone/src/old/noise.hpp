@@ -1,6 +1,6 @@
 #pragma once
 
-#include "global.hpp"
+#include "../global.hpp"
 
 #include <array>
 #include <numbers>
