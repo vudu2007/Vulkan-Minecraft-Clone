@@ -20,8 +20,8 @@ class Chunk
   private:
     glm::vec2 position;
     int size;
-    glm::vec2 x_bounds;
-    glm::vec2 z_bounds;
+    glm::vec2 xBounds;
+    glm::vec2 zBounds;
 
     // Mesh info.
     std::vector<Model::Vertex> vertices;

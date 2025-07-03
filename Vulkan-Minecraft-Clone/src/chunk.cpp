@@ -28,15 +28,15 @@ bool Chunk::checkBlockHidden(const glm::vec3& block_pos) const
 
 bool Chunk::checkInChunkBounds(const glm::vec3& block_pos) const
 {
-    const bool in_x_bounds = (block_pos.x >= x_bounds[0]) && (block_pos.x <= x_bounds[1]);
-    const bool in_z_bounds = (block_pos.z >= z_bounds[0]) && (block_pos.z <= z_bounds[1]);
+    const bool in_x_bounds = (block_pos.x >= xBounds[0]) && (block_pos.x <= xBounds[1]);
+    const bool in_z_bounds = (block_pos.z >= zBounds[0]) && (block_pos.z <= zBounds[1]);
     return in_x_bounds && in_z_bounds;
 }
 
 bool Chunk::checkInEdgeBounds(const glm::vec3& block_pos) const
 {
-    const bool in_x_bounds = (block_pos.x >= x_bounds[0] - 2) && (block_pos.x <= x_bounds[1] + 2);
-    const bool in_z_bounds = (block_pos.z >= z_bounds[0] - 2) && (block_pos.z <= z_bounds[1] + 2);
+    const bool in_x_bounds = (block_pos.x >= xBounds[0] - 2) && (block_pos.x <= xBounds[1] + 2);
+    const bool in_z_bounds = (block_pos.z >= zBounds[0] - 2) && (block_pos.z <= zBounds[1] + 2);
     return in_x_bounds && in_z_bounds;
 }
 
@@ -163,8 +163,8 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, con
     const int x_start = static_cast<int>(center_pos.x - half_size);
     const int z_start = static_cast<int>(center_pos.y - half_size);
 
-    x_bounds = glm::vec2(center_pos.x - half_size, center_pos.x + half_size);
-    z_bounds = glm::vec2(center_pos.y - half_size, center_pos.y + half_size);
+    xBounds = glm::vec2(center_pos.x - half_size, center_pos.x + (half_size - 1));
+    zBounds = glm::vec2(center_pos.y - half_size, center_pos.y + (half_size - 1));
 
     const int SEA_LEVEL = 0;
     const int MAX_HEIGHT = 50;
@@ -251,7 +251,7 @@ void Chunk::addBlock(const glm::vec3 block_pos)
     }
 
     // Add the block.
-    blockMap->emplace(block_pos, block_pos);
+    blockMap->emplace(block_pos, Block(block_pos, glm::vec3(1.0f)));
 
     // Update neighboring blocks.
     // Check if the neighbors are now fully enclosed.

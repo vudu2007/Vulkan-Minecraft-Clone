@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;$(ProjectDir)\src\external\stb;$(ProjectDir)\src\external\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Vu Du\Desktop\Programming\SDKs\VulkanSDK\1.3.296.0\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glm\Include;C:\Users\Vu Du\Desktop\Programming\Libraries\glfw-3.4.bin.WIN64\include;$(ProjectDir)\src\external\stb;$(ProjectDir)\src\external\tinyobjloader;$(ProjectDir)\src\external\FastNoiseLite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
