@@ -18,9 +18,12 @@
 class Chunk
 {
   private:
-    glm::vec2 position;
+    static constexpr int NUM_EDGE_BLOCKS = 2;
+
+    glm::vec3 position;
     int size;
     glm::vec2 xBounds;
+    glm::vec2 yBounds;
     glm::vec2 zBounds;
 
     // Mesh info.
@@ -40,14 +43,14 @@ class Chunk
     void generateMesh();
 
   public:
-    Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, const int size);
+    Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size);
 
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
 
-    glm::vec2 getPos() const;
+    glm::vec3 getPos() const;
     std::string getPosStr() const;
 
     const std::list<glm::vec3> getVisibleBlockPositions() const;

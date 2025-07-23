@@ -3,6 +3,7 @@
 #include "engine/physics/collision-handler.hpp"
 
 #include <algorithm>
+#include <array>
 #include <unordered_set>
 
 bool Chunk::checkBlockHidden(const glm::vec3& block_pos) const
@@ -29,15 +30,20 @@ bool Chunk::checkBlockHidden(const glm::vec3& block_pos) const
 bool Chunk::checkInChunkBounds(const glm::vec3& block_pos) const
 {
     const bool in_x_bounds = (block_pos.x >= xBounds[0]) && (block_pos.x <= xBounds[1]);
+    const bool in_y_bounds = (block_pos.y >= yBounds[0]) && (block_pos.y <= yBounds[1]);
     const bool in_z_bounds = (block_pos.z >= zBounds[0]) && (block_pos.z <= zBounds[1]);
-    return in_x_bounds && in_z_bounds;
+    return in_x_bounds && in_y_bounds && in_z_bounds;
 }
 
 bool Chunk::checkInEdgeBounds(const glm::vec3& block_pos) const
 {
-    const bool in_x_bounds = (block_pos.x >= xBounds[0] - 2) && (block_pos.x <= xBounds[1] + 2);
-    const bool in_z_bounds = (block_pos.z >= zBounds[0] - 2) && (block_pos.z <= zBounds[1] + 2);
-    return in_x_bounds && in_z_bounds;
+    const bool in_x_bounds =
+        (block_pos.x >= xBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.x <= xBounds[1] + NUM_EDGE_BLOCKS);
+    const bool in_y_bounds =
+        (block_pos.y >= yBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.y <= yBounds[1] + NUM_EDGE_BLOCKS);
+    const bool in_z_bounds =
+        (block_pos.z >= zBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.z <= zBounds[1] + NUM_EDGE_BLOCKS);
+    return in_x_bounds && in_y_bounds && in_z_bounds;
 }
 
 void Chunk::generateMesh()
@@ -46,20 +52,26 @@ void Chunk::generateMesh()
     indices.clear();
 
     // Iterate through the visible blocks to generate visible faces.
+    const std::array<glm::vec3, 6> offsets = {
+        glm::vec3(0.0f, 1.0f, 0.0f),  // +y
+        glm::vec3(0.0f, -1.0f, 0.0f), // -y
+        glm::vec3(1.0f, 0.0f, 0.0f),  // +x
+        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+        glm::vec3(0.0f, 0.0f, -1.0f), // -z
+    };
+    const std::array<glm::vec2, 4> uvs = {
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(1.0f, 0.0f),
+        glm::vec2(1.0f, 1.0f),
+        glm::vec2(0.0f, 1.0f),
+    };
     for (const auto& block_pos : visibleBlocks)
     {
         // Find the visible faces and generate vertices for the faces.
-        unsigned face_index = 0;
-        const std::vector<glm::vec3> offsets = {
-            glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-            glm::vec3(0.0f, -1.0f, 0.0f), // -y
-            glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-            glm::vec3(-1.0f, 0.0f, 0.0f), // -x
-            glm::vec3(0.0f, 0.0f, 1.0f),  // +z
-            glm::vec3(0.0f, 0.0f, -1.0f), // -z
-        };
-        for (const auto& offset : offsets)
+        for (unsigned i = 0; i < 6; ++i)
         {
+            const glm::vec3& offset = offsets[i];
             const glm::vec3 neighbor = block_pos + offset;
 
             // Determine if this face should be visible and generate it.
@@ -67,60 +79,57 @@ void Chunk::generateMesh()
             if (!neighbor_exist)
             {
                 const glm::vec3 offset_to_face = offset / 2.0f; // Face is inbetween current and neighbor.
-                glm::vec3 v_0_offset;
-                glm::vec3 v_1_offset;
-                glm::vec3 v_2_offset;
-                glm::vec3 v_3_offset;
+                std::array<glm::vec3, 4> v_offsets{};
                 glm::vec3 normal;
 
                 // Generating counter-clockwise.
-                switch (face_index)
+                switch (i)
                 {
                 case 0: { // +y
-                    v_0_offset = glm::vec3(-0.5f, 0.0f, -0.5f);
-                    v_1_offset = glm::vec3(-0.5f, 0.0f, 0.5f);
-                    v_2_offset = glm::vec3(0.5f, 0.0f, 0.5f);
-                    v_3_offset = glm::vec3(0.5f, 0.0f, -0.5f);
+                    v_offsets[0] = glm::vec3(-0.5f, 0.0f, -0.5f);
+                    v_offsets[1] = glm::vec3(-0.5f, 0.0f, 0.5f);
+                    v_offsets[2] = glm::vec3(0.5f, 0.0f, 0.5f);
+                    v_offsets[3] = glm::vec3(0.5f, 0.0f, -0.5f);
                     normal = glm::vec3(0.0f, 1.0f, 0.0f);
                     break;
                 }
                 case 1: { // -y
-                    v_0_offset = glm::vec3(-0.5f, 0.0f, -0.5f);
-                    v_1_offset = glm::vec3(0.5f, 0.0f, -0.5f);
-                    v_2_offset = glm::vec3(0.5f, 0.0f, 0.5f);
-                    v_3_offset = glm::vec3(-0.5f, 0.0f, 0.5f);
+                    v_offsets[0] = glm::vec3(-0.5f, 0.0f, -0.5f);
+                    v_offsets[1] = glm::vec3(0.5f, 0.0f, -0.5f);
+                    v_offsets[2] = glm::vec3(0.5f, 0.0f, 0.5f);
+                    v_offsets[3] = glm::vec3(-0.5f, 0.0f, 0.5f);
                     normal = glm::vec3(0.0f, -1.0f, 0.0f);
                     break;
                 }
                 case 2: { // +x
-                    v_0_offset = glm::vec3(0.0f, 0.5f, -0.5f);
-                    v_1_offset = glm::vec3(0.0f, 0.5f, 0.5f);
-                    v_2_offset = glm::vec3(0.0f, -0.5f, 0.5f);
-                    v_3_offset = glm::vec3(0.0f, -0.5f, -0.5f);
+                    v_offsets[0] = glm::vec3(0.0f, 0.5f, -0.5f);
+                    v_offsets[1] = glm::vec3(0.0f, 0.5f, 0.5f);
+                    v_offsets[2] = glm::vec3(0.0f, -0.5f, 0.5f);
+                    v_offsets[3] = glm::vec3(0.0f, -0.5f, -0.5f);
                     normal = glm::vec3(1.0f, 0.0f, 0.0f);
                     break;
                 }
                 case 3: { // -x
-                    v_0_offset = glm::vec3(0.0f, 0.5f, -0.5f);
-                    v_1_offset = glm::vec3(0.0f, -0.5f, -0.5f);
-                    v_2_offset = glm::vec3(0.0f, -0.5f, 0.5f);
-                    v_3_offset = glm::vec3(0.0f, 0.5f, 0.5f);
+                    v_offsets[0] = glm::vec3(0.0f, 0.5f, -0.5f);
+                    v_offsets[1] = glm::vec3(0.0f, -0.5f, -0.5f);
+                    v_offsets[2] = glm::vec3(0.0f, -0.5f, 0.5f);
+                    v_offsets[3] = glm::vec3(0.0f, 0.5f, 0.5f);
                     normal = glm::vec3(-1.0f, 0.0f, 0.0f);
                     break;
                 }
                 case 4: { // +z
-                    v_0_offset = glm::vec3(-0.5f, 0.5f, 0.0f);
-                    v_1_offset = glm::vec3(-0.5f, -0.5f, 0.0f);
-                    v_2_offset = glm::vec3(0.5f, -0.5f, 0.0f);
-                    v_3_offset = glm::vec3(0.5f, 0.5f, 0.0f);
+                    v_offsets[0] = glm::vec3(-0.5f, 0.5f, 0.0f);
+                    v_offsets[1] = glm::vec3(-0.5f, -0.5f, 0.0f);
+                    v_offsets[2] = glm::vec3(0.5f, -0.5f, 0.0f);
+                    v_offsets[3] = glm::vec3(0.5f, 0.5f, 0.0f);
                     normal = glm::vec3(0.0f, 0.0f, 1.0f);
                     break;
                 }
                 case 5: { // -z
-                    v_0_offset = glm::vec3(-0.5f, 0.5f, 0.0f);
-                    v_1_offset = glm::vec3(0.5f, 0.5f, 0.0f);
-                    v_2_offset = glm::vec3(0.5f, -0.5f, 0.0f);
-                    v_3_offset = glm::vec3(-0.5f, -0.5f, 0.0f);
+                    v_offsets[0] = glm::vec3(-0.5f, 0.5f, 0.0f);
+                    v_offsets[1] = glm::vec3(0.5f, 0.5f, 0.0f);
+                    v_offsets[2] = glm::vec3(0.5f, -0.5f, 0.0f);
+                    v_offsets[3] = glm::vec3(-0.5f, -0.5f, 0.0f);
                     normal = glm::vec3(0.0f, 0.0f, -1.0f);
                     break;
                 }
@@ -128,17 +137,15 @@ void Chunk::generateMesh()
 
                 const glm::vec3 color = (*blockMap)[block_pos].color;
                 const glm::vec3 face_pos = block_pos + offset_to_face;
-                vertices.emplace_back(face_pos + v_0_offset, normal, color, glm::vec2(0.0f, 0.0f));
-                vertices.emplace_back(face_pos + v_1_offset, normal, color, glm::vec2(1.0f, 0.0f));
-                vertices.emplace_back(face_pos + v_2_offset, normal, color, glm::vec2(1.0f, 1.0f));
-                vertices.emplace_back(face_pos + v_3_offset, normal, color, glm::vec2(0.0f, 1.0f));
+                for (unsigned j = 0; j < 4; ++j)
+                {
+                    vertices.emplace_back((face_pos + v_offsets[j]), normal, color, uvs[j]);
+                }
             }
-
-            ++face_index;
         }
     }
 
-    // Vertices are in a specific order so indicies will be in increasing order.
+    // Vertices are in a specific order so indices will be in increasing order.
     for (size_t i = 0; i < vertices.size(); i += 4)
     {
         indices.emplace_back(i);
@@ -150,27 +157,30 @@ void Chunk::generateMesh()
     }
 }
 
-Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, const int size)
+Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size)
     : position(center_pos), size(size)
 {
-    const glm::vec3 color_grass(0.349f, 0.651f, 0.290f);
-    const glm::vec3 color_dirt(0.396f, 0.263f, 0.129f);
-    const glm::vec3 color_stone(0.439f, 0.502f, 0.565f);
-    const glm::vec3 color_sand(0.96f, 0.87f, 0.70f);
+    constexpr glm::vec3 color_grass(0.349f, 0.651f, 0.290f);
+    constexpr glm::vec3 color_dirt(0.396f, 0.263f, 0.129f);
+    constexpr glm::vec3 color_stone(0.439f, 0.502f, 0.565f);
+    constexpr glm::vec3 color_sand(0.96f, 0.87f, 0.70f);
+    constexpr glm::vec3 color_border(1.0f, 0.0f, 0.0f);
 
     const float half_size = (size / static_cast<float>(2));
 
     const int x_start = static_cast<int>(center_pos.x - half_size);
-    const int z_start = static_cast<int>(center_pos.y - half_size);
+    const int y_start = static_cast<int>(center_pos.y - half_size);
+    const int z_start = static_cast<int>(center_pos.z - half_size);
 
-    xBounds = glm::vec2(center_pos.x - half_size, center_pos.x + (half_size - 1));
-    zBounds = glm::vec2(center_pos.y - half_size, center_pos.y + (half_size - 1));
+    xBounds = glm::vec2(center_pos.x - half_size, center_pos.x + half_size - 1);
+    yBounds = glm::vec2(center_pos.y - half_size, center_pos.y + half_size - 1);
+    zBounds = glm::vec2(center_pos.z - half_size, center_pos.z + half_size - 1);
 
-    const int SEA_LEVEL = 0;
-    const int MAX_HEIGHT = 50;
-    int min_height = -50; // std::numeric_limits<int>::max(); // TODO
-    const int HEIGHT_RANGE = MAX_HEIGHT - min_height;
-    assert(HEIGHT_RANGE > 0);
+    constexpr int SEA_LEVEL = 0;
+    const int MAX_HEIGHT = y_start + size - 1; // Inclusive.
+    const int MIN_HEIGHT = y_start;            // Inclusive.
+    const int HEIGHT_RANGE = 100;
+    const int HEIGHT_OFFSET = -50;
 
     // Keep track of blocks in neighboring chunks to discard later because they shouldn't exist in this chunk.
     // Will use these blocks to figure out whether blocks on edge of this chunk should be visible.
@@ -179,25 +189,37 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, con
     // Start at the corner of the chunk and offset it by -1 to figure out the blocks in neighboring chunks.
     // End at the corner with an offset of +1 or a condition `<=` to reach blocks in neighboring chunks.
     blockMap = std::make_unique<std::unordered_map<glm::vec3, Block>>();
-    for (int z = z_start - 2; z < z_start + size + 2; ++z)
+    for (int z = z_start - NUM_EDGE_BLOCKS; z < z_start + size + NUM_EDGE_BLOCKS; ++z)
     {
-        for (int x = x_start - 2; x < x_start + size + 2; ++x)
+        for (int x = x_start - NUM_EDGE_BLOCKS; x < x_start + size + NUM_EDGE_BLOCKS; ++x)
         {
+            // Get a [0, 1] noise value.
             const float noise_val = (height_noise.GetNoise(static_cast<float>(x), static_cast<float>(z)) + 1.0f) * 0.5f;
-            int height = static_cast<int>(std::floorf(noise_val * HEIGHT_RANGE));
-            if (min_height < 0)
+
+            int height = static_cast<int>(std::floor(noise_val * HEIGHT_RANGE));
+            height += HEIGHT_OFFSET;
+
+            const int num_blocks_above = height - MAX_HEIGHT; // Number of blocks above the max block of this chunk.
+
+            height = std::min(height, MAX_HEIGHT);
+            if (height == MAX_HEIGHT)
             {
-                height += min_height;
+                // Add the potential edge blocks.
+                assert(num_blocks_above >= 0);
+                height += std::min(NUM_EDGE_BLOCKS, num_blocks_above);
             }
 
-            min_height = std::min(min_height, height);
-
-            for (int y = min_height; y <= height; ++y)
+            for (int y = y_start - NUM_EDGE_BLOCKS; y <= height; ++y)
             {
-                const glm::vec3 position(static_cast<float>(x), y, static_cast<float>(z));
+                const glm::vec3 position(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 
                 glm::vec3 block_color = color_grass;
-                if (y < height - 3)
+                if ((x == x_start || x == x_start + size - 1) || (y == y_start || y == y_start + size - 1) ||
+                    (z == z_start || z == z_start + size - 1))
+                {
+                    block_color = color_border;
+                }
+                else if (y < height - 3)
                 {
                     block_color = color_stone;
                 }
@@ -212,11 +234,13 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec2& center_pos, con
 
                 blockMap->emplace(position, Block(position, block_color));
 
-                const bool is_z_edge =
-                    (z == z_start - 2) || (z == z_start - 1) || (z == z_start + size) || (z == z_start + size + 1);
-                const bool is_x_edge =
-                    (x == x_start - 2) || (x == x_start - 1) || (x == x_start + size) || (x == x_start + size + 1);
-                if (is_z_edge || is_x_edge)
+                const bool is_z_edge = (z == z_start - NUM_EDGE_BLOCKS) || (z == z_start - 1) ||
+                                       (z == z_start + size) || (z == z_start + size + 1);
+                const bool is_y_edge = (y == y_start - NUM_EDGE_BLOCKS) || (y == y_start - 1) ||
+                                       (y == y_start + size) || (y == y_start + size + 1);
+                const bool is_x_edge = (x == x_start - NUM_EDGE_BLOCKS) || (x == x_start - 1) ||
+                                       (x == x_start + size) || (x == x_start + size + 1);
+                if (is_z_edge || is_y_edge || is_x_edge)
                 {
                     edge_blocks.emplace(position);
                 }
@@ -355,7 +379,7 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
     return reachable_block_pos;
 }
 
-glm::vec2 Chunk::getPos() const
+glm::vec3 Chunk::getPos() const
 {
     return position;
 }

@@ -13,8 +13,8 @@
 class World
 {
   private:
-    using ChunkCoord = glm::vec2; // Center position of chunk floored as a string.
-    using ChunkCenter = glm::vec2;
+    using ChunkCoord = glm::vec3; // Center position of chunk floored as a string.
+    using ChunkCenter = glm::vec3;
 
     std::mutex activeChunksMutex;
     std::unordered_set<ChunkCoord> chunksToAdd;
@@ -38,7 +38,7 @@ class World
 
     std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
 
-    void addChunk(const std::vector<glm::vec2> chunk_center);
+    void addChunk(const std::vector<glm::vec3> chunk_center);
     unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
 
     void addBlock(const glm::vec3 block_pos);

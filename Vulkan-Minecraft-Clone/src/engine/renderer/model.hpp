@@ -127,8 +127,11 @@ template <> struct hash<Model::Vertex>
 {
     size_t operator()(Model::Vertex const& vertex) const
     {
-        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-               (hash<glm::vec2>()(vertex.texCoord) << 1);
+        const std::size_t h_pos = hash<glm::vec3>{}(vertex.pos);
+        const std::size_t h_normal = hash<glm::vec3>{}(vertex.normal);
+        const std::size_t h_color = hash<glm::vec3>{}(vertex.color);
+        const std::size_t h_tex_coord = hash<glm::vec2>{}(vertex.texCoord);
+        return ((((h_pos ^ (h_normal << 1)) >> 1) ^ (h_color << 1)) >> 1) ^ (h_tex_coord << 1);
     }
 };
 

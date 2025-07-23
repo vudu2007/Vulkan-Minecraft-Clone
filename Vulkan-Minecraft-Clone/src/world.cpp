@@ -15,8 +15,9 @@ const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
     const float fp_chunk_size = static_cast<float>(chunkSize);
     const float stride = fp_chunk_size;
     const float x = std::floorf(((pos.x + 0.5f) / fp_chunk_size + 0.5f)) * stride;
+    const float y = std::floorf(((pos.y + 0.5f) / fp_chunk_size + 0.5f)) * stride;
     const float z = std::floorf(((pos.z + 0.5f) / fp_chunk_size + 0.5f)) * stride;
-    return World::ChunkCenter(x, z);
+    return World::ChunkCenter(x, y, z);
 }
 
 World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
@@ -83,7 +84,7 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* fa
     return reachable_block_pos;
 }
 
-void World::addChunk(const std::vector<glm::vec2> chunk_centers)
+void World::addChunk(const std::vector<glm::vec3> chunk_centers)
 {
     for (const auto& chunk_center : chunk_centers)
     {
@@ -119,36 +120,41 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
         inactive_chunks.emplace(entry.first);
     }
 
-    std::vector<glm::vec2> chunk_centers;
+    std::vector<ChunkCenter> chunk_centers;
     bool add_chunks = false;
 
     float x = origin.x - offset;
     for (int i = 0; i <= (render_distance * 2); ++i)
     {
-        float z = origin.z - offset;
+        float y = origin.y - offset;
         for (int j = 0; j <= (render_distance * 2); ++j)
         {
-            const ChunkCenter chunk_center = posToChunkCenter({x, 0.0f, z});
-            const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-            inactive_chunks.erase(cc);
-            if (!activeChunks.contains(cc))
+            float z = origin.z - offset;
+            for (int k = 0; k <= (render_distance * 2); ++k)
             {
-                if (!chunks.contains(cc))
+                const ChunkCenter chunk_center = posToChunkCenter({x, y, z});
+                const ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
+                inactive_chunks.erase(cc);
+                if (!activeChunks.contains(cc))
                 {
-                    // Create the chunk asynchrounously and add it later.
-                    if (!chunksToAdd.contains(cc))
+                    if (!chunks.contains(cc))
                     {
-                        chunksToAdd.emplace(cc);
-                        chunk_centers.emplace_back(chunk_center);
-                        add_chunks = true;
+                        // Create the chunk asynchrounously and add it later.
+                        if (!chunksToAdd.contains(cc))
+                        {
+                            chunksToAdd.emplace(cc);
+                            chunk_centers.emplace_back(chunk_center);
+                            add_chunks = true;
+                        }
+                    }
+                    else
+                    {
+                        activeChunks.emplace(cc, chunks[cc]);
                     }
                 }
-                else
-                {
-                    activeChunks.emplace(cc, chunks[cc]);
-                }
+                z += chunkSize;
             }
-            z += chunkSize;
+            y += chunkSize;
         }
         x += chunkSize;
     }
@@ -179,6 +185,8 @@ void World::addBlock(const glm::vec3 block_pos)
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(-1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
     };
@@ -196,6 +204,8 @@ void World::removeBlock(const glm::vec3 block_pos)
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(1.0f, 0.0f, 0.0f),
         glm::vec3(-1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, 0.0f, 1.0f),
         glm::vec3(0.0f, 0.0f, -1.0f),
     };

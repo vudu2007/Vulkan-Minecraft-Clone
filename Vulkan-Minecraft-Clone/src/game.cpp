@@ -15,6 +15,10 @@ void Game::updateTerrain()
     const auto world_model = world.getModel();
     const auto& world_vertices = world_model.getVertices();
     const auto& world_indices = world_model.getIndices();
+    if (world_vertices.empty()) // TODO: find a way to allow empty vertex buffers?
+    {
+        return;
+    }
     renderer.updateVertexBuffer(
         terrainVertBufferIdx,
         world_vertices.data(),
