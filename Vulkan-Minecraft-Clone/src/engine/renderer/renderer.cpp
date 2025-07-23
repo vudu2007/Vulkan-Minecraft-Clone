@@ -199,6 +199,12 @@ void Renderer::updateVertexBuffer(
     const size_t data_type_size,
     const size_t count)
 {
+    vertexBuffers[index].vertexCount = count;
+    if (count == 0)
+    {
+        return;
+    }
+
     size_t num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
@@ -222,7 +228,6 @@ void Renderer::updateVertexBuffer(
 
     // TODO: do double buffering.
     // TODO: may need synchronization primitive to render only after update
-    vertexBuffers[index].vertexCount = count;
     vertexBuffers[index].pVertexBuffer->copyFrom(staging_buffer, num_bytes);
 }
 
@@ -519,6 +524,12 @@ void Renderer::updateIndexBuffer(
     const size_t data_type_size,
     const size_t count)
 {
+    indexBuffers[vertex_buffer_index].count = count;
+    if (count == 0)
+    {
+        return;
+    }
+
     const VkDeviceSize num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
