@@ -5,19 +5,19 @@
 #include <thread>
 #include <unordered_set>
 
-const World::ChunkCoord World::chunkCenterToChunkCoord(const ChunkCenter& chunk_center) const
+const ChunkCoord World::chunkCenterToChunkCoord(const ChunkCenter& chunk_center) const
 {
     return chunk_center / static_cast<float>(chunkSize);
 }
 
-const World::ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
+const ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
 {
     const float fp_chunk_size = static_cast<float>(chunkSize);
     const float stride = fp_chunk_size;
-    const float x = std::floorf(((pos.x + 0.5f) / fp_chunk_size + 0.5f)) * stride;
-    const float y = std::floorf(((pos.y + 0.5f) / fp_chunk_size + 0.5f)) * stride;
-    const float z = std::floorf(((pos.z + 0.5f) / fp_chunk_size + 0.5f)) * stride;
-    return World::ChunkCenter(x, y, z);
+    const float x = std::floor((pos.x + 0.5f) / fp_chunk_size + 0.5f) * stride;
+    const float y = std::floor((pos.y + 0.5f) / fp_chunk_size + 0.5f) * stride;
+    const float z = std::floor((pos.z + 0.5f) / fp_chunk_size + 0.5f) * stride;
+    return ChunkCenter(x, y, z);
 }
 
 World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
@@ -66,7 +66,10 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* fa
     // Check the chunk that contains the ray's origin (the player's position).
     const ChunkCenter chunk_center = posToChunkCenter(ray.getOrigin());
     ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
-    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
+    if (activeChunks.contains(cc))
+    {
+        reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
+    }
     if (reachable_block_pos.has_value())
     {
         return reachable_block_pos;
@@ -79,7 +82,10 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* fa
         return reachable_block_pos;
     }
     cc = chunkCenterToChunkCoord(next_chunk_center);
-    reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
+    if (activeChunks.contains(cc))
+    {
+        reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
+    }
 
     return reachable_block_pos;
 }
@@ -241,7 +247,7 @@ const Model World::getModel() const
     }
     vertices.reserve(vertices_size);
     indices.reserve(indices_size);
-    size_t accum = 0;
+    Model::Index accum = 0;
     for (const auto& chunk_info : activeChunks)
     {
         const auto chunk_vertices = chunk_info.second->getVertices();
@@ -253,7 +259,7 @@ const Model World::getModel() const
             chunk_index += accum;
         }
         indices.insert(indices.end(), chunk_indices.begin(), chunk_indices.end());
-        accum += chunk_vertices.size();
+        accum += static_cast<Model::Index>(chunk_vertices.size());
     }
 
     return Model(vertices, indices);

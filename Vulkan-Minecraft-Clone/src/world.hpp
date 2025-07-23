@@ -13,9 +13,6 @@
 class World
 {
   private:
-    using ChunkCoord = glm::vec3; // Center position of chunk floored as a string.
-    using ChunkCenter = glm::vec3;
-
     std::mutex activeChunksMutex;
     std::unordered_set<ChunkCoord> chunksToAdd;
 

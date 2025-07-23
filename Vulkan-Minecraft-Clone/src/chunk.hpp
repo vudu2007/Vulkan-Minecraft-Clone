@@ -7,7 +7,6 @@
 #include "FastNoiseLite.h"
 #include <GLM/gtx/hash.hpp>
 
-#include <list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -15,13 +14,27 @@
 #include <unordered_set>
 #include <vector>
 
+using ChunkCoord = glm::vec3; // Center position of chunk floored as a string.
+using ChunkCenter = glm::vec3;
+
 class Chunk
 {
   private:
+    // Edge blocks refer to blocks in neighboring chunks.
     static constexpr int NUM_EDGE_BLOCKS = 2;
 
-    glm::vec3 position;
+    static constexpr glm::vec3 COLOR_GRASS{0.349f, 0.651f, 0.290f};
+    static constexpr glm::vec3 COLOR_DIRT{0.396f, 0.263f, 0.129f};
+    static constexpr glm::vec3 COLOR_STONE{0.439f, 0.502f, 0.565f};
+    static constexpr glm::vec3 COLOR_SAND{0.96f, 0.87f, 0.70f};
+    static constexpr int SEA_LEVEL = 0;
+    static constexpr int HEIGHT_RANGE = 100;
+    static constexpr int HEIGHT_OFFSET = -50;
+
+    ChunkCenter center;
     int size;
+
+    // Bounds are inclusive and do not include edge blocks.
     glm::vec2 xBounds;
     glm::vec2 yBounds;
     glm::vec2 zBounds;
@@ -50,10 +63,6 @@ class Chunk
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
 
-    glm::vec3 getPos() const;
-    std::string getPosStr() const;
-
-    const std::list<glm::vec3> getVisibleBlockPositions() const;
     const std::vector<Model::Vertex> getVertices() const;
     const std::vector<Model::Index> getIndices() const;
 };
