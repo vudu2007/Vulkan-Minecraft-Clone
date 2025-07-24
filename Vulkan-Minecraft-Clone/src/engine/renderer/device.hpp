@@ -3,6 +3,8 @@
 
 #include "window.hpp"
 
+#include "vk_mem_alloc.h"
+
 #include <optional>
 #include <vector>
 
@@ -31,6 +33,7 @@ class Device
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice logicalDevice = VK_NULL_HANDLE;
+    VmaAllocator allocator = VK_NULL_HANDLE;
     VkCommandPool commandPool = VK_NULL_HANDLE;
 
     VkQueue graphicsQueue = VK_NULL_HANDLE;
@@ -43,6 +46,7 @@ class Device
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createAllocator();
     void createCommandPool();
 
     bool hasStencilComponent(const VkFormat format) const;
@@ -88,6 +92,7 @@ class Device
     const VkSurfaceKHR getSurface() const;
     const VkPhysicalDevice getPhysicalDevice() const;
     const VkDevice getLogicalDevice() const;
+    const VmaAllocator getAllocator() const;
     const VkCommandPool getCommandPool() const;
     const VkQueue getGraphicsQueue() const;
     const VkQueue getPresentQueue() const;

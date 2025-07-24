@@ -411,6 +411,22 @@ void Device::createLogicalDevice()
     vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
 }
 
+void Device::createAllocator()
+{
+    VmaAllocatorCreateInfo create_info{};
+    create_info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+    create_info.vulkanApiVersion = VK_API_VERSION_1_0;
+    create_info.physicalDevice = physicalDevice;
+    create_info.device = logicalDevice;
+    create_info.instance = instance;
+    create_info.pVulkanFunctions = nullptr;
+
+    if (vmaCreateAllocator(&create_info, &allocator) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create VMA allocator!");
+    }
+}
+
 void Device::createCommandPool()
 {
     const QueueFamilyIndices queue_family_indices = getQueueFamilies();
@@ -438,12 +454,14 @@ Device::Device(const Window& window) : window(window)
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createAllocator();
     createCommandPool();
 }
 
 Device::~Device()
 {
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+    vmaDestroyAllocator(allocator);
     vkDestroyDevice(logicalDevice, nullptr);
     if (ENABLE_VALIDATION_LAYERS)
     {
@@ -771,6 +789,11 @@ const VkPhysicalDevice Device::getPhysicalDevice() const
 const VkDevice Device::getLogicalDevice() const
 {
     return logicalDevice;
+}
+
+const VmaAllocator Device::getAllocator() const
+{
+    return allocator;
 }
 
 const VkCommandPool Device::getCommandPool() const

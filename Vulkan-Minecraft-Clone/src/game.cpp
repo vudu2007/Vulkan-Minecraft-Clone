@@ -29,6 +29,7 @@ void Game::run()
     Texture* block_texture_ptr = renderer.createTexture("src/textures/cube_texture.jpg");
     Model block_model("src/models/cube.obj");
 
+    // TODO: main thread should do something else instead of busy wait.
     while (world.getActiveChunks().empty())
     {
     }
@@ -36,17 +37,18 @@ void Game::run()
     const auto world_model = world.getModel();
     const auto& world_vertices = world_model.getVertices();
     const auto& world_indices = world_model.getIndices();
+    // Remake the buffers if the player's render distance changes.
     terrainVertBufferIdx = renderer.addVertexBuffer(
         world_vertices.data(),
         sizeof(world_vertices[0]),
         world_vertices.size(),
-        world_vertices.size() * 1024); // TODO
+        10000000); // TODO
     renderer.createIndexBuffer(
         terrainVertBufferIdx,
         world_indices.data(),
         sizeof(world_indices[0]),
         world_indices.size(),
-        world_indices.size() * 1024); // TODO
+        10000000); // TODO
 
     const unsigned ubo_idx_transforms =
         renderer.addUniformBuffer(0, sizeof(Model::UniformBufferObject), VK_SHADER_STAGE_VERTEX_BIT);

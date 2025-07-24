@@ -31,7 +31,8 @@ void Texture::createImage(const std::string& texture_file_path)
     Buffer staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     staging_buffer.map();

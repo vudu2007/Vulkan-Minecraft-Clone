@@ -142,7 +142,8 @@ unsigned Renderer::addVertexBuffer(
     Buffer staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     staging_buffer.map();
@@ -155,7 +156,11 @@ unsigned Renderer::addVertexBuffer(
     vertexBuffers.push_back(
         {count,
          instance_count,
-         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+         std::make_unique<Buffer>(
+             device,
+             create_info,
+             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+             VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT),
          nullptr});
     vertexBuffers.back().pVertexBuffer->copyFrom(staging_buffer, num_bytes);
 
@@ -175,7 +180,8 @@ unsigned Renderer::addVertexBuffer(
     Buffer instance_staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     instance_staging_buffer.map();
@@ -186,8 +192,11 @@ unsigned Renderer::addVertexBuffer(
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
     vertexBuffers.back().instanceCount = instance_count;
-    vertexBuffers.back().pInstanceVertexBuffer =
-        std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    vertexBuffers.back().pInstanceVertexBuffer = std::make_unique<Buffer>(
+        device,
+        create_info,
+        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT);
     vertexBuffers.back().pInstanceVertexBuffer->copyFrom(instance_staging_buffer, num_bytes);
 
     return static_cast<unsigned>(vertexBuffers.size() - 1);
@@ -216,7 +225,8 @@ void Renderer::updateVertexBuffer(
     Buffer staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     staging_buffer.map();
@@ -248,7 +258,8 @@ void Renderer::updateInstanceVertexBuffer(
     Buffer instance_staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     instance_staging_buffer.map();
@@ -502,7 +513,8 @@ void Renderer::createIndexBuffer(
     Buffer staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     staging_buffer.map();
@@ -514,7 +526,11 @@ void Renderer::createIndexBuffer(
     indexBuffers.push_back(
         {vertex_buffer_index,
          count,
-         std::make_unique<Buffer>(device, create_info, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)});
+         std::make_unique<Buffer>(
+             device,
+             create_info,
+             VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+             VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)});
     indexBuffers.back().pBuffer->copyFrom(staging_buffer, num_bytes);
 }
 
@@ -541,7 +557,8 @@ void Renderer::updateIndexBuffer(
     Buffer staging_buffer(
         device,
         create_info,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     // The host writes to the staging buffer.
     staging_buffer.map();
@@ -730,7 +747,8 @@ unsigned Renderer::addUniformBuffer(
         bufferPtrsPerFrame[i] = std::make_unique<Buffer>(
             device,
             create_info,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            VMA_MEMORY_USAGE_AUTO_PREFER_HOST,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
         bufferPtrsPerFrame[i]->map();
     }
     uniformBuffers.emplace_back(binding, std::move(bufferPtrsPerFrame));

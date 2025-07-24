@@ -25,46 +25,43 @@ and some Vulkan functions have explicit flags to specify that you want to do thi
 #include "buffer.hpp"
 
 #include <cassert>
+#include <sstream>
 #include <stdexcept>
 
 Buffer::Buffer(
     const Device& device,
     const VkBufferCreateInfo& create_info,
-    const VkMemoryPropertyFlags mem_properties,
+    const VmaMemoryUsage mem_usage,
+    const VmaAllocationCreateFlagBits mem_flags,
     const VkDeviceSize mem_offset)
-    : device(device)
+    : device(device), size(create_info.size)
 {
-    if (vkCreateBuffer(device.getLogicalDevice(), &create_info, nullptr, &buffer) != VK_SUCCESS)
+    VmaAllocationCreateInfo alloc_info{};
+    alloc_info.usage = mem_usage;
+    alloc_info.flags = mem_flags;
+
+    const VkResult res =
+        vmaCreateBuffer(device.getAllocator(), &create_info, &alloc_info, &buffer, &allocation, nullptr);
+    if (res != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create buffer!");
+        std::stringstream err;
+        err << "failed to create buffer! code: " << res;
+        throw std::runtime_error(err.str());
     }
-
-    VkMemoryRequirements mem_requirements;
-    vkGetBufferMemoryRequirements(device.getLogicalDevice(), buffer, &mem_requirements);
-    VkMemoryAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex = device.findMemoryType(mem_requirements.memoryTypeBits, mem_properties);
-    if (vkAllocateMemory(device.getLogicalDevice(), &alloc_info, nullptr, &memory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(device.getLogicalDevice(), buffer, memory, mem_offset);
-
-    size = create_info.size;
 }
 
 Buffer::~Buffer()
 {
-    vkDestroyBuffer(device.getLogicalDevice(), buffer, nullptr);
-    vkFreeMemory(device.getLogicalDevice(), memory, nullptr);
+    if (mappedMemory != nullptr)
+    {
+        unmap();
+    }
+    vmaDestroyBuffer(device.getAllocator(), buffer, allocation);
 }
 
-void Buffer::map(const VkDeviceSize offset, const VkDeviceSize size, const VkMemoryMapFlags flags)
+void Buffer::map(const VkDeviceSize offset, const VkDeviceSize size)
 {
-    const VkResult res = vkMapMemory(device.getLogicalDevice(), memory, offset, size, flags, &mappedMemory);
-    if (res != VK_SUCCESS)
+    if (vmaMapMemory(device.getAllocator(), allocation, &mappedMemory) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to map memory to buffer!");
     }
@@ -72,7 +69,7 @@ void Buffer::map(const VkDeviceSize offset, const VkDeviceSize size, const VkMem
 
 void Buffer::unmap()
 {
-    vkUnmapMemory(device.getLogicalDevice(), memory);
+    vmaUnmapMemory(device.getAllocator(), allocation);
     mappedMemory = nullptr;
 }
 
