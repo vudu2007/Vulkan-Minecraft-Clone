@@ -18,6 +18,7 @@ The project has only been tested on Windows using Visual Studio 2022.
 - FastNoiseLite (v.1.1.1)
 - stb_image (v.2.30)
 - tinyobjloader (v.2.0.0)
+- Vulkan Memory Allocator (v.3.3.0)
 
 ## Build and Run
 1. Download dependencies and keep track of the paths to them.
