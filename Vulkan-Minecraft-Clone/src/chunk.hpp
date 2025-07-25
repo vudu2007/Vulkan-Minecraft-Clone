@@ -10,7 +10,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -20,8 +19,10 @@ using ChunkCenter = glm::vec3;
 class Chunk
 {
   private:
+    using BlockContainer = std::vector<std::vector<std::vector<std::shared_ptr<Block>>>>;
+
     // Edge blocks refer to blocks in neighboring chunks.
-    static constexpr int NUM_EDGE_BLOCKS = 2;
+    static constexpr int EDGE_OFFSET = 2;
 
     static constexpr glm::vec3 COLOR_GRASS{0.349f, 0.651f, 0.290f};
     static constexpr glm::vec3 COLOR_DIRT{0.396f, 0.263f, 0.129f};
@@ -33,23 +34,34 @@ class Chunk
 
     ChunkCenter center;
     int size;
+    int blockCount = 0; // Includes edge blocks.
 
     // Bounds are inclusive and do not include edge blocks.
-    glm::vec2 xBounds;
-    glm::vec2 yBounds;
-    glm::vec2 zBounds;
+    glm::vec3 minBounds;
+    glm::vec3 maxBounds;
 
     // Mesh info.
     std::vector<Model::Vertex> vertices;
     std::vector<Model::Index> indices;
 
     // Contains blocks in this chunk and edge blocks of neighboring chunks.
-    std::unique_ptr<std::unordered_map<glm::vec3, Block>> blockMap;
+    // Will keep edge blocks up-to-date with neighbors based on player's interaction with the world.
+    // Stored in the order x -> y -> z and maintain a size of (`size` + `EDGE_OFFSET` * 2) cubed.
+    std::unique_ptr<BlockContainer> blocks;
 
     // Exclusive to only blocks in this chunk.
     std::unordered_set<glm::vec3> visibleBlocks;
 
-    bool checkBlockHidden(const glm::vec3& block_pos) const;
+    void initContainer();
+
+    std::shared_ptr<Block> getBlock(const glm::vec3& global_pos) const;
+    glm::vec3 getLocalPos(const glm::vec3& global_pos) const;
+
+    void generateBlock(const glm::vec3& global_pos, const Block& block);
+    void resetBlock(const glm::vec3& global_pos);
+
+    bool checkBlockExist(const glm::vec3& global_pos) const;
+    bool checkBlockHidden(const glm::vec3& global_pos) const; // Assumes `global_pos` is within the chunk.
     bool checkInChunkBounds(const glm::vec3& block_pos) const;
     bool checkInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
 
@@ -58,8 +70,8 @@ class Chunk
   public:
     Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size);
 
-    void addBlock(const glm::vec3 block_pos);
-    void removeBlock(const glm::vec3 block_pos);
+    void addBlock(const glm::vec3& global_pos);
+    void removeBlock(const glm::vec3& global_pos);
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
 

@@ -6,7 +6,6 @@
 
 struct Block
 {
-    glm::vec3 position;
     glm::vec3 color;
     Box3d collisionShape;
 

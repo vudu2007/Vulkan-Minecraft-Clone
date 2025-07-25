@@ -3,21 +3,67 @@
 #include "engine/physics/collision-handler.hpp"
 
 #include <algorithm>
-#include <array>
 
-bool Chunk::checkBlockHidden(const glm::vec3& block_pos) const
+void Chunk::initContainer()
+{
+    assert(blocks == nullptr);
+
+    blocks = std::make_unique<BlockContainer>();
+    blocks->resize(static_cast<size_t>(size + EDGE_OFFSET * 2));
+    for (auto& y : *blocks)
+    {
+        y.resize(static_cast<size_t>(size + EDGE_OFFSET * 2));
+        for (auto& z : y)
+        {
+            z.resize(static_cast<size_t>(size + EDGE_OFFSET * 2));
+        }
+    }
+}
+
+std::shared_ptr<Block> Chunk::getBlock(const glm::vec3& global_pos) const
+{
+    const glm::uvec3 local_pos = static_cast<glm::uvec3>(getLocalPos(global_pos));
+    return (*blocks)[local_pos.x][local_pos.y][local_pos.z];
+}
+
+glm::vec3 Chunk::getLocalPos(const glm::vec3& global_pos) const
+{
+    return global_pos - (minBounds - glm::vec3(EDGE_OFFSET));
+}
+
+void Chunk::generateBlock(const glm::vec3& global_pos, const Block& block)
+{
+    const glm::uvec3 local_pos = static_cast<glm::uvec3>(getLocalPos(global_pos));
+    (*blocks)[local_pos.x][local_pos.y][local_pos.z] = std::make_shared<Block>(block);
+    ++blockCount;
+}
+
+void Chunk::resetBlock(const glm::vec3& global_pos)
+{
+    const glm::uvec3 local_pos = static_cast<glm::uvec3>(getLocalPos(global_pos));
+    (*blocks)[local_pos.x][local_pos.y][local_pos.z].reset();
+    --blockCount;
+}
+
+bool Chunk::checkBlockExist(const glm::vec3& global_pos) const
+{
+    return getBlock(global_pos) != nullptr;
+}
+
+bool Chunk::checkBlockHidden(const glm::vec3& global_pos) const
 {
     const std::vector<glm::vec3> offsets = {
-        glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-        glm::vec3(0.0f, -1.0f, 0.0f), // -y
-        glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
-        glm::vec3(0.0f, 0.0f, 1.0f),  // +z
-        glm::vec3(0.0f, 0.0f, -1.0f), // -z
+        glm::vec3(0.0, 1.0, 0.0),  // +y
+        glm::vec3(0.0, -1.0, 0.0), // -y
+        glm::vec3(1.0, 0.0, 0.0),  // +x
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(0.0, 0.0, -1.0), // -z
     };
     for (const auto& offset : offsets)
     {
-        if (!blockMap->contains(block_pos + offset))
+        const glm::vec3 neighbor = global_pos + offset;
+        if (!checkBlockExist(neighbor))
         {
             // There must be a visible face.
             return false;
@@ -26,22 +72,21 @@ bool Chunk::checkBlockHidden(const glm::vec3& block_pos) const
     return true;
 }
 
-bool Chunk::checkInChunkBounds(const glm::vec3& block_pos) const
+bool Chunk::checkInChunkBounds(const glm::vec3& global_pos) const
 {
-    const bool in_x_bounds = (block_pos.x >= xBounds[0]) && (block_pos.x <= xBounds[1]);
-    const bool in_y_bounds = (block_pos.y >= yBounds[0]) && (block_pos.y <= yBounds[1]);
-    const bool in_z_bounds = (block_pos.z >= zBounds[0]) && (block_pos.z <= zBounds[1]);
+    const bool in_x_bounds = (global_pos.x >= minBounds.x) && (global_pos.x <= maxBounds.x);
+    const bool in_y_bounds = (global_pos.y >= minBounds.y) && (global_pos.y <= maxBounds.y);
+    const bool in_z_bounds = (global_pos.z >= minBounds.z) && (global_pos.z <= maxBounds.z);
     return in_x_bounds && in_y_bounds && in_z_bounds;
 }
 
-bool Chunk::checkInEdgeBounds(const glm::vec3& block_pos) const
+bool Chunk::checkInEdgeBounds(const glm::vec3& global_pos) const
 {
-    const bool in_x_bounds =
-        (block_pos.x >= xBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.x <= xBounds[1] + NUM_EDGE_BLOCKS);
-    const bool in_y_bounds =
-        (block_pos.y >= yBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.y <= yBounds[1] + NUM_EDGE_BLOCKS);
-    const bool in_z_bounds =
-        (block_pos.z >= zBounds[0] - NUM_EDGE_BLOCKS) && (block_pos.z <= zBounds[1] + NUM_EDGE_BLOCKS);
+    const glm::vec3 min_bounds = minBounds - glm::vec3(static_cast<float>(EDGE_OFFSET));
+    const glm::vec3 max_bounds = maxBounds + glm::vec3(static_cast<float>(EDGE_OFFSET));
+    const bool in_x_bounds = (global_pos.x >= min_bounds.x) && (global_pos.x <= max_bounds.x);
+    const bool in_y_bounds = (global_pos.y >= min_bounds.y) && (global_pos.y <= max_bounds.y);
+    const bool in_z_bounds = (global_pos.z >= min_bounds.z) && (global_pos.z <= max_bounds.z);
     return in_x_bounds && in_y_bounds && in_z_bounds;
 }
 
@@ -74,8 +119,9 @@ void Chunk::generateMesh()
             const glm::vec3 neighbor = block_pos + offset;
 
             // Determine if this face should be visible and generate it.
-            const bool neighbor_exist = (*blockMap).contains(neighbor);
-            if (!neighbor_exist)
+            // NOTE: assume `visibleBlocks` will never be edge blocks, so neighbor is never out of bounds.
+            const bool neighbor_not_exist = !checkBlockExist(neighbor);
+            if (neighbor_not_exist)
             {
                 const glm::vec3 offset_to_face = offset / 2.0f; // Face is inbetween current and neighbor.
                 std::array<glm::vec3, 4> v_offsets{};
@@ -134,7 +180,7 @@ void Chunk::generateMesh()
                 }
                 }
 
-                const glm::vec3 color = (*blockMap)[block_pos].color;
+                const glm::vec3 color = getBlock(block_pos)->color;
                 const glm::vec3 face_pos = block_pos + offset_to_face;
                 for (unsigned j = 0; j < 4; ++j)
                 {
@@ -159,26 +205,29 @@ void Chunk::generateMesh()
 Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size)
     : center(center_pos), size(size)
 {
-    const float half_size = (static_cast<float>(size) / 2.0f);
+    const float half_size = (static_cast<float>(size) * 0.5f);
 
-    xBounds = glm::vec2(center_pos.x - half_size, center_pos.x + half_size - 1);
-    yBounds = glm::vec2(center_pos.y - half_size, center_pos.y + half_size - 1);
-    zBounds = glm::vec2(center_pos.z - half_size, center_pos.z + half_size - 1);
+    minBounds = center_pos - glm::vec3(half_size);
+    maxBounds = center_pos + glm::vec3(half_size - 1.0f);
 
-    const int x_start = static_cast<int>(xBounds[0]);
-    const int y_start = static_cast<int>(yBounds[0]);
-    const int z_start = static_cast<int>(zBounds[0]);
-    const int x_end = static_cast<int>(xBounds[1]);
-    const int y_end = static_cast<int>(yBounds[1]);
-    const int z_end = static_cast<int>(zBounds[1]);
+    const int x_start = static_cast<int>(minBounds.x);
+    const int y_start = static_cast<int>(minBounds.y);
+    const int z_start = static_cast<int>(minBounds.z);
+    const int x_end = static_cast<int>(maxBounds.x);
+    const int y_end = static_cast<int>(maxBounds.y);
+    const int z_end = static_cast<int>(maxBounds.z);
 
     // Start at the corner of the chunk and offset it by -`NUM_EDGE_BLOCKS` to figure out the blocks in neighboring
     // chunks. End at the corner with an offset of +`NUM_EDGE_BLOCKS` or a condition `<=` to reach blocks in neighboring
     // chunks.
-    blockMap = std::make_unique<std::unordered_map<glm::vec3, Block>>();
-    for (int z = z_start - NUM_EDGE_BLOCKS; z <= z_end + NUM_EDGE_BLOCKS; ++z)
+
+    // Set up block container.
+    initContainer();
+
+    // Generate blocks.
+    for (int z = z_start - EDGE_OFFSET; z <= z_end + EDGE_OFFSET; ++z)
     {
-        for (int x = x_start - NUM_EDGE_BLOCKS; x <= x_end + NUM_EDGE_BLOCKS; ++x)
+        for (int x = x_start - EDGE_OFFSET; x <= x_end + EDGE_OFFSET; ++x)
         {
             // At this moment, height is the global height; tallest point at this xz-position.
             const float noise_val = (height_noise.GetNoise(static_cast<float>(x), static_cast<float>(z)) + 1.0f) * 0.5f;
@@ -190,15 +239,16 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
             {
                 // We are at the highest block of this chunk so we need to make sure to add any edge blocks that exist
                 // in the neighboring chunk above.
-                const int num_blocks_above =
-                    global_height - y_end; // Number of blocks above the max block of this chunk.
+
+                // Number of blocks above the max block of this chunk.
+                const int num_blocks_above = global_height - y_end;
                 assert(num_blocks_above >= 0);
-                height += std::min(NUM_EDGE_BLOCKS, num_blocks_above);
+                height += std::min(EDGE_OFFSET, num_blocks_above);
             }
 
-            for (int y = y_start - NUM_EDGE_BLOCKS; y <= height; ++y)
+            for (int y = y_start - EDGE_OFFSET; y <= height; ++y)
             {
-                const glm::vec3 block_pos(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+                glm::vec3 block_pos(x, y, z);
 
                 glm::vec3 block_color = COLOR_GRASS;
                 if (y < global_height - 3)
@@ -214,42 +264,53 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
                     block_color = COLOR_DIRT;
                 }
 
-                blockMap->emplace(block_pos, Block(block_pos, block_color));
+                generateBlock(block_pos, {block_pos, block_color});
             }
         }
     }
 
-    // Determine the visible blocks.
-    for (auto& map : *blockMap)
+    // Remove the container if there aren't any blocks; to save memory.
+    if (blockCount == 0)
     {
-        const glm::vec3& block_pos = map.first;
+        blocks.reset();
+        return;
+    }
 
-        // Ignore if an edge block.
-        if (!checkInChunkBounds(block_pos) && checkInEdgeBounds(block_pos))
+    // Determine the visible blocks; ignore edge blocks.
+    for (int x = x_start; x <= x_end; ++x)
+    {
+        for (int y = y_start; y <= y_end; ++y)
         {
-            continue;
-        }
-
-        const Block& block = map.second;
-        if (!checkBlockHidden(block.position))
-        {
-            visibleBlocks.emplace(block_pos);
+            for (int z = z_start; z <= z_end; ++z)
+            {
+                const glm::vec3 global_pos(x, y, z);
+                if (checkBlockExist(global_pos) && !checkBlockHidden(global_pos))
+                {
+                    visibleBlocks.emplace(global_pos);
+                }
+            }
         }
     }
 
     generateMesh();
 }
 
-void Chunk::addBlock(const glm::vec3 block_pos)
+void Chunk::addBlock(const glm::vec3& global_pos)
 {
     // Ignore if it isn't in edge bounds or if it already exist.
-    if (!checkInEdgeBounds(block_pos) || blockMap->contains(block_pos))
+    if (!checkInEdgeBounds(global_pos) || checkBlockExist(global_pos))
     {
         return;
     }
 
+    // Initialize the container if this chunk was previously empty.
+    if (blockCount == 0)
+    {
+        initContainer();
+    }
+
     // Add the block.
-    blockMap->emplace(block_pos, Block(block_pos, glm::vec3(1.0f)));
+    generateBlock(global_pos, {global_pos, glm::vec3(1.0f)});
 
     // Update neighboring blocks.
     // Check if the neighbors are now fully enclosed.
@@ -263,27 +324,31 @@ void Chunk::addBlock(const glm::vec3 block_pos)
     };
     for (const auto& offset : offsets)
     {
-        const glm::vec3 neighbor = block_pos + offset;
-        if ((*blockMap).contains(neighbor) && checkBlockHidden(neighbor))
+        const glm::vec3 neighbor = global_pos + offset;
+        if (!checkInChunkBounds(neighbor)) // Ignore if edge block since they are never visible.
+        {
+            continue;
+        }
+        if (checkBlockExist(neighbor) && checkBlockHidden(neighbor))
         {
             visibleBlocks.erase(neighbor);
         }
     }
 
     // Add it to visible if it's within chunk bounds and is not enclosed.
-    if (checkInChunkBounds(block_pos) && !checkBlockHidden(block_pos))
+    if (checkInChunkBounds(global_pos) && !checkBlockHidden(global_pos))
     {
-        visibleBlocks.emplace(block_pos);
+        visibleBlocks.emplace(global_pos);
     }
 
     // TODO: utilize block pos to redo mesh.
     generateMesh();
 }
 
-void Chunk::removeBlock(const glm::vec3 block_pos)
+void Chunk::removeBlock(const glm::vec3& global_pos)
 {
     // Ignore if it doesn't exist in this chunk.
-    if (!(*blockMap).contains(block_pos))
+    if (!checkInEdgeBounds(global_pos) || !checkBlockExist(global_pos))
     {
         return;
     }
@@ -299,17 +364,23 @@ void Chunk::removeBlock(const glm::vec3 block_pos)
     };
     for (const auto& offset : offsets)
     {
-        const glm::vec3 neighbor = block_pos + offset;
-        // Check (1) already exists, (2) is not visible, and (3) not a neighboring edge block from a different chunk.
-        if ((*blockMap).contains(neighbor) && !visibleBlocks.contains(neighbor) && checkInChunkBounds(neighbor))
+        const glm::vec3 neighbor = global_pos + offset;
+        // Check (1) not a edge block, (2) already exists, and (3) is not visible.
+        if (checkInChunkBounds(neighbor) && checkBlockExist(neighbor) && !visibleBlocks.contains(neighbor))
         {
             visibleBlocks.emplace(neighbor);
         }
     }
 
     // Delete the block.
-    visibleBlocks.erase(block_pos);
-    blockMap->erase(block_pos);
+    visibleBlocks.erase(global_pos);
+    resetBlock(global_pos);
+
+    // Delete the container if there are no more blocks in this chunk.
+    if (blockCount == 0)
+    {
+        blocks.reset();
+    }
 
     // TODO: utilize block pos to redo mesh.
     generateMesh();
@@ -334,7 +405,7 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
         glm::ivec3 curr_face_entered{};
         const bool intersected = CollisionHandler::rayShapeIntersect(
             ray,
-            ((*blockMap)[block_pos]).getCollisionShape(),
+            getBlock(block_pos)->getCollisionShape(),
             &t_min,
             nullptr,
             &curr_face_entered);

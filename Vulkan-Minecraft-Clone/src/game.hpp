@@ -9,7 +9,7 @@ class Game
   private:
     static const int CHUNK_SIZE = 16;
     inline static const glm::vec3 DEFAULT_PLAYER_POS{0.0f};
-    static const int DEFAULT_PLAYER_RENDER_DISTANCE = 4;
+    static const int DEFAULT_PLAYER_RENDER_DISTANCE = 10;
 
     Window window;
     Renderer renderer{window};
