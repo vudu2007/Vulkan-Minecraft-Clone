@@ -47,7 +47,7 @@ void Player::pollKeyboardControls()
 
     if (player_moved)
     {
-        // world.updateChunks(getPosition(), getRenderDistance());
+        world.updateChunks(getPosition(), getRenderDistance());
         reach.setOrigin(position + camera.getEye()); // TODO:
     }
 }

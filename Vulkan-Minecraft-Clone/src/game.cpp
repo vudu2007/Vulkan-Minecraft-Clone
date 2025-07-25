@@ -84,7 +84,7 @@ void Game::run()
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
         // Update instance data.
-        // updateTerrain();
+        updateTerrain();
 
         player.processInput();
         renderer.drawFrame();

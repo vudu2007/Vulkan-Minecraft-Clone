@@ -297,8 +297,8 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
 
 void Chunk::addBlock(const glm::vec3& global_pos)
 {
-    // Ignore if it isn't in edge bounds or if it already exist.
-    if (!checkInEdgeBounds(global_pos) || checkBlockExist(global_pos))
+    // Ignore if it isn't in edge bounds, or if it already exist in a non-empty chunk.
+    if (!checkInEdgeBounds(global_pos) || ((blockCount > 0) && checkBlockExist(global_pos)))
     {
         return;
     }
