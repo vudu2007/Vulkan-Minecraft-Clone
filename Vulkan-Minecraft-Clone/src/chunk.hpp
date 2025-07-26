@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -24,6 +25,7 @@ class Chunk
     // Edge blocks refer to blocks in neighboring chunks.
     static constexpr int EDGE_OFFSET = 2;
 
+    static constexpr glm::vec3 COLOR_DEFAULT{1.0f};
     static constexpr glm::vec3 COLOR_GRASS{0.349f, 0.651f, 0.290f};
     static constexpr glm::vec3 COLOR_DIRT{0.396f, 0.263f, 0.129f};
     static constexpr glm::vec3 COLOR_STONE{0.439f, 0.502f, 0.565f};
@@ -31,6 +33,22 @@ class Chunk
     static constexpr int SEA_LEVEL = 0;
     static constexpr int HEIGHT_RANGE = 100;
     static constexpr int HEIGHT_OFFSET = -50;
+
+    enum BlockType
+    {
+        DEFAULT,
+        GRASS,
+        DIRT,
+        STONE,
+        SAND,
+    };
+    static inline const std::unordered_map<BlockType, std::shared_ptr<Block>> AVAILABLE_BLOCKS = {
+        {BlockType::DEFAULT, std::make_shared<Block>(COLOR_DEFAULT)},
+        {BlockType::GRASS,   std::make_shared<Block>(COLOR_GRASS)  },
+        {BlockType::DIRT,    std::make_shared<Block>(COLOR_DIRT)   },
+        {BlockType::STONE,   std::make_shared<Block>(COLOR_STONE)  },
+        {BlockType::SAND,    std::make_shared<Block>(COLOR_SAND)   },
+    };
 
     ChunkCenter center;
     int size;
@@ -57,7 +75,7 @@ class Chunk
     std::shared_ptr<Block> getBlock(const glm::vec3& global_pos) const;
     glm::vec3 getLocalPos(const glm::vec3& global_pos) const;
 
-    void generateBlock(const glm::vec3& global_pos, const Block& block);
+    void generateBlock(const glm::vec3& global_pos, const BlockType type);
     void resetBlock(const glm::vec3& global_pos);
 
     bool checkBlockExist(const glm::vec3& global_pos) const;

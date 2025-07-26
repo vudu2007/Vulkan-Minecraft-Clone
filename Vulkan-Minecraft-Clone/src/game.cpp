@@ -27,7 +27,6 @@ void Game::updateTerrain()
 void Game::run()
 {
     Texture* block_texture_ptr = renderer.createTexture("src/textures/cube_texture.jpg");
-    Model block_model("src/models/cube.obj");
 
     // TODO: main thread should do something else instead of busy wait.
     while (world.getActiveChunks().empty())
@@ -84,7 +83,7 @@ void Game::run()
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
         // Update instance data.
-        updateTerrain();
+        // updateTerrain();
 
         player.processInput();
         renderer.drawFrame();

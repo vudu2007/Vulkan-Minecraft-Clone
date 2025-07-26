@@ -1,5 +1,4 @@
-#ifndef VMC_SRC_GAME_HPP
-#define VMC_SRC_GAME_HPP
+#pragma once
 
 #include "engine/renderer/renderer.hpp"
 #include "player.hpp"
@@ -7,9 +6,9 @@
 class Game
 {
   private:
-    static const int CHUNK_SIZE = 16;
-    inline static const glm::vec3 DEFAULT_PLAYER_POS{0.0f};
-    static const int DEFAULT_PLAYER_RENDER_DISTANCE = 4;
+    static constexpr int CHUNK_SIZE = 16;
+    static constexpr glm::vec3 DEFAULT_PLAYER_POS{0.0f};
+    static constexpr int DEFAULT_PLAYER_RENDER_DISTANCE = 8;
 
     Window window;
     Renderer renderer{window};
@@ -22,5 +21,3 @@ class Game
   public:
     void run();
 };
-
-#endif // VMC_SRC_GAME_HPP

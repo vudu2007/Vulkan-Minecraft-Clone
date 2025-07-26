@@ -22,18 +22,8 @@ layout(binding = 0) uniform UniformBufferObject
 void main()
 {
     gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPos, 1.0);
-    
-    // TODO: temp; this is for visible chunk borders.
-    if (mod(inPos.x, 16.0) == 7.5 || mod(inPos.z, 16.0) == 7.5)
-    {
-        outFragColor = inColor * 0.2;
-    }
-    else
-    {
-        outFragColor = inColor;
-    }
-    
+    outFragColor = inColor;
     outfragTexCoord = inTexCoord;
-    outNormal = mat3(transpose(inverse(ubo.model))) * inNormal;  
+    outNormal = mat3(transpose(inverse(ubo.model))) * inNormal;
     outFragPos = vec3(ubo.model * vec4(inPos, 1.0));
 }

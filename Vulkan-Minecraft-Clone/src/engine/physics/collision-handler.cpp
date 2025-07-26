@@ -30,17 +30,11 @@ bool CollisionHandler::rayBox3dIntersect(
         const float inv_ray_d_component = 1.0f / ray_d[i]; // Handles -0 vs 0.
 
         // Depending on the ray's direction, the `t_min` could be `>` than `t_max`.
-        float next_t_min;
-        float next_t_max;
-        if (inv_ray_d_component >= 0)
+        float next_t_min = (min_bounds[i] - ray_o[i]) * inv_ray_d_component;
+        float next_t_max = (max_bounds[i] - ray_o[i]) * inv_ray_d_component;
+        if (inv_ray_d_component < 0)
         {
-            next_t_min = (min_bounds[i] - ray_o[i]) * inv_ray_d_component;
-            next_t_max = (max_bounds[i] - ray_o[i]) * inv_ray_d_component;
-        }
-        else
-        {
-            next_t_min = (max_bounds[i] - ray_o[i]) * inv_ray_d_component;
-            next_t_max = (min_bounds[i] - ray_o[i]) * inv_ray_d_component;
+            std::swap(next_t_min, next_t_max);
         }
 
         t_max = std::min(t_max, next_t_max);

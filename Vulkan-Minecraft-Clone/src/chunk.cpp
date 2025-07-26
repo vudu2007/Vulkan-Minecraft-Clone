@@ -31,10 +31,10 @@ glm::vec3 Chunk::getLocalPos(const glm::vec3& global_pos) const
     return global_pos - (minBounds - glm::vec3(EDGE_OFFSET));
 }
 
-void Chunk::generateBlock(const glm::vec3& global_pos, const Block& block)
+void Chunk::generateBlock(const glm::vec3& global_pos, const BlockType type)
 {
     const glm::uvec3 local_pos = static_cast<glm::uvec3>(getLocalPos(global_pos));
-    (*blocks)[local_pos.x][local_pos.y][local_pos.z] = std::make_shared<Block>(block);
+    (*blocks)[local_pos.x][local_pos.y][local_pos.z] = AVAILABLE_BLOCKS.at(type);
     ++blockCount;
 }
 
@@ -250,21 +250,21 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
             {
                 glm::vec3 block_pos(x, y, z);
 
-                glm::vec3 block_color = COLOR_GRASS;
+                BlockType block_type = BlockType::GRASS;
                 if (y < global_height - 3)
                 {
-                    block_color = COLOR_STONE;
+                    block_type = BlockType::STONE;
                 }
                 else if (y <= SEA_LEVEL && global_height <= SEA_LEVEL)
                 {
-                    block_color = COLOR_SAND;
+                    block_type = BlockType::SAND;
                 }
                 else if (y < global_height)
                 {
-                    block_color = COLOR_DIRT;
+                    block_type = BlockType::DIRT;
                 }
 
-                generateBlock(block_pos, {block_pos, block_color});
+                generateBlock(block_pos, block_type);
             }
         }
     }
@@ -310,7 +310,7 @@ void Chunk::addBlock(const glm::vec3& global_pos)
     }
 
     // Add the block.
-    generateBlock(global_pos, {global_pos, glm::vec3(1.0f)});
+    generateBlock(global_pos, BlockType::DEFAULT);
 
     // Update neighboring blocks.
     // Check if the neighbors are now fully enclosed.
@@ -405,7 +405,7 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
         glm::ivec3 curr_face_entered{};
         const bool intersected = CollisionHandler::rayShapeIntersect(
             ray,
-            getBlock(block_pos)->getCollisionShape(),
+            Box3d(glm::vec3(block_pos) - glm::vec3(0.5f), glm::vec3(block_pos) + glm::vec3(0.5f)),
             &t_min,
             nullptr,
             &curr_face_entered);

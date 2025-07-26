@@ -9,8 +9,8 @@ class Texture
     const Device& device;
 
     uint32_t mipLevels = 0;
+    VmaAllocation allocation = VK_NULL_HANDLE;
     VkImage image = VK_NULL_HANDLE;
-    VkDeviceMemory imageMemory = VK_NULL_HANDLE;
     VkImageView imageView = VK_NULL_HANDLE;
     VkSampler sampler = VK_NULL_HANDLE;
 

@@ -6,13 +6,14 @@
 #include <stb_image.h>
 
 #include <cmath>
+#include <sstream>
 #include <stdexcept>
 
 void Texture::createImage(const std::string& texture_file_path)
 {
     int tex_width, tex_height, tex_channels;
     stbi_uc* pixels = stbi_load(texture_file_path.c_str(), &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-    VkDeviceSize image_size = tex_width * tex_height * 4; // 4 bytes per pixel.
+    VkDeviceSize image_size = static_cast<VkDeviceSize>(tex_width) * tex_height * 4; // 4 bytes per pixel.
 
     mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tex_width, tex_height)))) + 1;
 
@@ -41,6 +42,10 @@ void Texture::createImage(const std::string& texture_file_path)
 
     stbi_image_free(pixels);
 
+    VmaAllocationCreateInfo alloc_info{};
+    alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+    alloc_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
     // Create texture image.
     VkImageCreateInfo image_info{};
     image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -56,24 +61,14 @@ void Texture::createImage(const std::string& texture_file_path)
     image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     image_info.samples = VK_SAMPLE_COUNT_1_BIT;
     image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    if (vkCreateImage(device.getLogicalDevice(), &image_info, nullptr, &image) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create image!");
-    }
 
-    VkMemoryRequirements mem_requirements;
-    vkGetImageMemoryRequirements(device.getLogicalDevice(), image, &mem_requirements);
-    VkMemoryAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    alloc_info.allocationSize = mem_requirements.size;
-    alloc_info.memoryTypeIndex =
-        device.findMemoryType(mem_requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (vkAllocateMemory(device.getLogicalDevice(), &alloc_info, nullptr, &imageMemory) != VK_SUCCESS)
+    const VkResult res = vmaCreateImage(device.getAllocator(), &image_info, &alloc_info, &image, &allocation, nullptr);
+    if (res != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to allocate image memory!");
+        std::stringstream err;
+        err << "failed to create image! code: " << res;
+        throw std::runtime_error(err.str());
     }
-
-    vkBindImageMemory(device.getLogicalDevice(), image, imageMemory, 0);
 
     // Prepare image for copying into.
     device.transitionImageLayout(
@@ -159,8 +154,7 @@ Texture::~Texture()
 {
     vkDestroySampler(device.getLogicalDevice(), sampler, nullptr);
     vkDestroyImageView(device.getLogicalDevice(), imageView, nullptr);
-    vkDestroyImage(device.getLogicalDevice(), image, nullptr);
-    vkFreeMemory(device.getLogicalDevice(), imageMemory, nullptr);
+    vmaDestroyImage(device.getAllocator(), image, allocation);
 }
 
 const VkImageView Texture::getImageView() const
