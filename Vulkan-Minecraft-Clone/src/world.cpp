@@ -20,6 +20,15 @@ const ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
     return ChunkCenter(x, y, z);
 }
 
+void World::runChunksChangedCallbacks()
+{
+    std::lock_guard<std::mutex> lock(activeChunksMutex);
+    for (const auto& callback : chunksChangedCallbacks)
+    {
+        callback();
+    }
+}
+
 World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
     : terrainHeightNoise(seed), seed(seed), chunkSize(chunk_size)
 {
@@ -111,6 +120,8 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
             chunksToAdd.erase(cc);
         }
     }
+
+    runChunksChangedCallbacks();
 }
 
 unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
@@ -202,6 +213,7 @@ void World::addBlock(const glm::vec3 block_pos)
         ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
         activeChunks[cc]->addBlock(block_pos);
     }
+    runChunksChangedCallbacks();
 }
 
 void World::removeBlock(const glm::vec3 block_pos)
@@ -221,6 +233,17 @@ void World::removeBlock(const glm::vec3 block_pos)
         ChunkCoord cc = chunkCenterToChunkCoord(chunk_center);
         activeChunks[cc]->removeBlock(block_pos);
     }
+    runChunksChangedCallbacks();
+}
+
+void World::addChunksChangedCallback(const std::function<void()>& callback)
+{
+    chunksChangedCallbacks.push_back(callback);
+}
+
+void World::clearChunksChangedCallbacks()
+{
+    chunksChangedCallbacks.clear();
 }
 
 const std::vector<Chunk*> World::getActiveChunks() const

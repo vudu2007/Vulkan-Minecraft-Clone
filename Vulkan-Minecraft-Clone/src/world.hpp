@@ -29,7 +29,11 @@ class World
     const ChunkCoord chunkCenterToChunkCoord(const ChunkCenter& chunk_center) const;
     const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
+    void runChunksChangedCallbacks();
+
   public:
+    std::vector<std::function<void()>> chunksChangedCallbacks;
+
     World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius);
     ~World();
 
@@ -40,6 +44,9 @@ class World
 
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
+
+    void addChunksChangedCallback(const std::function<void()>& callback);
+    void clearChunksChangedCallbacks();
 
     const std::vector<Chunk*> getActiveChunks() const;
     const Model getModel() const;

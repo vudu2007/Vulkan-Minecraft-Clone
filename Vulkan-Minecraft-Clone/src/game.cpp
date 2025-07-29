@@ -33,6 +33,8 @@ void Game::run()
     {
     }
 
+    world.addChunksChangedCallback([this] { updateTerrain(); });
+
     const auto world_model = world.getModel();
     const auto& world_vertices = world_model.getVertices();
     const auto& world_indices = world_model.getIndices();
