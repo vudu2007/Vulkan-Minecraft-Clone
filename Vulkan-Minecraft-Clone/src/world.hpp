@@ -14,7 +14,7 @@ class World
 {
   private:
     std::mutex activeChunksMutex;
-    std::unordered_set<ChunkCoord> chunksToAdd;
+    std::unordered_set<ChunkCenter> chunksToAdd;
 
     FastNoiseLite terrainHeightNoise;
     unsigned seed;
@@ -23,17 +23,16 @@ class World
     // TODO: currently, a cache of chunks; will probably need an eviction policy to save memory;
     // maybe don't cache chunks at all and store world data in persistant memory and load them when needed;
     // maybe use a combination where inactive cached chunks are written to persistent memory.
-    std::unordered_map<ChunkCoord, Chunk*> chunks;
-    std::unordered_map<ChunkCoord, Chunk*> activeChunks;
+    std::unordered_map<ChunkCenter, Chunk*> chunks;
+    std::unordered_map<ChunkCenter, Chunk*> activeChunks;
 
-    const ChunkCoord chunkCenterToChunkCoord(const ChunkCenter& chunk_center) const;
+    std::vector<std::function<void()>> chunksChangedCallbacks;
+
     const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
     void runChunksChangedCallbacks();
 
   public:
-    std::vector<std::function<void()>> chunksChangedCallbacks;
-
     World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius);
     ~World();
 

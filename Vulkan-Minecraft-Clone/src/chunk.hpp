@@ -14,7 +14,6 @@
 #include <unordered_set>
 #include <vector>
 
-using ChunkCoord = glm::vec3; // Center position of chunk floored as a string.
 using ChunkCenter = glm::vec3;
 
 class Chunk
