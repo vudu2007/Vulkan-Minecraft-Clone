@@ -111,6 +111,7 @@ class Model
     std::vector<glm::vec3> normals;
 
   public:
+    Model() = default;
     Model(const std::string model_file_path, const float scale = 1.0f);
     Model(const std::vector<Vertex>& vertices, const std::vector<Index>& indices);
 

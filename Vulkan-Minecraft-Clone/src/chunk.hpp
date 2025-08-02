@@ -58,8 +58,7 @@ class Chunk
     glm::vec3 maxBounds;
 
     // Mesh info.
-    std::vector<Model::Vertex> vertices;
-    std::vector<Model::Index> indices;
+    Model model;
 
     // Contains blocks in this chunk and edge blocks of neighboring chunks.
     // Will keep edge blocks up-to-date with neighbors based on player's interaction with the world.
@@ -92,6 +91,6 @@ class Chunk
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
 
-    const std::vector<Model::Vertex> getVertices() const;
-    const std::vector<Model::Index> getIndices() const;
+    ChunkCenter getCenter() const;
+    const Model& getModel() const;
 };

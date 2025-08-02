@@ -253,18 +253,21 @@ const Model World::getModel() const
     size_t indices_size = 0;
     for (const auto& chunk_info : activeChunks)
     {
-        vertices_size += chunk_info.second->getVertices().size();
-        indices_size += chunk_info.second->getIndices().size();
+        const Model& chunk_model = chunk_info.second->getModel();
+        vertices_size += chunk_model.getVertices().size();
+        indices_size += chunk_model.getIndices().size();
     }
     vertices.reserve(vertices_size);
     indices.reserve(indices_size);
     Model::Index accum = 0;
     for (const auto& chunk_info : activeChunks)
     {
-        const auto chunk_vertices = chunk_info.second->getVertices();
+        const Model& chunk_model = chunk_info.second->getModel();
+
+        const auto chunk_vertices = chunk_model.getVertices();
         vertices.insert(vertices.end(), chunk_vertices.begin(), chunk_vertices.end());
 
-        auto chunk_indices = chunk_info.second->getIndices();
+        auto chunk_indices = chunk_model.getIndices();
         for (auto& chunk_index : chunk_indices)
         {
             chunk_index += accum;

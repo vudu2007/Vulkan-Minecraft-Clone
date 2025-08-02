@@ -92,8 +92,8 @@ bool Chunk::checkInEdgeBounds(const glm::vec3& global_pos) const
 
 void Chunk::generateMesh()
 {
-    vertices.clear();
-    indices.clear();
+    std::vector<Model::Vertex> vertices;
+    std::vector<Model::Index> indices;
 
     // Iterate through the visible blocks to generate visible faces.
     constexpr std::array<glm::vec3, 6> offsets = {
@@ -200,6 +200,8 @@ void Chunk::generateMesh()
         indices.emplace_back(i + 3);
         indices.emplace_back(i);
     }
+
+    model = Model(vertices, indices);
 }
 
 Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size)
@@ -424,12 +426,12 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
     return reachable_block_pos;
 }
 
-const std::vector<Model::Vertex> Chunk::getVertices() const
+ChunkCenter Chunk::getCenter() const
 {
-    return vertices;
+    return center;
 }
 
-const std::vector<Model::Index> Chunk::getIndices() const
+const Model& Chunk::getModel() const
 {
-    return indices;
+    return model;
 }
