@@ -15,24 +15,46 @@ const ChunkCenter World::posToChunkCenter(const glm::vec3& pos) const
     return ChunkCenter(x, y, z);
 }
 
-void World::runChunksChangedCallbacks()
+void World::runChunkLoadedCallbacks(const Chunk& chunk)
 {
-    std::lock_guard<std::mutex> lock(activeChunksMutex);
-    for (const auto& callback : chunksChangedCallbacks)
+    for (const auto& callback : chunkLoadedCallbacks)
     {
-        callback();
+        callback(chunk);
     }
 }
 
-World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius)
-    : terrainHeightNoise(seed), seed(seed), chunkSize(chunk_size)
+void World::runChunkUnloadedCallbacks(const Chunk& chunk)
+{
+    for (const auto& callback : chunkUnloadedCallbacks)
+    {
+        callback(chunk);
+    }
+}
+
+bool World::isChunkActive(const ChunkCenter& cc) const
+{
+    return activeChunks.contains(cc) && (activeChunks.at(cc) != nullptr);
+}
+
+World::World(const unsigned seed, const int chunk_size) : terrainHeightNoise(seed), seed(seed), chunkSize(chunk_size)
 {
     // Set up noises.
     terrainHeightNoise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
     terrainHeightNoise.SetFractalType(FastNoiseLite::FractalType_FBm);
     terrainHeightNoise.SetFractalOctaves(5);
     terrainHeightNoise.SetFractalWeightedStrength(1.5f);
+}
 
+World::~World()
+{
+    for (auto& chunk : chunks)
+    {
+        free(chunk.second);
+    }
+}
+
+void World::init(const glm::vec3& origin, const unsigned radius)
+{
     std::cout << ">>> Loading world with seed (" << seed << ")..." << std::endl;
 
     const unsigned total_num_chunks = updateChunks(origin, radius);
@@ -51,17 +73,9 @@ World::World(const unsigned seed, const int chunk_size, const glm::vec3& origin,
     std::cout << ">>> Finished loading world!" << std::endl;
 }
 
-World::~World()
-{
-    for (auto& chunk : chunks)
-    {
-        free(chunk.second);
-    }
-}
-
 std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* face_entered)
 {
-    std::lock_guard<std::mutex> lock(activeChunksMutex);
+    std::lock_guard<std::mutex> lock(updateChunksMutex);
 
     std::optional<glm::vec3> reachable_block_pos;
 
@@ -69,7 +83,7 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* fa
 
     // Check the chunk that contains the ray's origin (the player's position).
     const ChunkCenter cc = posToChunkCenter(ray.getOrigin());
-    if (activeChunks.contains(cc))
+    if (isChunkActive(cc))
     {
         reachable_block_pos = activeChunks[cc]->getReachableBlock(ray, face_entered);
     }
@@ -84,7 +98,7 @@ std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* fa
     {
         return reachable_block_pos;
     }
-    if (activeChunks.contains(next_cc))
+    if (isChunkActive(next_cc))
     {
         reachable_block_pos = activeChunks[next_cc]->getReachableBlock(ray, face_entered);
     }
@@ -102,17 +116,17 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
             continue;
         }
 
-        Chunk* chunk = new Chunk{terrainHeightNoise, chunk_center, chunkSize};
+        Chunk* chunk = new Chunk(terrainHeightNoise, chunk_center, chunkSize);
 
         {
-            std::lock_guard<std::mutex> lock(activeChunksMutex);
+            std::lock_guard<std::mutex> lock(updateChunksMutex);
             chunks.emplace(chunk_center, chunk);
             activeChunks.emplace(chunk_center, chunks[chunk_center]);
             chunksToAdd.erase(chunk_center);
         }
-    }
 
-    runChunksChangedCallbacks();
+        runChunkLoadedCallbacks(*chunks[chunk_center]);
+    }
 }
 
 unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
@@ -129,7 +143,6 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
     }
 
     std::vector<ChunkCenter> chunk_centers;
-    bool add_chunks = false;
 
     float x = origin.x - offset;
     for (int i = 0; i <= (render_distance * 2); ++i)
@@ -146,17 +159,20 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
                 {
                     if (!chunks.contains(cc))
                     {
-                        // Create the chunk asynchrounously and add it later.
                         if (!chunksToAdd.contains(cc))
                         {
+                            // Create the chunk asynchrounously and add it later.
                             chunksToAdd.emplace(cc);
                             chunk_centers.emplace_back(cc);
-                            add_chunks = true;
-                        }
+                        } // Else, do nothing.
                     }
                     else
                     {
                         activeChunks.emplace(cc, chunks[cc]);
+                        if (isChunkActive(cc))
+                        {
+                            runChunkLoadedCallbacks(*activeChunks[cc]);
+                        }
                     }
                 }
                 z += chunkSize;
@@ -166,7 +182,7 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
         x += chunkSize;
     }
 
-    if (add_chunks)
+    if (!chunk_centers.empty())
     {
         // Give a batch of chunks to a single async thread to process.
         // TODO: use thread pool to avoid overhead.
@@ -174,11 +190,15 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
     }
 
     {
-        std::lock_guard<std::mutex> lock(activeChunksMutex);
+        std::lock_guard<std::mutex> lock(updateChunksMutex);
 
         // Remove now inactive chunks.
         for (const auto& cc : inactive_chunks)
         {
+            if (isChunkActive(cc))
+            {
+                runChunkUnloadedCallbacks(*activeChunks[cc]);
+            }
             activeChunks.erase(cc);
         }
     }
@@ -200,9 +220,12 @@ void World::addBlock(const glm::vec3 block_pos)
     for (const auto& offset : offsets)
     {
         const ChunkCenter cc = posToChunkCenter(block_pos + offset);
-        activeChunks[cc]->addBlock(block_pos);
+        if (isChunkActive(cc))
+        {
+            activeChunks[cc]->addBlock(block_pos);
+            runChunkLoadedCallbacks(*activeChunks[cc]);
+        }
     }
-    runChunksChangedCallbacks();
 }
 
 void World::removeBlock(const glm::vec3 block_pos)
@@ -219,19 +242,32 @@ void World::removeBlock(const glm::vec3 block_pos)
     for (const auto& offset : offsets)
     {
         const ChunkCenter cc = posToChunkCenter(block_pos + offset);
-        activeChunks[cc]->removeBlock(block_pos);
+        if (isChunkActive(cc))
+        {
+            activeChunks[cc]->removeBlock(block_pos);
+            runChunkLoadedCallbacks(*activeChunks[cc]);
+        }
     }
-    runChunksChangedCallbacks();
 }
 
-void World::addChunksChangedCallback(const std::function<void()>& callback)
+void World::addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback)
 {
-    chunksChangedCallbacks.push_back(callback);
+    chunkLoadedCallbacks.push_back(callback);
 }
 
-void World::clearChunksChangedCallbacks()
+void World::clearChunkLoadedCallbacks()
 {
-    chunksChangedCallbacks.clear();
+    chunkLoadedCallbacks.clear();
+}
+
+void World::addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback)
+{
+    chunkUnloadedCallbacks.push_back(callback);
+}
+
+void World::clearChunkUnloadedCallbacks()
+{
+    chunkUnloadedCallbacks.clear();
 }
 
 const std::vector<Chunk*> World::getActiveChunks() const

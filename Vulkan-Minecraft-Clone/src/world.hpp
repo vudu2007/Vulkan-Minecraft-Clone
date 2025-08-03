@@ -13,7 +13,7 @@
 class World
 {
   private:
-    std::mutex activeChunksMutex;
+    std::mutex updateChunksMutex;
     std::unordered_set<ChunkCenter> chunksToAdd;
 
     FastNoiseLite terrainHeightNoise;
@@ -26,15 +26,22 @@ class World
     std::unordered_map<ChunkCenter, Chunk*> chunks;
     std::unordered_map<ChunkCenter, Chunk*> activeChunks;
 
+    std::vector<std::function<void(const Chunk&)>> chunkLoadedCallbacks;
+    std::vector<std::function<void(const Chunk&)>> chunkUnloadedCallbacks;
     std::vector<std::function<void()>> chunksChangedCallbacks;
 
     const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
-    void runChunksChangedCallbacks();
+    void runChunkLoadedCallbacks(const Chunk& chunk);
+    void runChunkUnloadedCallbacks(const Chunk& chunk);
+
+    bool isChunkActive(const ChunkCenter& cc) const;
 
   public:
-    World(const unsigned seed, const int chunk_size, const glm::vec3& origin, const unsigned radius);
+    World(const unsigned seed, const int chunk_size);
     ~World();
+
+    void init(const glm::vec3& origin, const unsigned radius);
 
     std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
 
@@ -44,8 +51,11 @@ class World
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
 
-    void addChunksChangedCallback(const std::function<void()>& callback);
-    void clearChunksChangedCallbacks();
+    void addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback);
+    void clearChunkLoadedCallbacks();
+
+    void addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback);
+    void clearChunkUnloadedCallbacks();
 
     const std::vector<Chunk*> getActiveChunks() const;
     const Model getModel() const;

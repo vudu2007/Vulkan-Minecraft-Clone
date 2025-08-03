@@ -11,82 +11,92 @@ struct LightingInfo
     alignas(16) glm::vec3 viewPos;
 };
 
-void Game::updateTerrain()
-{
-    const auto world_model = world.getModel();
-    const auto& world_vertices = world_model.getVertices();
-    const auto& world_indices = world_model.getIndices();
-
-    {
-        std::lock_guard<std::mutex> lock(updateMutex);
-
-        renderer.updateVertexBuffer(0, world_vertices.data(), sizeof(world_vertices[0]), world_vertices.size());
-        renderer.updateIndexBuffer(0, 0, world_indices.data(), sizeof(world_indices[0]), world_indices.size());
-    }
-}
-
 void Game::loadChunkModel(const Chunk& chunk)
 {
-    // const ChunkCenter cc = chunk.getCenter();
-    // const Model& chunk_model = chunk.getModel();
+    std::lock_guard<std::mutex> lock(updateMutex);
 
-    // const auto& chunk_vertices = chunk_model.getVertices();
-    // if (chunkToVertexIdx.contains(cc))
-    //{
-    //     renderer.updateVertexBuffer(
-    //         chunkToVertexIdx[cc],
-    //         chunk_vertices.data(),
-    //         sizeof(chunk_vertices[0]),
-    //         chunk_vertices.size());
-    // }
-    // else
-    //{
-    //     chunkToVertexIdx[cc] = renderer.addVertexBuffer(
-    //         chunk_vertices.data(),
-    //         sizeof(chunk_vertices[0]),
-    //         chunk_vertices.size(),
-    //         static_cast<size_t>(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE));
-    // }
+    const ChunkCenter cc = chunk.getCenter();
+    const Model& chunk_model = chunk.getModel();
 
-    // const auto& chunk_indices = chunk_model.getIndices();
-    // renderer
-    //     .updateIndexBuffer(chunkToVertexIdx[cc], chunk_indices.data(), sizeof(chunk_indices[0]),
-    //     chunk_indices.size());
+    const auto& chunk_vertices = chunk_model.getVertices();
+    const auto& chunk_indices = chunk_model.getIndices();
+
+    // Ignore if an empty (no model) chunk.
+    if (chunk_vertices.empty() || chunk_indices.empty())
+    {
+        return;
+    }
+
+    if (chunkToVertexBufferId.contains(cc)) // Chunk already present, so update it.
+    {
+        const unsigned id = chunkToVertexBufferId[cc];
+
+        renderer.updateVertexBuffer(
+            chunkToVertexBufferId[cc],
+            chunk_vertices.data(),
+            sizeof(chunk_vertices[0]),
+            chunk_vertices.size());
+
+        renderer.updateIndexBuffer(id, 0, chunk_indices.data(), sizeof(chunk_indices[0]), chunk_indices.size());
+    }
+    else // Chunk not present, so add it.
+    {
+        // Figure out vertex buffer id.
+        unsigned id;
+        if (reusableIds.empty())
+        {
+            id = chunkToVertexBufferId.size();
+        }
+        else
+        {
+            id = reusableIds.top();
+            reusableIds.pop();
+        }
+        chunkToVertexBufferId[cc] = id;
+
+        renderer.addVertexBuffer(
+            id,
+            chunk_vertices.data(),
+            sizeof(chunk_vertices[0]),
+            chunk_vertices.size(),
+            static_cast<size_t>(MAX_NUM_BLOCKS_IN_CHUNK));
+
+        // Max number of indices = MAX_NUM_BLOCKS_IN_CHUNK * 6 faces per block * 6 indices per face
+        renderer.addIndexBuffer(
+            id,
+            0,
+            chunk_indices.data(),
+            sizeof(chunk_indices[0]),
+            chunk_indices.size(),
+            static_cast<size_t>(MAX_NUM_BLOCKS_IN_CHUNK) * 36);
+    }
 }
 
 void Game::unloadChunkModel(const Chunk& chunk)
 {
-    // const ChunkCenter cc = chunk.getCenter();
+    std::lock_guard<std::mutex> lock(updateMutex);
+
+    const ChunkCenter cc = chunk.getCenter();
+
+    if (!chunkToVertexBufferId.contains(cc))
+    {
+        return; // Ignore this chunk since it isn't loaded, e.g. empty chunks.
+    }
+
+    const unsigned id = chunkToVertexBufferId[cc];
+    renderer.removeVertexBuffer(id);
+    chunkToVertexBufferId.erase(cc);
+    reusableIds.push(id);
 }
 
 void Game::run()
 {
-    Texture* block_texture_ptr = renderer.createTexture("src/textures/cube_texture.jpg");
+    Texture* block_texture_ptr = renderer.createTexture("../../Vulkan-Minecraft-Clone/src/textures/cube_texture.jpg");
 
-    // TODO: main thread should do something else instead of busy wait.
-    while (world.getActiveChunks().empty())
-    {
-    }
-
-    world.addChunksChangedCallback([this] { updateTerrain(); });
-
-    const auto world_model = world.getModel();
-    const auto& world_vertices = world_model.getVertices();
-    const auto& world_indices = world_model.getIndices();
-
-    renderer.addVertexBuffer(
-        0,
-        world_vertices.data(),
-        sizeof(world_vertices[0]),
-        world_vertices.size(),
-        10000000); // TODO
-    renderer.addIndexBuffer(
-        0,
-        0,
-        world_indices.data(),
-        sizeof(world_indices[0]),
-        world_indices.size(),
-        10000000); // TODO
+    world.addChunkLoadedCallback([this](const Chunk& chunk) { loadChunkModel(chunk); });
+    world.addChunkUnloadedCallback([this](const Chunk& chunk) { unloadChunkModel(chunk); });
+    world.init(DEFAULT_PLAYER_POS, DEFAULT_PLAYER_RENDER_DISTANCE);
+    std::cout << "Number of vertex buffers in use = " << chunkToVertexBufferId.size() << std::endl;
 
     const unsigned ubo_idx_transforms =
         renderer.addUniformBuffer(0, sizeof(Model::UniformBufferObject), VK_SHADER_STAGE_VERTEX_BIT);

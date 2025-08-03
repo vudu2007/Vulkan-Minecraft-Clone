@@ -316,8 +316,8 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) c
 void Renderer::createGraphicsPipeline()
 {
     // Load the shaders.
-    auto vert_shader_code = VmcUtility::readFile("src/shaders/shader_block_vert.spv");
-    auto frag_shader_code = VmcUtility::readFile("src/shaders/shader_block_frag.spv");
+    auto vert_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/src/shaders/shader_block_vert.spv");
+    auto frag_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/src/shaders/shader_block_frag.spv");
     VkShaderModule vert_shader_module = createShaderModule(vert_shader_code);
     VkShaderModule frag_shader_module = createShaderModule(frag_shader_code);
 
@@ -958,8 +958,6 @@ Renderer::IndexBufferInfo::IndexBufferInfo(const IndexBufferInfo& other)
 
 Renderer::IndexBufferInfo::IndexBufferInfo(IndexBufferInfo&& other) noexcept
 {
-    // TODO.
-    std::cout << "\tIndexBufferInfo move constructor!" << std::endl;
     count = other.count;
     pBuffer = std::move(other.pBuffer);
     type = other.type;
