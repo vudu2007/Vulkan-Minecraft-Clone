@@ -121,11 +121,15 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
         {
             std::lock_guard<std::mutex> lock(updateChunksMutex);
             chunks.emplace(chunk_center, chunk);
-            activeChunks.emplace(chunk_center, chunks[chunk_center]);
             chunksToAdd.erase(chunk_center);
-        }
 
-        runChunkLoadedCallbacks(*chunks[chunk_center]);
+            // Check if the chunk is still active; if so, add it.
+            if (activeChunks.contains(chunk_center))
+            {
+                activeChunks[chunk_center] = chunks[chunk_center];
+                runChunkLoadedCallbacks(*chunks[chunk_center]);
+            }
+        }
     }
 }
 
@@ -164,15 +168,16 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
                             // Create the chunk asynchrounously and add it later.
                             chunksToAdd.emplace(cc);
                             chunk_centers.emplace_back(cc);
-                        } // Else, do nothing.
+                        }
+
+                        // Make sure the chunk is marked as active even if it hasn't loaded.
+                        activeChunks.emplace(cc, nullptr);
                     }
                     else
                     {
+                        // Chunk already exist, so load it.
                         activeChunks.emplace(cc, chunks[cc]);
-                        if (isChunkActive(cc))
-                        {
-                            runChunkLoadedCallbacks(*activeChunks[cc]);
-                        }
+                        runChunkLoadedCallbacks(*activeChunks[cc]);
                     }
                 }
                 z += chunkSize;
