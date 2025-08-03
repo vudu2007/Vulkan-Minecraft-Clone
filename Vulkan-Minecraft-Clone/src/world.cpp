@@ -264,10 +264,10 @@ const Model World::getModel() const
     {
         const Model& chunk_model = chunk_info.second->getModel();
 
-        const auto chunk_vertices = chunk_model.getVertices();
+        const auto& chunk_vertices = chunk_model.getVertices();
         vertices.insert(vertices.end(), chunk_vertices.begin(), chunk_vertices.end());
 
-        auto chunk_indices = chunk_model.getIndices();
+        std::vector<Model::Index> chunk_indices = chunk_model.getIndices();
         for (auto& chunk_index : chunk_indices)
         {
             chunk_index += accum;

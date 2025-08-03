@@ -36,12 +36,17 @@ class Renderer
     // Buffers.
     struct IndexBufferInfo
     {
-        unsigned vertexBufferIdx; // Associated vertex buffer information for these indices.
         size_t count = 0;
         std::unique_ptr<Buffer> pBuffer;
         VkIndexType type = VK_INDEX_TYPE_UINT32; // TODO
+
+        IndexBufferInfo() = default;
+        IndexBufferInfo(size_t count, std::unique_ptr<Buffer> pBuffer, VkIndexType type = VK_INDEX_TYPE_UINT32);
+        IndexBufferInfo(const IndexBufferInfo& other);
+        IndexBufferInfo(IndexBufferInfo&& other) noexcept;
     };
-    std::vector<IndexBufferInfo> indexBuffers;
+    using IndexBuffers = std::unordered_map<unsigned, IndexBufferInfo>;
+    std::unordered_map<unsigned, IndexBuffers> vertToIndexBuffers;
 
     // TODO: need a away to allow for drawing vertices without indices if not specified.
     struct VertexBufferInfo
@@ -51,7 +56,7 @@ class Renderer
         std::unique_ptr<Buffer> pVertexBuffer;
         std::unique_ptr<Buffer> pInstanceVertexBuffer;
     };
-    std::vector<VertexBufferInfo> vertexBuffers;
+    std::unordered_map<unsigned, VertexBufferInfo> vertexBuffers;
 
     struct UniformBufferInfo
     {
@@ -96,7 +101,8 @@ class Renderer
     void createGraphicsPipeline();
     void createDescriptorSets();
 
-    unsigned addVertexBuffer(
+    bool addVertexBuffer(
+        const unsigned id,
         const void* data,
         const size_t data_type_size,
         const size_t count,
@@ -104,25 +110,30 @@ class Renderer
         const void* instance_data = nullptr,
         const size_t instance_data_type_size = 0,
         const size_t instance_count = 1,
-        const size_t instance_capacity = 0);
-    void updateVertexBuffer(const unsigned index, const void* data, const size_t data_type_size, const size_t count);
-    void updateInstanceVertexBuffer(
-        const unsigned index,
+        const size_t instance_capacity = 1);
+    bool updateVertexBuffer(const unsigned id, const void* data, const size_t data_type_size, const size_t count);
+    bool updateInstanceVertexBuffer(
+        const unsigned id,
         const void* data,
         const size_t data_type_size,
         const size_t count);
 
-    void createIndexBuffer(
-        const unsigned vertex_buffer_index,
+    bool addIndexBuffer(
+        const unsigned vertex_buffer_id,
+        const unsigned index_buffer_id,
         const void* data,
         const size_t data_type_size,
         const size_t count,
         const size_t capacity);
-    void updateIndexBuffer(
-        const unsigned vertex_buffer_index,
+    bool updateIndexBuffer(
+        const unsigned vertex_buffer_id,
+        const unsigned index_buffer_id,
         const void* data,
         const size_t data_type_size,
         const size_t count);
+
+    void removeVertexBuffer(const unsigned id);
+    void removeIndexBuffer(const unsigned vertex_buffer_id, const unsigned index_buffer_id);
 
     // unsigned addUniformBufferArray();
     unsigned addUniformBuffer(

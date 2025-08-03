@@ -2,6 +2,7 @@
 #include "world.hpp"
 
 #include <iostream>
+#include <thread>
 
 struct LightingInfo
 {
@@ -15,13 +16,47 @@ void Game::updateTerrain()
     const auto world_model = world.getModel();
     const auto& world_vertices = world_model.getVertices();
     const auto& world_indices = world_model.getIndices();
-    renderer.updateVertexBuffer(
-        terrainVertBufferIdx,
-        world_vertices.data(),
-        sizeof(world_vertices[0]),
-        world_vertices.size());
-    renderer
-        .updateIndexBuffer(terrainVertBufferIdx, world_indices.data(), sizeof(world_indices[0]), world_indices.size());
+
+    {
+        std::lock_guard<std::mutex> lock(updateMutex);
+
+        renderer.updateVertexBuffer(0, world_vertices.data(), sizeof(world_vertices[0]), world_vertices.size());
+        renderer.updateIndexBuffer(0, 0, world_indices.data(), sizeof(world_indices[0]), world_indices.size());
+    }
+}
+
+void Game::loadChunkModel(const Chunk& chunk)
+{
+    // const ChunkCenter cc = chunk.getCenter();
+    // const Model& chunk_model = chunk.getModel();
+
+    // const auto& chunk_vertices = chunk_model.getVertices();
+    // if (chunkToVertexIdx.contains(cc))
+    //{
+    //     renderer.updateVertexBuffer(
+    //         chunkToVertexIdx[cc],
+    //         chunk_vertices.data(),
+    //         sizeof(chunk_vertices[0]),
+    //         chunk_vertices.size());
+    // }
+    // else
+    //{
+    //     chunkToVertexIdx[cc] = renderer.addVertexBuffer(
+    //         chunk_vertices.data(),
+    //         sizeof(chunk_vertices[0]),
+    //         chunk_vertices.size(),
+    //         static_cast<size_t>(CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE));
+    // }
+
+    // const auto& chunk_indices = chunk_model.getIndices();
+    // renderer
+    //     .updateIndexBuffer(chunkToVertexIdx[cc], chunk_indices.data(), sizeof(chunk_indices[0]),
+    //     chunk_indices.size());
+}
+
+void Game::unloadChunkModel(const Chunk& chunk)
+{
+    // const ChunkCenter cc = chunk.getCenter();
 }
 
 void Game::run()
@@ -38,14 +73,16 @@ void Game::run()
     const auto world_model = world.getModel();
     const auto& world_vertices = world_model.getVertices();
     const auto& world_indices = world_model.getIndices();
-    // Remake the buffers if the player's render distance changes.
-    terrainVertBufferIdx = renderer.addVertexBuffer(
+
+    renderer.addVertexBuffer(
+        0,
         world_vertices.data(),
         sizeof(world_vertices[0]),
         world_vertices.size(),
         10000000); // TODO
-    renderer.createIndexBuffer(
-        terrainVertBufferIdx,
+    renderer.addIndexBuffer(
+        0,
+        0,
         world_indices.data(),
         sizeof(world_indices[0]),
         world_indices.size(),
@@ -84,11 +121,12 @@ void Game::run()
         ubo_lighting.viewPos = player.getPosition();
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
-        // Update instance data.
-        // updateTerrain();
-
         player.processInput();
-        renderer.drawFrame();
+
+        {
+            std::lock_guard<std::mutex> lock(updateMutex);
+            renderer.drawFrame();
+        }
     }
 
     delete block_texture_ptr;
