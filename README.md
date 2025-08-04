@@ -1,6 +1,6 @@
 # Vulkan Minecraft Clone
 An exploratory project on the Vulkan API by implementing a Minecraft like game as the goal.<br>
-The project has only been tested on Windows using Visual Studio 2022.
+The project has only been tested on Windows 11 using Visual Studio 2022.
 
 ## Controls (TODO)
 - `W`/`A`/`S`/`D` to move.
