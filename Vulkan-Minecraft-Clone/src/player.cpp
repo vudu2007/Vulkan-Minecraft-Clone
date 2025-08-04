@@ -47,8 +47,16 @@ void Player::pollKeyboardControls()
 
     if (player_moved)
     {
-        world.updateChunks(getPosition(), getRenderDistance());
-        reach.setOrigin(position + camera.getEye()); // TODO:
+        position = camera.getEye() + glm::vec3(0.0f, -DEFAULT_PLAYER_HEIGHT, 0.0f);
+
+        const ChunkCenter curr_chunk_center = world.getPosToChunkCenter(getPosition());
+        if (chunkCenter != curr_chunk_center)
+        {
+            chunkCenter = curr_chunk_center;
+            world.updateChunks(getPosition(), getRenderDistance());
+        }
+
+        reach.setOrigin(camera.getEye()); // TODO:
     }
 }
 
@@ -77,15 +85,16 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
     : window(window), world(world),
       camera(
           window,
-          glm::vec3(0, 2, 0),
-          glm::vec3(0, 2, -1),
-          glm::vec3(0, 1, 0),
+          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT, 0.0f),
+          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT, -1.0f),
+          glm::vec3(0.0f, 1.0f, 0.0f),
           glm::radians(70.0f),
           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
           0.1f,
           1000.0f),
       position(pos), speed(speed), renderDistance(render_distance),
-      reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f)
+      reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f),
+      chunkCenter(world.getPosToChunkCenter(getPosition()))
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
         this->eventKeyboardControls(key, scancode, action, mods);
@@ -140,9 +149,7 @@ const Camera& Player::getCamera() const
 
 const glm::vec3 Player::getPosition() const
 {
-    // TODO:
-    // return position;
-    return camera.getEye();
+    return position;
 }
 
 const unsigned Player::getRenderDistance() const

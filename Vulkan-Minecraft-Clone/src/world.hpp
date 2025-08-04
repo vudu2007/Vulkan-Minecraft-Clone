@@ -2,6 +2,7 @@
 
 #include "chunk.hpp"
 
+#include "BS_thread_pool.hpp"
 #include <GLM/gtx/hash.hpp>
 
 #include <mutex>
@@ -13,8 +14,8 @@
 class World
 {
   private:
+    BS::thread_pool<> threadPool;
     std::mutex updateChunksMutex;
-    std::unordered_set<ChunkCenter> chunksToAdd;
 
     FastNoiseLite terrainHeightNoise;
     unsigned seed;
@@ -24,13 +25,12 @@ class World
     // maybe don't cache chunks at all and store world data in persistant memory and load them when needed;
     // maybe use a combination where inactive cached chunks are written to persistent memory.
     std::unordered_map<ChunkCenter, Chunk*> chunks;
-    std::unordered_map<ChunkCenter, Chunk*> activeChunks;
+    std::unordered_set<ChunkCenter> chunksToAdd;
+    std::unordered_set<ChunkCenter> activeChunks;
 
     std::vector<std::function<void(const Chunk&)>> chunkLoadedCallbacks;
     std::vector<std::function<void(const Chunk&)>> chunkUnloadedCallbacks;
     std::vector<std::function<void()>> chunksChangedCallbacks;
-
-    const ChunkCenter posToChunkCenter(const glm::vec3& pos) const;
 
     void runChunkLoadedCallbacks(const Chunk& chunk);
     void runChunkUnloadedCallbacks(const Chunk& chunk);
@@ -38,7 +38,7 @@ class World
     bool isChunkActive(const ChunkCenter& cc) const;
 
   public:
-    World(const unsigned seed, const int chunk_size);
+    World(const unsigned seed, const int chunk_size, const unsigned num_threads = 1);
     ~World();
 
     void init(const glm::vec3& origin, const unsigned radius);
@@ -57,6 +57,6 @@ class World
     void addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback);
     void clearChunkUnloadedCallbacks();
 
-    const std::vector<Chunk*> getActiveChunks() const;
+    const ChunkCenter getPosToChunkCenter(const glm::vec3& pos) const;
     const Model getModel() const;
 };

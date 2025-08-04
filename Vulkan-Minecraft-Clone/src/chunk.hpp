@@ -25,6 +25,7 @@ class Chunk
     static constexpr int EDGE_OFFSET = 2;
 
     static constexpr glm::vec3 COLOR_DEFAULT{1.0f};
+    static constexpr glm::vec3 COLOR_RED{1.0f, 0.0f, 0.0f};
     static constexpr glm::vec3 COLOR_GRASS{0.349f, 0.651f, 0.290f};
     static constexpr glm::vec3 COLOR_DIRT{0.396f, 0.263f, 0.129f};
     static constexpr glm::vec3 COLOR_STONE{0.439f, 0.502f, 0.565f};
@@ -36,6 +37,7 @@ class Chunk
     enum BlockType
     {
         DEFAULT,
+        RED,
         GRASS,
         DIRT,
         STONE,
@@ -43,6 +45,7 @@ class Chunk
     };
     static inline const std::unordered_map<BlockType, std::shared_ptr<Block>> AVAILABLE_BLOCKS = {
         {BlockType::DEFAULT, std::make_shared<Block>(COLOR_DEFAULT)},
+        {BlockType::RED,     std::make_shared<Block>(COLOR_RED)    },
         {BlockType::GRASS,   std::make_shared<Block>(COLOR_GRASS)  },
         {BlockType::DIRT,    std::make_shared<Block>(COLOR_DIRT)   },
         {BlockType::STONE,   std::make_shared<Block>(COLOR_STONE)  },

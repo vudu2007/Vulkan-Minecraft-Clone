@@ -253,7 +253,11 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
                 glm::vec3 block_pos(x, y, z);
 
                 BlockType block_type = BlockType::GRASS;
-                if (y < global_height - 3)
+                if (y == y_start || y == y_end)
+                {
+                    block_type = BlockType::RED;
+                }
+                else if (y < global_height - 3)
                 {
                     block_type = BlockType::STONE;
                 }

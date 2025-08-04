@@ -9,11 +9,13 @@
 class Player
 {
   private:
-    inline static const float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
+    static constexpr float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
+    static constexpr float DEFAULT_PLAYER_HEIGHT = 2.0f;
 
     Window& window;
 
     World& world;
+    ChunkCenter chunkCenter;
 
     Camera camera;
     Ray reach;

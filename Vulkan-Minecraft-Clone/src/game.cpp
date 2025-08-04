@@ -1,8 +1,8 @@
 #include "game.hpp"
 #include "world.hpp"
 
+#include <chrono>
 #include <iostream>
-#include <thread>
 
 struct LightingInfo
 {
@@ -114,11 +114,23 @@ void Game::run()
     renderer.createGraphicsPipeline();
     renderer.createDescriptorSets();
 
+    std::chrono::steady_clock::time_point last_frame_time = std::chrono::steady_clock::now();
+    double accum_time = 0.0;
     while (!window.shouldClose())
     {
         window.pollEvents();
 
         // TODO: game logic here
+        std::chrono::steady_clock::time_point curr_frame_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> delta_time = curr_frame_time - last_frame_time;
+        last_frame_time = curr_frame_time;
+        accum_time += delta_time.count();
+        if (accum_time >= 0.25)
+        {
+            accum_time = 0.0;
+            double fps = 1.0 / delta_time.count();
+            std::cout << "\rFPS: " << static_cast<int>(fps) << "     ";
+        }
 
         // Update uniforms.
         Model::UniformBufferObject ubo{};
