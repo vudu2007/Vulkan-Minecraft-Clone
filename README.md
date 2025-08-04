@@ -10,15 +10,16 @@ The project has only been tested on Windows using Visual Studio 2022.
 - `Left-Alt` to toggle the cursor.
 
 ## Dependencies to install
-- Vulkan (tested with v.1.4.303)
-- GLFW (TODO)
-- GLM (TODO)
+- [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) (tested with v.1.4.303)
+- [GLFW](https://www.glfw.org/) (tested with v.3.4)
+- [GLM](https://github.com/g-truc/glm) (TODO)
 
 ## External
-- FastNoiseLite (v.1.1.1)
-- stb_image (v.2.30)
-- tinyobjloader (v.2.0.0)
-- Vulkan Memory Allocator (v.3.3.0)
+- [BS Thread Pool](https://github.com/bshoshany/thread-pool) (v.5.0.0)
+- [FastNoiseLite](https://github.com/Auburn/FastNoiseLite) (v.1.1.1)
+- [stb_image](https://github.com/nothings/stb) (v.2.30)
+- [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader) (v.2.0.0)
+- [Vulkan Memory Allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) (v.3.3.0)
 
 ## Build and Run
 1. Download dependencies and keep track of the paths to them.
