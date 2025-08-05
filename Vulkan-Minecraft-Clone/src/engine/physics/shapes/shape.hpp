@@ -2,6 +2,8 @@
 
 #include "../geometry.hpp"
 
+#include "../../usage/glm-usage.hpp"
+
 #include <string>
 
 class Shape : public Geometry
@@ -12,15 +14,15 @@ class Shape : public Geometry
   public:
     enum Type
     {
-        BOX_3D,
+        AABB_3D,
     };
 
     static std::string toString(const Shape::Type& type)
     {
         switch (type)
         {
-        case Type::BOX_3D:
-            return "BOX_3D";
+        case Type::AABB_3D:
+            return "AABB_3D";
         default:
             return "UNDEFINED";
         }
@@ -40,5 +42,6 @@ class Shape3d : public Shape
     Shape3d(const Shape::Type type);
 
   public:
+    virtual void translate(const glm::vec3& value) = 0;
     Shape::Type getShapeType() const;
 };

@@ -3,9 +3,9 @@
 #include <limits>
 #include <stdexcept>
 
-bool CollisionHandler::rayBox3dIntersect(
+bool CollisionHandler::rayToBox3dIntersect(
     const Ray& ray,
-    const Box3d& box,
+    const Aabb3d& box,
     float* out_t_min,
     float* out_t_max,
     glm::ivec3* out_face_enter,
@@ -73,7 +73,19 @@ bool CollisionHandler::rayBox3dIntersect(
     return true;
 }
 
-bool CollisionHandler::rayShapeIntersect(
+bool CollisionHandler::box3dToBox3dIntersect(const Aabb3d& box_1, const Aabb3d& box_2)
+{
+    const auto box_1_min = box_1.getMinBounds();
+    const auto box_1_max = box_1.getMaxBounds();
+    const auto box_2_min = box_2.getMinBounds();
+    const auto box_2_max = box_2.getMaxBounds();
+    const bool does_x_overlap = (box_1_min.x <= box_2_max.x) && (box_2_min.x <= box_1_max.x);
+    const bool does_y_overlap = (box_1_min.y <= box_2_max.y) && (box_2_min.y <= box_1_max.y);
+    const bool does_z_overlap = (box_1_min.z <= box_2_max.z) && (box_2_min.z <= box_1_max.z);
+    return does_x_overlap && does_y_overlap && does_z_overlap;
+}
+
+bool CollisionHandler::rayToShapeIntersect(
     const Ray& ray,
     const Shape& shape,
     float* out_t_min,
@@ -83,10 +95,10 @@ bool CollisionHandler::rayShapeIntersect(
 {
     switch (shape.getShapeType())
     {
-    case Shape::Type::BOX_3D:
-        return rayBox3dIntersect(
+    case Shape::Type::AABB_3D:
+        return rayToBox3dIntersect(
             ray,
-            static_cast<const Box3d&>(shape),
+            static_cast<const Aabb3d&>(shape),
             out_t_min,
             out_t_max,
             out_face_enter,
@@ -98,8 +110,20 @@ bool CollisionHandler::rayShapeIntersect(
     return false;
 }
 
-bool CollisionHandler::shapeIntersect(const Shape& one, const Shape& two)
+bool CollisionHandler::shapeToShapeIntersect(const Shape& one, const Shape& two)
 {
-    // TODO: implement
-    throw std::runtime_error("shapeIntersect(...) not implemented!");
+    // TODO: find a more scalable way to implement this.
+    if ((one.getShapeType() == Shape::Type::AABB_3D) && (two.getShapeType() == Shape::Type::AABB_3D))
+    {
+        // Box3D and Box3D.
+        return box3dToBox3dIntersect(static_cast<const Aabb3d&>(one), static_cast<const Aabb3d&>(two));
+    }
+    else
+    {
+        // Intersection not supported/unimplemented.
+        throw std::runtime_error(
+            "Unsupported shape combination for shape-to-shape intersection test: (one) " +
+            Shape::toString(one.getShapeType()) + " and (two) " + Shape::toString(two.getShapeType()));
+    }
+    return false;
 }

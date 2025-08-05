@@ -1,21 +1,23 @@
 #pragma once
 
 #include "ray/ray.hpp"
-#include "shapes/box.hpp"
+#include "shapes/aabb.hpp"
 
 class CollisionHandler
 {
   private:
-    static bool rayBox3dIntersect(
+    static bool rayToBox3dIntersect(
         const Ray& ray,
-        const Box3d& box,
+        const Aabb3d& box,
         float* out_t_min = nullptr,
         float* out_t_max = nullptr,
         glm::ivec3* out_face_enter = nullptr,
         glm::ivec3* out_face_exit = nullptr);
 
+    static bool box3dToBox3dIntersect(const Aabb3d& box_1, const Aabb3d& box_2);
+
   public:
-    static bool rayShapeIntersect(
+    static bool rayToShapeIntersect(
         const Ray& ray,
         const Shape& shape,
         float* out_t_min = nullptr,
@@ -23,7 +25,7 @@ class CollisionHandler
         glm::ivec3* out_face_enter = nullptr, // TODO: these face parameters don't make sense for a general method.
         glm::ivec3* out_face_exit = nullptr);
 
-    static bool shapeIntersect(const Shape& one, const Shape& two);
+    static bool shapeToShapeIntersect(const Shape& one, const Shape& two);
 
     CollisionHandler() = delete;
 };

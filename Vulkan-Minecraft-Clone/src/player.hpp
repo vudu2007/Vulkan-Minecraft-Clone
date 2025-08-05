@@ -3,6 +3,7 @@
 #include "block.hpp"
 #include "engine/camera.hpp"
 #include "engine/physics/ray/ray.hpp"
+#include "engine/physics/shapes/aabb.hpp"
 #include "engine/renderer/window.hpp"
 #include "world.hpp"
 
@@ -19,6 +20,7 @@ class Player
 
     Camera camera;
     Ray reach;
+    Aabb3d hitbox;
 
     // Player attributes.
     glm::vec3 position;

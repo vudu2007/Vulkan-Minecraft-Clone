@@ -4,7 +4,7 @@ Block::Block(const glm::vec3 color) : color(color), collisionShape(glm::vec3(-0.
 {
 }
 
-const Box3d& Block::getCollisionShape() const
+const Aabb3d& Block::getCollisionShape() const
 {
     return collisionShape;
 }

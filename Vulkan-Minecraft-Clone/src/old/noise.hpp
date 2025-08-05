@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../global.hpp"
+#include "../engine/usage/glm-usage.hpp"
 
 #include <array>
 #include <numbers>

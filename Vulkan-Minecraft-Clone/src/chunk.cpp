@@ -410,9 +410,9 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
     {
         float t_min = min_dist; // Can be any value; it will be modified by the intersection test.
         glm::ivec3 curr_face_entered{};
-        const bool intersected = CollisionHandler::rayShapeIntersect(
+        const bool intersected = CollisionHandler::rayToShapeIntersect(
             ray,
-            Box3d(glm::vec3(block_pos) - glm::vec3(0.5f), glm::vec3(block_pos) + glm::vec3(0.5f)),
+            Aabb3d(glm::vec3(block_pos) - glm::vec3(0.5f), glm::vec3(block_pos) + glm::vec3(0.5f)),
             &t_min,
             nullptr,
             &curr_face_entered);

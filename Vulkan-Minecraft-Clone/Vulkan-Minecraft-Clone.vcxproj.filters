@@ -69,7 +69,7 @@
     <ClCompile Include="src\block.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\engine\physics\shapes\box.cpp">
+    <ClCompile Include="src\engine\physics\shapes\aabb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\engine\physics\shapes\shape.cpp">
@@ -81,7 +81,10 @@
     <ClCompile Include="src\engine\physics\ray\ray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\engine\renderer\vma-usage.cpp">
+    <ClCompile Include="src\engine\usage\vma-usage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\engine\usage\glm-usage.hpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -148,10 +151,7 @@
     <ClInclude Include="src\block.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\global.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\engine\physics\shapes\box.hpp">
+    <ClInclude Include="src\engine\physics\shapes\aabb.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\physics\shapes\shape.hpp">

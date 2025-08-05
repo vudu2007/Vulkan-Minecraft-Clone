@@ -5,6 +5,7 @@
 #include "engine/renderer/model.hpp"
 
 #include "FastNoiseLite.h"
+#include "engine/usage/glm-usage.hpp"
 #include <GLM/gtx/hash.hpp>
 
 #include <memory>

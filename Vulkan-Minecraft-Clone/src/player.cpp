@@ -48,6 +48,7 @@ void Player::pollKeyboardControls()
     if (player_moved)
     {
         position = camera.getEye() + glm::vec3(0.0f, -DEFAULT_PLAYER_HEIGHT, 0.0f);
+        reach.setOrigin(camera.getEye());
 
         const ChunkCenter curr_chunk_center = world.getPosToChunkCenter(getPosition());
         if (chunkCenter != curr_chunk_center)
@@ -55,8 +56,6 @@ void Player::pollKeyboardControls()
             chunkCenter = curr_chunk_center;
             world.updateChunks(getPosition(), getRenderDistance());
         }
-
-        reach.setOrigin(camera.getEye()); // TODO:
     }
 }
 
@@ -94,6 +93,7 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
           1000.0f),
       position(pos), speed(speed), renderDistance(render_distance),
       reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f),
+      hitbox(pos + glm::vec3(-0.5f, 0.0f, -0.5f), pos + glm::vec3(0.5f, DEFAULT_PLAYER_HEIGHT, 0.5f)),
       chunkCenter(world.getPosToChunkCenter(getPosition()))
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {

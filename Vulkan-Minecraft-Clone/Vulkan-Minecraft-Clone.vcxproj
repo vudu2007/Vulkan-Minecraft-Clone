@@ -138,9 +138,10 @@
     <ClCompile Include="src\block.cpp" />
     <ClCompile Include="src\chunk.cpp" />
     <ClCompile Include="src\engine\camera.cpp" />
+    <ClCompile Include="src\engine\usage\glm-usage.hpp" />
     <ClCompile Include="src\engine\physics\collision-handler.cpp" />
     <ClCompile Include="src\engine\physics\ray\ray.cpp" />
-    <ClCompile Include="src\engine\physics\shapes\box.cpp" />
+    <ClCompile Include="src\engine\physics\shapes\aabb.cpp" />
     <ClCompile Include="src\engine\physics\shapes\shape.cpp" />
     <ClCompile Include="src\engine\renderer\buffer.cpp" />
     <ClCompile Include="src\engine\renderer\descriptor.cpp" />
@@ -150,7 +151,7 @@
     <ClCompile Include="src\engine\renderer\renderer.cpp" />
     <ClCompile Include="src\engine\renderer\swapchain.cpp" />
     <ClCompile Include="src\engine\renderer\texture.cpp" />
-    <ClCompile Include="src\engine\renderer\vma-usage.cpp" />
+    <ClCompile Include="src\engine\usage\vma-usage.cpp" />
     <ClCompile Include="src\engine\renderer\window.cpp" />
     <ClCompile Include="src\game.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -172,7 +173,7 @@
     <ClInclude Include="src\block.hpp" />
     <ClInclude Include="src\chunk.hpp" />
     <ClInclude Include="src\engine\camera.hpp" />
-    <ClInclude Include="src\engine\physics\shapes\box.hpp" />
+    <ClInclude Include="src\engine\physics\shapes\aabb.hpp" />
     <ClInclude Include="src\engine\physics\collision-handler.hpp" />
     <ClInclude Include="src\engine\physics\geometry.hpp" />
     <ClInclude Include="src\engine\physics\ray\ray.hpp" />
@@ -187,7 +188,6 @@
     <ClInclude Include="src\engine\renderer\texture.hpp" />
     <ClInclude Include="src\engine\renderer\window.hpp" />
     <ClInclude Include="src\game.hpp" />
-    <ClInclude Include="src\global.hpp" />
     <ClInclude Include="src\old\noise.hpp" />
     <ClInclude Include="src\player.hpp" />
     <ClInclude Include="src\utility.hpp" />

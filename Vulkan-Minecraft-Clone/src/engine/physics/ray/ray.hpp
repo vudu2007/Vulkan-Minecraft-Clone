@@ -2,7 +2,7 @@
 
 #include "../geometry.hpp"
 
-#include "../../../global.hpp" // TODO:
+#include "../../usage/glm-usage.hpp"
 
 class Ray : public Geometry
 {
