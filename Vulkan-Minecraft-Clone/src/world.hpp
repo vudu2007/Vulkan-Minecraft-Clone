@@ -15,7 +15,7 @@ class World
 {
   private:
     BS::thread_pool<> threadPool;
-    std::mutex updateChunksMutex;
+    std::mutex accessChunksMutex;
 
     FastNoiseLite terrainHeightNoise;
     unsigned seed;

@@ -13,17 +13,23 @@ struct LightingInfo
 
 void Game::loadChunkModel(const Chunk& chunk)
 {
-    std::lock_guard<std::mutex> lock(updateMutex);
-
     const ChunkCenter cc = chunk.getCenter();
     const Model& chunk_model = chunk.getModel();
 
     const auto& chunk_vertices = chunk_model.getVertices();
     const auto& chunk_indices = chunk_model.getIndices();
 
-    // Ignore if an empty (no model) chunk.
+    std::unique_lock<std::mutex> lock(updateMutex);
+
+    // Handle an empty (no model) chunk.
     if (chunk_vertices.empty() || chunk_indices.empty())
     {
+        // If this chunk existed before, we need to unload it.
+        if (chunkToVertexBufferId.contains(cc))
+        {
+            lock.unlock();
+            unloadChunkModel(chunk);
+        }
         return;
     }
 
@@ -54,12 +60,14 @@ void Game::loadChunkModel(const Chunk& chunk)
         }
         chunkToVertexBufferId[cc] = id;
 
+        // Max number of indices = MAX_NUM_BLOCKS_IN_CHUNK * 6 faces per block * 2 triangles per face * 3 vertices per
+        // triangle
         renderer.addVertexBuffer(
             id,
             chunk_vertices.data(),
             sizeof(chunk_vertices[0]),
             chunk_vertices.size(),
-            static_cast<size_t>(MAX_NUM_BLOCKS_IN_CHUNK));
+            static_cast<size_t>(MAX_NUM_BLOCKS_IN_CHUNK * 36));
 
         // Max number of indices = MAX_NUM_BLOCKS_IN_CHUNK * 6 faces per block * 6 indices per face
         renderer.addIndexBuffer(
@@ -74,9 +82,9 @@ void Game::loadChunkModel(const Chunk& chunk)
 
 void Game::unloadChunkModel(const Chunk& chunk)
 {
-    std::lock_guard<std::mutex> lock(updateMutex);
-
     const ChunkCenter cc = chunk.getCenter();
+
+    std::lock_guard<std::mutex> lock(updateMutex);
 
     if (!chunkToVertexBufferId.contains(cc))
     {

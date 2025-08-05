@@ -73,7 +73,7 @@ void World::init(const glm::vec3& origin, const unsigned radius)
 
 std::optional<glm::vec3> World::getReachableBlock(const Ray& ray, glm::ivec3* face_entered)
 {
-    std::lock_guard<std::mutex> lock(updateChunksMutex);
+    std::lock_guard<std::mutex> lock(accessChunksMutex);
 
     std::optional<glm::vec3> reachable_block_pos;
 
@@ -117,18 +117,18 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
         Chunk* chunk = new Chunk(terrainHeightNoise, cc, chunkSize);
 
         {
-            std::lock_guard<std::mutex> lock(updateChunksMutex);
+            std::lock_guard<std::mutex> lock(accessChunksMutex);
 
             assert(!chunks.contains(cc));
 
             chunks[cc] = chunk;
             chunksToAdd.erase(cc);
+        }
 
-            // Check if the chunk is still active; if so, notify that a chunk loaded.
-            if (activeChunks.contains(cc))
-            {
-                runChunkLoadedCallbacks(*chunks[cc]);
-            }
+        // Check if the chunk is still active; if so, notify that a chunk loaded.
+        if (activeChunks.contains(cc))
+        {
+            runChunkLoadedCallbacks(*chunks[cc]);
         }
     }
 }
@@ -154,23 +154,27 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
             {
                 const ChunkCenter cc = getPosToChunkCenter({x, y, z});
                 inactive_chunks.erase(cc);
+
                 if (!activeChunks.contains(cc))
                 {
                     // Make sure the chunk is marked as active even if it hasn't loaded.
                     activeChunks.emplace(cc);
 
-                    if (!chunks.contains(cc))
                     {
-                        if (!chunksToAdd.contains(cc))
+                        std::lock_guard<std::mutex> lock(accessChunksMutex);
+                        if (!chunks.contains(cc))
                         {
-                            // Create the chunk asynchrounously and add it later.
-                            chunksToAdd.emplace(cc);
-                            chunk_centers.emplace_back(cc);
-                        } // Else, don't add it to the set of chunks to add because it's already in there.
-                    }
-                    else
-                    {
-                        runChunkLoadedCallbacks(*chunks[cc]);
+                            if (!chunksToAdd.contains(cc))
+                            {
+                                // Create the chunk asynchrounously and add it later.
+                                chunksToAdd.emplace(cc);
+                                chunk_centers.emplace_back(cc);
+                            } // Else, don't add it to the set of chunks to add because it's already in there.
+                        }
+                        else
+                        {
+                            runChunkLoadedCallbacks(*chunks[cc]);
+                        }
                     }
                 }
                 z += chunkSize;
@@ -202,14 +206,15 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
     for (const auto& cc : inactive_chunks)
     {
         {
-            std::lock_guard<std::mutex> lock(updateChunksMutex);
+            std::lock_guard<std::mutex> lock(accessChunksMutex);
 
             if (chunks.contains(cc))
             {
                 runChunkUnloadedCallbacks(*chunks[cc]);
             }
-            activeChunks.erase(cc);
         }
+
+        activeChunks.erase(cc);
     }
 
     return static_cast<unsigned>(chunk_centers.size());

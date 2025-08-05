@@ -79,10 +79,11 @@ class Chunk
     void generateBlock(const glm::vec3& global_pos, const BlockType type);
     void resetBlock(const glm::vec3& global_pos);
 
-    bool checkBlockExist(const glm::vec3& global_pos) const;
-    bool checkBlockHidden(const glm::vec3& global_pos) const; // Assumes `global_pos` is within the chunk.
-    bool checkInChunkBounds(const glm::vec3& block_pos) const;
-    bool checkInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
+    bool doesBlockExist(const glm::vec3& global_pos) const;
+    bool isBlockVisible(const glm::vec3& global_pos) const; // In the visible blocks set.
+    bool isBlockHidden(const glm::vec3& global_pos) const;  // Hidden relative to other blocks.
+    bool isInChunkBounds(const glm::vec3& block_pos) const;
+    bool isInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
 
     void generateMesh();
 
