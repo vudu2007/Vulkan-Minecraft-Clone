@@ -21,7 +21,7 @@ class Game
     Window window;
     Renderer renderer{window};
     World world{727, CHUNK_SIZE, static_cast<unsigned>(std::thread::hardware_concurrency() * 0.25)};
-    Player player{window, world, DEFAULT_PLAYER_POS, 0.1f, DEFAULT_PLAYER_RENDER_DISTANCE};
+    Player player{window, world, DEFAULT_PLAYER_POS, 10.0f, DEFAULT_PLAYER_RENDER_DISTANCE};
 
     std::stack<unsigned> reusableIds;
     std::unordered_map<ChunkCenter, unsigned> chunkToVertexBufferId;

@@ -133,11 +133,11 @@ void Game::run()
         std::chrono::duration<double> delta_time = curr_frame_time - last_frame_time;
         last_frame_time = curr_frame_time;
         accum_time += delta_time.count();
-        if (accum_time >= 0.25)
+        if (accum_time >= 0.3)
         {
             accum_time = 0.0;
             double fps = 1.0 / delta_time.count();
-            std::cout << "\rFPS: " << static_cast<int>(fps) << "     ";
+            // std::cout << "\rFPS: " << static_cast<int>(fps) << "     ";
         }
 
         // Update uniforms.
@@ -151,7 +151,7 @@ void Game::run()
         ubo_lighting.viewPos = player.getPosition();
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
-        player.processInput();
+        player.update(delta_time.count());
 
         {
             std::lock_guard<std::mutex> lock(updateMutex);

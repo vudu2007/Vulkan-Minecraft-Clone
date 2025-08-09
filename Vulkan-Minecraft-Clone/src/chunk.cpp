@@ -431,6 +431,42 @@ const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ive
     return reachable_block_pos;
 }
 
+bool Chunk::doesEntityIntersect(
+    const glm::vec3& velocity,
+    const float delta,
+    const Aabb3d& hitbox,
+    float& new_delta,
+    glm::ivec3* entry_face) const
+{
+    new_delta = delta;
+    bool intersected = false;
+
+    // Dynamic AABB check.
+    for (const auto& block_pos : visibleBlocks)
+    {
+        const Aabb3d block_hitbox(glm::vec3(block_pos) - glm::vec3(0.5f), glm::vec3(block_pos) + glm::vec3(0.5f));
+        glm::ivec3 curr_entry_face{};
+        const float t_min = CollisionHandler::sweptAABB(hitbox, block_hitbox, velocity, delta, &curr_entry_face);
+        const bool curr_intersected = (t_min != std::numeric_limits<float>::infinity());
+        assert(t_min >= 0.0f);
+        if (curr_intersected)
+        {
+            // Get the minimum because it represents the closest collision.
+            if (t_min < new_delta)
+            {
+                new_delta = t_min;
+                if (entry_face != nullptr)
+                {
+                    *entry_face = curr_entry_face;
+                }
+            }
+        }
+        intersected = intersected || curr_intersected;
+    }
+
+    return intersected;
+}
+
 ChunkCenter Chunk::getCenter() const
 {
     return center;

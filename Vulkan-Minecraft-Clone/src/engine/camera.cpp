@@ -139,6 +139,11 @@ glm::vec3 Camera::getRight() const
     return right;
 }
 
+glm::vec3 Camera::getWorldUp() const
+{
+    return worldUp;
+}
+
 glm::mat4 Camera::viewMatrix() const
 {
     return glm::lookAt(eye, eye + forward, up);

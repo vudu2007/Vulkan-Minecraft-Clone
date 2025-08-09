@@ -1,55 +1,106 @@
 #include "player.hpp"
 
-#include <iostream>
+#include <GLM/gtx/string_cast.hpp>
 
-void Player::pollKeyboardControls()
+constexpr float EPSILON = 0.0001f;
+
+void Player::updatePosition()
+{
+    camera.translate(position - prevPosition);
+    reach.setOrigin(camera.getEye());
+    hitbox.translate(position - prevPosition);
+}
+
+int Player::getKeyState(const int key) const
+{
+    return window.getKeyboardKey(key);
+}
+
+bool Player::isKeyPressed(const int key_state) const
+{
+    return getKeyState(key_state) == GLFW_PRESS;
+}
+
+void Player::pollKeyboardControls(const double delta)
 {
     float adj_speed = speed;
-    if (window.getKeyboardKey(GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+    float dt = static_cast<float>(delta);
+    if (isKeyPressed(GLFW_KEY_LEFT_CONTROL))
     {
         adj_speed *= DEFAULT_SPRINT_MULTIPLIER;
     }
 
-    const glm::vec3 forward = camera.getForward();
-    const glm::vec3 right = camera.getRight();
+    glm::vec3 forward = camera.getForward();
+    forward.y = 0.0f;
+    forward = glm::normalize(forward);
+    glm::vec3 right = camera.getRight();
+    right.y = 0.0f;
+    right = glm::normalize(right);
+    glm::vec3 up = camera.getWorldUp();
 
+    glm::vec3 velocity{};
     bool player_moved = false;
-    if (window.getKeyboardKey(GLFW_KEY_W) == GLFW_PRESS)
+    if (isKeyPressed(GLFW_KEY_W))
     {
-        camera.moveForwardXZ(adj_speed);
-        player_moved = true;
+        velocity += forward * adj_speed;
     }
-    if (window.getKeyboardKey(GLFW_KEY_S) == GLFW_PRESS)
+    if (isKeyPressed(GLFW_KEY_S))
     {
-        camera.moveBackwardXZ(adj_speed);
-        player_moved = true;
+        velocity += -forward * adj_speed;
     }
-    if (window.getKeyboardKey(GLFW_KEY_A) == GLFW_PRESS)
+    if (isKeyPressed(GLFW_KEY_A))
     {
-        camera.moveLeftXZ(adj_speed);
-        player_moved = true;
+        velocity += -right * adj_speed;
     }
-    if (window.getKeyboardKey(GLFW_KEY_D) == GLFW_PRESS)
+    if (isKeyPressed(GLFW_KEY_D))
     {
-        camera.moveRightXZ(adj_speed);
-        player_moved = true;
+        velocity += right * adj_speed;
     }
-    if (window.getKeyboardKey(GLFW_KEY_SPACE) == GLFW_PRESS)
+    if (isKeyPressed(GLFW_KEY_SPACE))
     {
-        camera.moveUpXZ(adj_speed);
-        player_moved = true;
+        velocity += up * adj_speed;
     }
-    if (window.getKeyboardKey(GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    if (!isOnFloor && isKeyPressed(GLFW_KEY_LEFT_SHIFT))
     {
-        camera.moveDownXZ(adj_speed);
-        player_moved = true;
+        velocity += -up * adj_speed;
     }
 
-    if (player_moved)
+    const float prev_dt = dt;
+    if (velocity != glm::vec3(0.0f))
     {
-        position = camera.getEye() + glm::vec3(0.0f, -DEFAULT_PLAYER_HEIGHT, 0.0f);
-        reach.setOrigin(camera.getEye());
+        // Check for collisions component-wise.
+        glm::vec3 deltas(dt);
+        glm::vec3 offsets{};
+        for (glm::length_t i = 0; i < 3; ++i)
+        {
+            // Ignore components that'll have no impact.
+            if (velocity[i] == 0.0f)
+            {
+                continue;
+            }
 
+            glm::vec3 curr_velocity{};
+            curr_velocity[i] = velocity[i];
+            glm::ivec3 entry_face{};
+            float new_delta = dt;
+            if (world.doesEntityIntersect(position, curr_velocity, dt, hitbox, new_delta, &entry_face))
+            {
+                deltas[i] = new_delta;
+                offsets[i] = EPSILON * (entry_face.x + entry_face.y + entry_face.z);
+            }
+        }
+
+        // Update state.
+        const glm::vec3 displacement = velocity * deltas;
+        position += displacement + offsets;
+
+        // std::cout << "pos " << glm::to_string(position) << "     "
+        //           << "\n@ vel " << glm::to_string(velocity) << "     "
+        //           << "\n@ dt " << dt << " compared to deltas " << glm::to_string(deltas) << "     "
+        //           << "\nwhere offsets are: " << glm::to_string(offsets) << "     "
+        //           << "\033[F\033[F\033[F" << "\r";
+
+        // Notify the world to update chunks.
         const ChunkCenter curr_chunk_center = world.getPosToChunkCenter(getPosition());
         if (chunkCenter != curr_chunk_center)
         {
@@ -84,16 +135,16 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
     : window(window), world(world),
       camera(
           window,
-          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT, 0.0f),
-          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT, -1.0f),
+          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, 0.0f),
+          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, -1.0f),
           glm::vec3(0.0f, 1.0f, 0.0f),
           glm::radians(70.0f),
           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),
           0.1f,
           1000.0f),
-      position(pos), speed(speed), renderDistance(render_distance),
+      position(pos), prevPosition(pos), speed(speed), renderDistance(render_distance),
       reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f),
-      hitbox(pos + glm::vec3(-0.5f, 0.0f, -0.5f), pos + glm::vec3(0.5f, DEFAULT_PLAYER_HEIGHT, 0.5f)),
+      hitbox(pos + glm::vec3(-0.3f, 0.0f, -0.3f), pos + glm::vec3(0.3f, DEFAULT_PLAYER_HEIGHT, 0.3f)),
       chunkCenter(world.getPosToChunkCenter(getPosition()))
 {
     window.addKeyCallback([this](int key, int scancode, int action, int mods) {
@@ -103,10 +154,12 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
         [this](int button, int action, int mods) { this->eventMouseControls(button, action, mods); });
 }
 
-void Player::processInput()
+void Player::update(const double delta)
 {
+    prevPosition = position;
+
     // Keyboard input.
-    pollKeyboardControls();
+    pollKeyboardControls(delta);
 
     // Mouse input.
     double x = 0.0, y = 0.0;
@@ -140,6 +193,8 @@ void Player::processInput()
             world.removeBlock(block_pos.value());
         }
     }
+
+    updatePosition();
 }
 
 const Camera& Player::getCamera() const

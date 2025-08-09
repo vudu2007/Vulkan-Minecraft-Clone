@@ -95,6 +95,12 @@ class Chunk
     void removeBlock(const glm::vec3& global_pos);
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
+    bool doesEntityIntersect(
+        const glm::vec3& velocity,
+        const float delta,
+        const Aabb3d& hitbox,
+        float& new_delta,
+        glm::ivec3* entry_face = nullptr) const;
 
     ChunkCenter getCenter() const;
     const Model& getModel() const;

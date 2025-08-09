@@ -62,6 +62,7 @@ class Camera
     glm::vec3 getForward() const;
     glm::vec3 getUp() const;
     glm::vec3 getRight() const;
+    glm::vec3 getWorldUp() const;
 
     glm::mat4 viewMatrix() const;
     glm::mat4 projMatrix() const;

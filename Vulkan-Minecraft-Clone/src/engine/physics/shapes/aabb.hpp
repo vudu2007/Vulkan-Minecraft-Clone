@@ -11,8 +11,10 @@ class Aabb3d : public Shape3d
   public:
     Aabb3d(const glm::vec3& min_bounds, const glm::vec3& max_bounds);
 
-    void translate(const glm::vec3& value) override;
+    void translate(const glm::vec3& units) override;
 
     glm::vec3 getMinBounds() const;
     glm::vec3 getMaxBounds() const;
+    glm::vec3 getCenter() const;
+    glm::vec3 getLengths() const;
 };

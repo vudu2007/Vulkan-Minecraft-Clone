@@ -44,6 +44,13 @@ class World
     void init(const glm::vec3& origin, const unsigned radius);
 
     std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
+    bool doesEntityIntersect(
+        const glm::vec3& pos,
+        const glm::vec3& velocity,
+        const float delta,
+        const Aabb3d& hitbox,
+        float& new_delta,
+        glm::ivec3* entry_face = nullptr);
 
     void addChunk(const std::vector<glm::vec3> chunk_center);
     unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
