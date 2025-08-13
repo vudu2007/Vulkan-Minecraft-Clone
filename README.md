@@ -8,6 +8,7 @@ As of now, the project has only been tested on Windows 11 using Visual Studio 20
 - `Space` to ascend.
 - Hold `Left-Control` to speed up.
 - `Left-Alt` to toggle the cursor.
+- `F1` to cycle "game modes".
 
 ## Dependencies to install
 - [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) (tested with v.1.4.303)
