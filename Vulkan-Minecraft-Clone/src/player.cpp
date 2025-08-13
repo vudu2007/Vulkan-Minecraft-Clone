@@ -6,9 +6,10 @@ constexpr float EPSILON = 0.0001f;
 
 void Player::updatePosition()
 {
-    camera.translate(position - prevPosition);
+    const glm::vec3 displacement = position - prevPosition;
+    camera.translate(displacement);
     reach.setOrigin(camera.getEye());
-    hitbox.translate(position - prevPosition);
+    hitbox.translate(displacement);
 }
 
 int Player::getKeyState(const int key) const
@@ -38,48 +39,91 @@ void Player::pollKeyboardControls(const double delta)
     right = glm::normalize(right);
     glm::vec3 up = camera.getWorldUp();
 
-    glm::vec3 velocity{};
+    glm::vec3 new_velocity = velocity;
+
     bool player_moved = false;
-    if (isKeyPressed(GLFW_KEY_W))
+
+    if (gameMode == GameMode::Creative)
     {
-        velocity += forward * adj_speed;
+        new_velocity = {};
+        adj_speed *= 2.0f;
+        if (isKeyPressed(GLFW_KEY_W))
+        {
+            new_velocity += forward * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_S))
+        {
+            new_velocity += -forward * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_A))
+        {
+            new_velocity += -right * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_D))
+        {
+            new_velocity += right * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_LEFT_SHIFT))
+        {
+            new_velocity += -up * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_SPACE))
+        {
+            new_velocity += up * adj_speed;
+        }
     }
-    if (isKeyPressed(GLFW_KEY_S))
+    else if (gameMode == GameMode::Survival)
     {
-        velocity += -forward * adj_speed;
-    }
-    if (isKeyPressed(GLFW_KEY_A))
-    {
-        velocity += -right * adj_speed;
-    }
-    if (isKeyPressed(GLFW_KEY_D))
-    {
-        velocity += right * adj_speed;
-    }
-    if (isKeyPressed(GLFW_KEY_SPACE))
-    {
-        velocity += up * adj_speed;
-    }
-    if (!isOnFloor && isKeyPressed(GLFW_KEY_LEFT_SHIFT))
-    {
-        velocity += -up * adj_speed;
+        new_velocity.x = 0.0f;
+        new_velocity.z = 0.0f;
+
+        if (isKeyPressed(GLFW_KEY_W))
+        {
+            new_velocity += forward * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_S))
+        {
+            new_velocity += -forward * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_A))
+        {
+            new_velocity += -right * adj_speed;
+        }
+        if (isKeyPressed(GLFW_KEY_D))
+        {
+            new_velocity += right * adj_speed;
+        }
+
+        // Apply forces.
+        new_velocity.y += world.getGravity() * 2.0f * dt;
+
+        constexpr float jump_force = 7.0f;
+        if (isOnFloor && isKeyPressed(GLFW_KEY_SPACE))
+        {
+            new_velocity += up * jump_force;
+        }
     }
 
     const float prev_dt = dt;
-    if (velocity != glm::vec3(0.0f))
+    if (new_velocity != glm::vec3(0.0f))
     {
         // Update the position.
         glm::vec3 new_position = position;
         Aabb3d new_hitbox = hitbox;
-        glm::vec3 new_velocity = velocity;
         float remaining_dt = dt;
+        isOnFloor = false;
         for (glm::length_t i = 0; i < 3; ++i)
         {
             // Run a collision test.
             glm::vec3 normal{};
             float new_dt = remaining_dt;
-            const bool intersected =
-                world.doesEntityIntersect(new_position, new_velocity, remaining_dt, new_hitbox, new_dt, &normal);
+
+            bool intersected = false;
+            if (gameMode != GameMode::Creative)
+            {
+                intersected =
+                    world.doesEntityIntersect(new_position, new_velocity, remaining_dt, new_hitbox, new_dt, &normal);
+            }
 
             if (!intersected)
             {
@@ -102,6 +146,12 @@ void Player::pollKeyboardControls(const double delta)
             // Apply a slide response.
             new_velocity -= normal * glm::dot(new_velocity, normal);
 
+            // Check if the player is now on a floor.
+            if (normal == camera.getWorldUp())
+            {
+                isOnFloor = true;
+            }
+
             // Don't continue if there is no more velocity or time to process.
             if (glm::length(new_velocity) <= 0.0f || remaining_dt <= 0.0f)
             {
@@ -109,6 +159,7 @@ void Player::pollKeyboardControls(const double delta)
             }
         }
         position = new_position;
+        velocity = new_velocity;
 
         // Notify the world to update chunks.
         const ChunkCenter curr_chunk_center = world.getPosToChunkCenter(getPosition());
@@ -123,15 +174,33 @@ void Player::pollKeyboardControls(const double delta)
 void Player::eventKeyboardControls(const int key, const int scancode, const int action, const int mods)
 {
     // TODO: move somewhere else that is UI related.
-    if (key == GLFW_KEY_LEFT_ALT && action == GLFW_PRESS)
+    if (action == GLFW_PRESS)
     {
-        if (window.getInputMode(GLFW_CURSOR) != GLFW_CURSOR_NORMAL)
+        if (key == GLFW_KEY_LEFT_ALT)
         {
-            window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            if (window.getInputMode(GLFW_CURSOR) != GLFW_CURSOR_NORMAL)
+            {
+                window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            else
+            {
+                window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
         }
-        else
+
+        if (key == GLFW_KEY_F1)
         {
-            window.setInputMode(GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            switch (gameMode)
+            {
+            case GameMode::Creative: {
+                gameMode = GameMode::Survival;
+                break;
+            }
+            case GameMode::Survival: {
+                gameMode = GameMode::Creative;
+                break;
+            }
+            }
         }
     }
 }
@@ -205,6 +274,11 @@ void Player::update(const double delta)
     }
 
     updatePosition();
+
+    // std::cout << "@pos " << glm::to_string(position) << "     "
+    //           << "\n@vel " << glm::to_string(velocity) << "     "
+    //           << "\n@is on floor? " << (isOnFloor ? "(T)" : "(F)") << "     "
+    //           << "\033[F\033[F" << "\r";
 }
 
 const Camera& Player::getCamera() const

@@ -21,6 +21,8 @@ class World
     unsigned seed;
     int chunkSize; // In blocks.
 
+    float gravity = -9.8f;
+
     // TODO: currently, a cache of chunks; will probably need an eviction policy to save memory;
     // maybe don't cache chunks at all and store world data in persistant memory and load them when needed;
     // maybe use a combination where inactive cached chunks are written to persistent memory.
@@ -66,4 +68,6 @@ class World
 
     const ChunkCenter getPosToChunkCenter(const glm::vec3& pos) const;
     const Model getModel() const;
+
+    float getGravity() const;
 };

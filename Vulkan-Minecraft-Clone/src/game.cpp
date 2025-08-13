@@ -55,8 +55,8 @@ void Game::loadChunkModel(const Chunk& chunk)
         }
         else
         {
-            id = reusableIds.top();
-            reusableIds.pop();
+            id = reusableIds.back();
+            reusableIds.erase(reusableIds.end() - 1);
         }
         chunkToVertexBufferId[cc] = id;
 
@@ -94,7 +94,7 @@ void Game::unloadChunkModel(const Chunk& chunk)
     const unsigned id = chunkToVertexBufferId[cc];
     renderer.removeVertexBuffer(id);
     chunkToVertexBufferId.erase(cc);
-    reusableIds.push(id);
+    reusableIds.push_back(id);
 }
 
 void Game::run()

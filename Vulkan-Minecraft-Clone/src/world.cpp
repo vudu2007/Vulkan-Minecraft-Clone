@@ -398,3 +398,8 @@ const Model World::getModel() const
 
     return Model(vertices, indices);
 }
+
+float World::getGravity() const
+{
+    return gravity;
+}

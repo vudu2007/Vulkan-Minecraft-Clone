@@ -7,12 +7,15 @@
 #include "engine/renderer/window.hpp"
 #include "world.hpp"
 
-// TODO: at larger coordinates the player will get stuck in voxels. In the future, we can (1) increase the precision by
-// using doubles, (2) have a floating origin so that the player is always near coordinates [0,0,0], (3) do stuff in a
-// chunk's local space, and/or (4) round the player's position to safe positions.
-
 class Player
 {
+  public:
+    enum GameMode
+    {
+        Creative,
+        Survival,
+    };
+
   private:
     static constexpr float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
     static constexpr float DEFAULT_PLAYER_HEIGHT = 1.8f;
@@ -26,9 +29,12 @@ class Player
     Ray reach;
     Aabb3d hitbox;
 
+    GameMode gameMode = GameMode::Creative;
+
     // Player attributes.
     glm::vec3 position;
     glm::vec3 prevPosition;
+    glm::vec3 velocity;
     float speed;
     unsigned renderDistance;
 
