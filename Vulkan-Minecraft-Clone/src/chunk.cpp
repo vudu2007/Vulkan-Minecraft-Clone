@@ -436,32 +436,44 @@ bool Chunk::doesEntityIntersect(
     const float delta,
     const Aabb3d& hitbox,
     float& new_delta,
-    glm::ivec3* entry_face) const
+    glm::vec3* normal) const
 {
     new_delta = delta;
-    bool intersected = false;
 
-    // Dynamic AABB check.
+    bool intersected = false;
+    glm::vec3 closest_normal{};
+    const Aabb3d broad_phase_aabb = CollisionHandler::getBroadPhaseAabb(hitbox, velocity, delta);
+
     for (const auto& block_pos : visibleBlocks)
     {
         const Aabb3d block_hitbox(glm::vec3(block_pos) - glm::vec3(0.5f), glm::vec3(block_pos) + glm::vec3(0.5f));
-        glm::ivec3 curr_entry_face{};
-        const float t_min = CollisionHandler::sweptAABB(hitbox, block_hitbox, velocity, delta, &curr_entry_face);
-        const bool curr_intersected = (t_min != std::numeric_limits<float>::infinity());
+
+        // Check whether to ignore the current block given the broad phase AABB.
+        if (!CollisionHandler::shapeToShapeIntersect(broad_phase_aabb, block_hitbox))
+        {
+            continue;
+        }
+
+        glm::vec3 curr_normal{};
+        const float t_min = CollisionHandler::sweptAabbPerAxis(hitbox, block_hitbox, velocity, delta, curr_normal);
+
         assert(t_min >= 0.0f);
-        if (curr_intersected)
+        if (t_min != std::numeric_limits<float>::infinity())
         {
             // Get the minimum because it represents the closest collision.
             if (t_min < new_delta)
             {
                 new_delta = t_min;
-                if (entry_face != nullptr)
-                {
-                    *entry_face = curr_entry_face;
-                }
+                closest_normal = curr_normal;
             }
+            intersected = true;
         }
-        intersected = intersected || curr_intersected;
+    }
+
+    // Update modifiable parameters.
+    if (normal != nullptr)
+    {
+        *normal = closest_normal;
     }
 
     return intersected;

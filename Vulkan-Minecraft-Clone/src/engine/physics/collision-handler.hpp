@@ -40,17 +40,33 @@ class CollisionHandler
         std::vector<std::any>* a_info = nullptr,
         std::vector<std::any>* b_info = nullptr);
 
-    static float sweptAABB(
+    [[nodiscard]] static Aabb3d getBroadPhaseAabb(const Aabb3d& a, const glm::vec3& a_velocity, const float dt);
+
+    static float sweptAabbPerAxis(
+        const Aabb3d& a,
+        const Aabb3d& b,
+        const glm::vec3& a_velocity,
+        const float dt,
+        glm::vec3& normal);
+    static float sweptAabbPerAxis(
+        const Aabb3d& a,
+        const Aabb3d& b,
+        const glm::vec3& a_velocity,
+        const glm::vec3& b_velocity,
+        const float dt,
+        glm::vec3& normal);
+
+    static float sweptAabbMinkowski(
         const Aabb3d& a,
         const Aabb3d& b,
         const glm::vec3& a_velocity,
         const float t,
         glm::ivec3* entry_face = nullptr);
-    static float sweptAABB(
+    static float sweptAabbMinkowski(
         const Aabb3d& a,
         const Aabb3d& b,
         const glm::vec3& a_velocity,
-        glm::vec3& b_velocity,
+        const glm::vec3& b_velocity,
         const float t,
         glm::ivec3* entry_face = nullptr);
 

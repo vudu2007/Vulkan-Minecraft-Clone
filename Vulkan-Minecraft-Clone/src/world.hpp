@@ -50,7 +50,7 @@ class World
         const float delta,
         const Aabb3d& hitbox,
         float& new_delta,
-        glm::ivec3* entry_face = nullptr);
+        glm::vec3* normal = nullptr);
 
     void addChunk(const std::vector<glm::vec3> chunk_center);
     unsigned updateChunks(const glm::vec3& origin, const unsigned radius);

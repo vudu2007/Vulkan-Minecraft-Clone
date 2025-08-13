@@ -16,5 +16,6 @@ class Aabb3d : public Shape3d
     glm::vec3 getMinBounds() const;
     glm::vec3 getMaxBounds() const;
     glm::vec3 getCenter() const;
-    glm::vec3 getLengths() const;
+    glm::vec3 getLength() const;
+    glm::vec3 getDim() const;
 };

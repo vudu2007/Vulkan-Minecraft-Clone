@@ -68,37 +68,47 @@ void Player::pollKeyboardControls(const double delta)
     const float prev_dt = dt;
     if (velocity != glm::vec3(0.0f))
     {
-        // Check for collisions component-wise.
-        glm::vec3 deltas(dt);
-        glm::vec3 offsets{};
+        // Update the position.
+        glm::vec3 new_position = position;
+        Aabb3d new_hitbox = hitbox;
+        glm::vec3 new_velocity = velocity;
+        float remaining_dt = dt;
         for (glm::length_t i = 0; i < 3; ++i)
         {
-            // Ignore components that'll have no impact.
-            if (velocity[i] == 0.0f)
+            // Run a collision test.
+            glm::vec3 normal{};
+            float new_dt = remaining_dt;
+            const bool intersected =
+                world.doesEntityIntersect(new_position, new_velocity, remaining_dt, new_hitbox, new_dt, &normal);
+
+            if (!intersected)
             {
-                continue;
+                const glm::vec3 displacement = new_velocity * remaining_dt;
+                new_position += displacement;
+                break;
             }
 
-            glm::vec3 curr_velocity{};
-            curr_velocity[i] = velocity[i];
-            glm::ivec3 entry_face{};
-            float new_delta = dt;
-            if (world.doesEntityIntersect(position, curr_velocity, dt, hitbox, new_delta, &entry_face))
+            assert(glm::length(normal) > 0.0f);
+
+            // Update the potential position.
+            const glm::vec3 offset = normal * EPSILON;
+            const glm::vec3 displacement = new_velocity * new_dt + offset;
+            new_position += displacement;
+            new_hitbox.translate(displacement);
+            remaining_dt -= new_dt;
+
+            assert(remaining_dt >= 0.0f);
+
+            // Apply a slide response.
+            new_velocity -= normal * glm::dot(new_velocity, normal);
+
+            // Don't continue if there is no more velocity or time to process.
+            if (glm::length(new_velocity) <= 0.0f || remaining_dt <= 0.0f)
             {
-                deltas[i] = new_delta;
-                offsets[i] = EPSILON * (entry_face.x + entry_face.y + entry_face.z);
+                break;
             }
         }
-
-        // Update state.
-        const glm::vec3 displacement = velocity * deltas;
-        position += displacement + offsets;
-
-        // std::cout << "pos " << glm::to_string(position) << "     "
-        //           << "\n@ vel " << glm::to_string(velocity) << "     "
-        //           << "\n@ dt " << dt << " compared to deltas " << glm::to_string(deltas) << "     "
-        //           << "\nwhere offsets are: " << glm::to_string(offsets) << "     "
-        //           << "\033[F\033[F\033[F" << "\r";
+        position = new_position;
 
         // Notify the world to update chunks.
         const ChunkCenter curr_chunk_center = world.getPosToChunkCenter(getPosition());

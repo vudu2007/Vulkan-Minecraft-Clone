@@ -113,7 +113,7 @@ bool World::doesEntityIntersect(
     const float delta,
     const Aabb3d& hitbox,
     float& new_delta,
-    glm::ivec3* entry_face)
+    glm::vec3* normal)
 {
     // Given the entity's position, determine which chunks to check.
     // TODO: entity can go so fast that the chunks haven't loaded yet; can maybe add boundaries to already loaded chunks
@@ -142,23 +142,30 @@ bool World::doesEntityIntersect(
     }
 
     // Ask the chunks to run intersection test on this entity and return the result.
+    new_delta = delta;
     bool intersected = false;
+    glm::vec3 closest_normal{};
     for (const auto& cc : chunk_centers)
     {
         float curr_new_delta;
-        glm::ivec3 curr_entry_face;
-        if (chunks[cc]->doesEntityIntersect(velocity, delta, hitbox, curr_new_delta, &curr_entry_face))
+        glm::vec3 curr_normal;
         {
-            if (curr_new_delta < new_delta)
+            std::lock_guard<std::mutex> lock(accessChunksMutex);
+            if (chunks[cc]->doesEntityIntersect(velocity, delta, hitbox, curr_new_delta, &curr_normal))
             {
-                new_delta = curr_new_delta;
-                if (entry_face != nullptr)
+                if (curr_new_delta < new_delta)
                 {
-                    *entry_face = curr_entry_face;
+                    new_delta = curr_new_delta;
+                    closest_normal = curr_normal;
                 }
+                intersected = true;
             }
-            intersected = true;
         }
+    }
+
+    if (normal != nullptr)
+    {
+        *normal = closest_normal;
     }
 
     // No intersection was found, so return false.

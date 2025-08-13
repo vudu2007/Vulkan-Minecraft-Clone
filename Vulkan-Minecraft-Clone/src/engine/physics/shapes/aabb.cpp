@@ -29,7 +29,12 @@ glm::vec3 Aabb3d::getCenter() const
     return (maxBounds + minBounds) * 0.5f;
 }
 
-glm::vec3 Aabb3d::getLengths() const
+glm::vec3 Aabb3d::getLength() const
 {
-    return (maxBounds - minBounds) * 0.5f;
+    return getDim() * 0.5f;
+}
+
+glm::vec3 Aabb3d::getDim() const
+{
+    return maxBounds - minBounds;
 }

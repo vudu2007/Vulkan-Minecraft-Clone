@@ -100,7 +100,7 @@ class Chunk
         const float delta,
         const Aabb3d& hitbox,
         float& new_delta,
-        glm::ivec3* entry_face = nullptr) const;
+        glm::vec3* normal = nullptr) const;
 
     ChunkCenter getCenter() const;
     const Model& getModel() const;
