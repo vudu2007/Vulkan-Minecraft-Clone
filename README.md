@@ -1,6 +1,6 @@
 # Vulkan Minecraft Clone
-An exploratory project on the Vulkan API by implementing a Minecraft like game as the goal.<br>
-The project has only been tested on Windows 11 using Visual Studio 2022.
+An exploratory project on the Vulkan API (using v.1.0 features) by implementing a Minecraft like game as the goal.<br>
+As of now, the project has only been tested on Windows 11 using Visual Studio 2022.
 
 ## Controls (TODO)
 - `W`/`A`/`S`/`D` to move.
@@ -34,4 +34,6 @@ The project has only been tested on Windows 11 using Visual Studio 2022.
 ## Resources
 - [Vulkan Tutorial](https://vulkan-tutorial.com/)
 - [Learn OpenGL](https://learnopengl.com/)
-- [Brendan Galea Vulkan (c++) Game Engine Tutorials Playlist](https://youtube.com/playlist?list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&si=4Qpm8svqKWqGVDzK)
+- [Brendan Galea - Vulkan (c++) Game Engine Tutorials Playlist](https://youtube.com/playlist?list=PL8327DO66nu9qYVKLDmdLW_84-yE4auCR&si=4Qpm8svqKWqGVDzK)
+- [BrendanL.K - Swept AABB Collision](https://www.gamedev.net/tutorials/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084/)
+- [Kentom Hamaluik - Swept AABB Minkowski](https://blog.hamaluik.ca/posts/swept-aabb-collision-using-minkowski-difference/)
