@@ -99,7 +99,7 @@ void Game::unloadChunkModel(const Chunk& chunk)
 
 void Game::run()
 {
-    Texture* block_texture_ptr = renderer.createTexture("../../Vulkan-Minecraft-Clone/src/textures/cube_texture.jpg");
+    Texture* block_texture_ptr = renderer.createTexture("../../Vulkan-Minecraft-Clone/textures/cube_texture.jpg");
 
     world.addChunkLoadedCallback([this](const Chunk& chunk) { loadChunkModel(chunk); });
     world.addChunkUnloadedCallback([this](const Chunk& chunk) { unloadChunkModel(chunk); });

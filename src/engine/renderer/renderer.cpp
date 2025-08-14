@@ -316,8 +316,8 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) c
 void Renderer::createGraphicsPipeline()
 {
     // Load the shaders.
-    auto vert_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/src/shaders/shader_block_vert.spv");
-    auto frag_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/src/shaders/shader_block_frag.spv");
+    auto vert_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/shaders/shader_block_vert.spv");
+    auto frag_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/shaders/shader_block_frag.spv");
     VkShaderModule vert_shader_module = createShaderModule(vert_shader_code);
     VkShaderModule frag_shader_module = createShaderModule(frag_shader_code);
 
