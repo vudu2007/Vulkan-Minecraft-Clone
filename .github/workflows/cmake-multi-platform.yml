@@ -72,8 +72,7 @@ jobs:
     - name: Debug Vulkan paths
       run: |
         echo "VULKAN_SDK = $VULKAN_SDK"
-        ls "$VULKAN_SDK/Include"
-        ls "$VULKAN_SDK/Lib"
+        ls "{$VULKAN_SDK}/"
       shell: bash
 
     - name: Configure CMake
