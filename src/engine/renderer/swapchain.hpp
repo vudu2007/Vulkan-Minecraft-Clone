@@ -1,5 +1,4 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_SWAPCHAIN_HPP
-#define VMC_SRC_ENGINE_RENDERER_SWAPCHAIN_HPP
+#pragma once
 
 #include "device.hpp"
 
@@ -54,5 +53,3 @@ class Swapchain
     const VkRenderPass getRenderPass() const;
     const std::vector<VkFramebuffer>& getFramebuffers() const;
 };
-
-#endif VMC_SRC_ENGINE_RENDERER_SWAPCHAIN_HPP

@@ -622,6 +622,8 @@ bool Renderer::updateIndexBuffer(
     // Create the index buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     index_buffer.pBuffer->copyFrom(staging_buffer, num_bytes);
+
+    return true;
 }
 
 void Renderer::removeVertexBuffer(const unsigned id)
