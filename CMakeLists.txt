@@ -16,19 +16,19 @@ project(Vulkan-Minecraft-Clone CXX)
 # (1.a) Vulkan.
 if(DEFINED VULKAN_SDK_PATH)
     set(Vulkan_INCLUDE_DIRS "${VULKAN_SDK_PATH}/Include")
-    set(Vulkan_LIB "${VULKAN_SDK_PATH}/Lib")
+    set(Vulkan_LIBRARIES "${VULKAN_SDK_PATH}/Lib")
     set(Vulkan_FOUND "True")
     message(STATUS "Found Vulkan: using variable `VULKAN_SDK_PATH`.")
 else()
     find_package(Vulkan REQUIRED)
     message(STATUS "Found Vulkan: $ENV{VULKAN_SDK}.")
     set(Vulkan_INCLUDE_DIRS "$ENV{VULKAN_SDK}/Include")
-    set(Vulkan_LIB "$ENV{VULKAN_SDK}/Lib")
+    set(Vulkan_LIBRARIES "$ENV{VULKAN_SDK}/Lib")
 endif()
 if(NOT Vulkan_FOUND)
     message(FATAL_ERROR "Could not find Vulkan library!")
 else()
-    message(STATUS "Using Vulkan library at: ${Vulkan_LIB}.")
+    message(STATUS "Using Vulkan library at: ${Vulkan_LIBRARIES}.")
 endif()
 
 # (1.b) GLFW.
@@ -36,28 +36,28 @@ if(DEFINED GLFW_PATH)
     set(GLFW_INCLUDE_DIRS "${GLFW_PATH}/include")
     if (MSVC)
         if (GLFW_MSVC_YEAR STREQUAL "2022")
-            set(GLFW_LIB_DIR "${GLFW_PATH}/lib-vc2022")
+            set(GLFW_LIBRARIES "${GLFW_PATH}/lib-vc2022")
         else()
             message(FATAL_ERROR "`GLFW_PATH` defined and MSVC detected but GLFW_MSVC_YEAR not supported!")
         endif()
     elseif (CMAKE_GENERATOR STREQUAL "MinGW Makefiles")
         message(STATUS "Using MinGW")
-        set(GLFW_LIB_DIR "${GLFW_PATH}/lib-mingw-w64")
+        set(GLFW_LIBRARIES "${GLFW_PATH}/lib-mingw-w64")
     else()
         message(FATAL_ERROR "`GLFW_PATH` defined but unknown compiler or generator!")
     endif()
 
     add_library(glfw STATIC IMPORTED)
     set_target_properties(glfw PROPERTIES
-        IMPORTED_LOCATION "${GLFW_LIB_DIR}/glfw3.lib"
+        IMPORTED_LOCATION "${GLFW_LIBRARIES}/glfw3.lib"
         INTERFACE_INCLUDE_DIRECTORIES "${GLFW_INCLUDE_DIRS}"
     )
 else()
     find_package(glfw3 3.4 REQUIRED)
-    set(GLFW_LIB_DIR glfw)
+    set(GLFW_LIBRARIES glfw)
     message(STATUS "Found GLFW.")
 endif()
-if(NOT GLFW_LIB_DIR)
+if(NOT GLFW_LIBRARIES)
     message(FATAL_ERROR "Could not find GLFW library!")
 else()
     message(STATUS "Using GLFW library at: ${GLFW_LIB}.")
@@ -70,8 +70,16 @@ set(GLM_PATH external/glm-1.0.1/Include)
 set(STB_PATH external/stb)
 set(BS_THREAD_POOL_PATH external/thread-pool-5.0.0)
 set(TINYOBJ_PATH external/tinyobjloader)
-set(VMA external/VulkanMemoryAllocator-3.3.0)
+set(VMA_PATH external/VulkanMemoryAllocator-3.3.0)
 
+set(ALL_EXTERNAL_PATHS 
+    ${FAST_NOISE_LITE_PATH}
+    ${GLM_PATH}
+    ${STB_PATH}
+    ${BS_THREAD_POOL_PATH}
+    ${TINYOBJ_PATH}
+    ${VMA_PATH}
+)
 
 ####################################################################################################
 # (2) Prepare them for a build.
@@ -98,24 +106,27 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 
 if(WIN32)
-    message(STATUS "Creating a build for Windows.")
+    message(STATUS "Creating build for Windows.")
     
     target_include_directories(${PROJECT_NAME} PUBLIC
         ${PROJECT_SOURCE_DIR}/src
         ${Vulkan_INCLUDE_DIRS}
         ${GLFW_INCLUDE_DIRS}
-        ${GLM_PATH}
-        ${TINYOBJ_PATH}
-        ${FAST_NOISE_LITE_PATH}
-        ${STB_PATH}
-        ${BS_THREAD_POOL_PATH}
-        ${VMA}
+        ${ALL_EXTERNAL_PATHS}
     )
     target_link_directories(${PROJECT_NAME} PUBLIC
-        ${Vulkan_LIB}
+        ${Vulkan_LIBRARIES}
         ${GLFW_LIB}
     )
-    target_link_libraries(${PROJECT_NAME} vulkan-1 glfw)
+    target_link_libraries(${PROJECT_NAME} glfw vulkan-1)
+elseif (UNIX)
+    message(STATUS "Creating build for Unix.")
+
+    target_include_directories(${PROJECT_NAME} PUBLIC
+      ${PROJECT_SOURCE_DIR}/src
+      ${ALL_EXTERNAL_PATHS}
+    )
+    target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
 else()
     message(FATAL_ERROR "Currently, CMake not configured for current target system!")
 endif()
