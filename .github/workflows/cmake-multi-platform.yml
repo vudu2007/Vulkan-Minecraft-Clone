@@ -53,7 +53,7 @@ jobs:
       uses: humbletim/install-vulkan-sdk@v1.2
 
     - name: Print Vulkan SDK path
-      run: echo "VULKAN_SDK is $env:VULKAN_SDK"
+      run: echo "VULKAN_SDK is $VULKAN_SDK"
       shell: bash
 
     # - name: Clone vcpkg
