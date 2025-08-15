@@ -189,7 +189,7 @@ void Chunk::generateMesh()
                 const glm::vec3 face_pos = block_pos + offset_to_face;
                 for (unsigned j = 0; j < 4; ++j)
                 {
-                    vertices.emplace_back((face_pos + v_offsets[j]), normal, color, uvs[j]);
+                    vertices.emplace_back(Model::Vertex((face_pos + v_offsets[j]), normal, color, uvs[j]));
                 }
             }
         }
