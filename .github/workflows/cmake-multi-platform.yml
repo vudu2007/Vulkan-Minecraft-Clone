@@ -56,22 +56,18 @@ jobs:
       run: echo "VULKAN_SDK is $VULKAN_SDK"
       shell: bash
 
-    # - name: Clone vcpkg
-    #   run: git clone https://github.com/microsoft/vcpkg.git
+    - name: Clone vcpkg
+      run: git clone https://github.com/microsoft/vcpkg.git
 
-    # - name: Bootstrap vcpkg
-    #   run: |
-    #     ./vcpkg/bootstrap-vcpkg.sh
-    #   shell: bash
+    - name: Bootstrap vcpkg
+      run: |
+        ./vcpkg/bootstrap-vcpkg.sh
+      shell: bash
 
-    # - name: Install GLFW via vcpkg
-    #   run: |
-    #     ./vcpkg/vcpkg install glfw3
-    #   shell: bash
-
-    # - name: Set environment variables
-    #   run: |
-    #   shell: bash
+    - name: Install GLFW via vcpkg
+      run: |
+        ./vcpkg/vcpkg install glfw3
+      shell: bash
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
