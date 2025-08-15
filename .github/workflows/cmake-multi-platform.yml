@@ -51,6 +51,8 @@ jobs:
     - name: Install Vulkan SDK
       # uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff
       uses: humbletim/install-vulkan-sdk@v1.2
+      with:
+        full: true
 
     - name: Print Vulkan SDK path
       run: echo "VULKAN_SDK is $VULKAN_SDK"
