@@ -76,7 +76,7 @@ jobs:
     - name: Setup Vulkan SDK
       uses: humbletim/install-vulkan-sdk@0ef43dbc8af56d77bcb1e8b1ebbbaa8718ead524
       with:
-        version: 1.4.321.0
+        version: 1.4.303.0
         cache: true
                 
     - name: Print Vulkan SDK path
