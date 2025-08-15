@@ -77,9 +77,10 @@ jobs:
         -DCMAKE_CXX_COMPILER="${{ matrix.cpp_compiler }}"
         -DCMAKE_C_COMPILER="${{ matrix.c_compiler }}"
         -DCMAKE_BUILD_TYPE="${{ matrix.build_type }}"
+        -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake"
+        -DCMAKE_PREFIX_PATH="$GLFW_INSTALL_PREFIX"
         -DVulkan_INCLUDE_DIR="$env:VULKAN_SDK\Include"
         -DVulkan_LIBRARY="$env:VULKAN_SDK\Lib\vulkan-1.lib"
-        -DCMAKE_PREFIX_PATH="$GLFW_INSTALL_PREFIX"
         -S "${{ github.workspace }}"
       shell: bash
 
