@@ -4,7 +4,7 @@
 #include "device.hpp"
 
 #include "../usage/glm-usage.hpp"
-#include <GLM/gtx/hash.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <array>
 

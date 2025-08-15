@@ -3,7 +3,7 @@
 #include <cassert>
 #include <iostream>
 
-#include <GLM/gtx/string_cast.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 void World::runChunkLoadedCallbacks(const Chunk& chunk)
 {
