@@ -104,8 +104,6 @@ jobs:
         -DCMAKE_C_COMPILER="${{ matrix.c_compiler }}"
         -DCMAKE_BUILD_TYPE="${{ matrix.build_type }}"
         -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        -DVulkan_INCLUDE_DIR="$VULKAN_SDK/Include"
-        -DVulkan_LIBRARY="$VULKAN_SDK/Lib/vulkan-1.lib"
         -S "${{ github.workspace }}"
       shell: bash
 
