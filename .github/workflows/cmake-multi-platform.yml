@@ -48,10 +48,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Install Vulkan SDK
-      # uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff
-      uses: humbletim/install-vulkan-sdk@v1.2
-
+    - name: Setup Vulkan SDK
+      # You may pin to the exact commit or the version.
+      # uses: humbletim/setup-vulkan-sdk@c25f41106918cde0bf347e6f201277392b3a9e9d
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
+                
     - name: Print Vulkan SDK path
       run: echo "VULKAN_SDK is $VULKAN_SDK"
       shell: bash
@@ -72,7 +73,7 @@ jobs:
     - name: Debug Vulkan paths
       run: |
         echo "VULKAN_SDK = $VULKAN_SDK"
-        ls "$VULKAN_SDK/bin/"
+        ls "$VULKAN_SDK/"
       shell: bash
 
     - name: Configure CMake
