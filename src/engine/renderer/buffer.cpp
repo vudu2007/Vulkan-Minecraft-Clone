@@ -26,6 +26,7 @@ and some Vulkan functions have explicit flags to specify that you want to do thi
 
 #include <cassert>
 #include <sstream>
+#include <cstring>
 #include <stdexcept>
 
 Buffer::Buffer(
