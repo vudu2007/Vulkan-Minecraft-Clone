@@ -128,7 +128,7 @@ if(WIN32)
         ${Vulkan_LIBRARIES}
         ${GLFW_LIB}
     )
-    target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan)
+    target_link_libraries(${PROJECT_NAME} glfw vulkan-1)
 elseif (UNIX)
     message(STATUS "Creating build for Unix.")
 
@@ -136,7 +136,7 @@ elseif (UNIX)
       ${PROJECT_SOURCE_DIR}/src
       ${ALL_EXTERNAL_PATHS}
     )
-    target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan)
+    target_link_libraries(${PROJECT_NAME} glfw libvulkan)
 else()
     message(FATAL_ERROR "Currently, CMake not configured for current target system!")
 endif()

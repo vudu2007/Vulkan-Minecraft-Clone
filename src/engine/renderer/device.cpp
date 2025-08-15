@@ -1,5 +1,6 @@
 #include "device.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <set>
 
