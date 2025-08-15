@@ -50,8 +50,6 @@ jobs:
 
     - name: Setup Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.2
-      with:
-        full: true
                 
     - name: Print Vulkan SDK path
       run: echo "VULKAN_SDK is $VULKAN_SDK"
@@ -70,6 +68,7 @@ jobs:
 
     - name: Check for GLFW
       run: find ./vcpkg -name glfw3.h
+      shell: bash
 
     - name: Debug Vulkan paths
       run: |
