@@ -51,7 +51,6 @@ jobs:
     - name: Setup Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.2
       with:
-        version: 1.3.268.0
         full: true
                 
     - name: Print Vulkan SDK path
@@ -62,14 +61,15 @@ jobs:
       run: git clone https://github.com/microsoft/vcpkg.git
 
     - name: Bootstrap vcpkg
-      run: |
-        ./vcpkg/bootstrap-vcpkg.sh
+      run: ./vcpkg/bootstrap-vcpkg.sh
       shell: bash
 
     - name: Install GLFW via vcpkg
-      run: |
-        ./vcpkg/vcpkg install glfw3
+      run: ./vcpkg/vcpkg install glfw3
       shell: bash
+
+    - name: Check for GLFW
+      run: find ./vcpkg -name glfw3.h
 
     - name: Debug Vulkan paths
       run: |
