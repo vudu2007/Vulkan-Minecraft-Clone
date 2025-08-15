@@ -20,6 +20,7 @@ class Model
         glm::vec3 color;
         glm::vec2 texCoord;
 
+        Vertex() = default;
         Vertex(const glm::vec3& pos, const glm::vec3& normal, const glm::vec3& color, const glm::vec2& tex_coord);
 
         bool operator==(const Vertex& other) const
