@@ -1,7 +1,7 @@
 #include "camera.hpp"
 
-#include <GLM/gtc/matrix_transform.hpp>
-#include <GLM/gtx/string_cast.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 Camera::Camera(
     Window& window,

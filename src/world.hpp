@@ -3,7 +3,7 @@
 #include "chunk.hpp"
 
 #include "BS_thread_pool.hpp"
-#include <GLM/gtx/hash.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <mutex>
 #include <string>

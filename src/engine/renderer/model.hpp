@@ -4,7 +4,7 @@
 #include "device.hpp"
 
 #include "../usage/glm-usage.hpp"
-#include <GLM/gtx/hash.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <array>
 
@@ -19,6 +19,9 @@ class Model
         glm::vec3 normal;
         glm::vec3 color;
         glm::vec2 texCoord;
+
+        Vertex() = default;
+        Vertex(const glm::vec3& pos, const glm::vec3& normal, const glm::vec3& color, const glm::vec2& tex_coord);
 
         bool operator==(const Vertex& other) const
         {

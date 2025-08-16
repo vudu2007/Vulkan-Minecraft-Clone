@@ -6,7 +6,7 @@
 
 #include "FastNoiseLite.h"
 #include "engine/usage/glm-usage.hpp"
-#include <GLM/gtx/hash.hpp>
+#include <glm/gtx/hash.hpp>
 
 #include <memory>
 #include <optional>

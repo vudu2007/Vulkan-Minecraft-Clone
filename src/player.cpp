@@ -1,6 +1,6 @@
 #include "player.hpp"
 
-#include <GLM/gtx/string_cast.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 constexpr float EPSILON = 0.0001f;
 

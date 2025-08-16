@@ -62,6 +62,8 @@ class Renderer
     {
         uint32_t binding;
         std::vector<std::unique_ptr<Buffer>> bufferPtrPerFrame;
+
+        UniformBufferInfo(const uint32_t binding, std::vector<std::unique_ptr<Buffer>>&& buffer_ptr_per_frame);
     };
     std::vector<UniformBufferInfo> uniformBuffers;
 

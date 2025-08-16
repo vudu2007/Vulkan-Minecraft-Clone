@@ -5,4 +5,4 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include <GLM/glm.hpp>
+#include <glm/glm.hpp>

@@ -557,11 +557,6 @@ bool Renderer::addIndexBuffer(
     // Create the index buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-    if (!vertToIndexBuffers.contains(vertex_buffer_id))
-    {
-        vertToIndexBuffers[vertex_buffer_id] = {};
-    }
-
     vertToIndexBuffers[vertex_buffer_id].emplace(
         index_buffer_id,
         IndexBufferInfo(
@@ -622,6 +617,8 @@ bool Renderer::updateIndexBuffer(
     // Create the index buffer and copy the data from the staging buffer into it.
     create_info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
     index_buffer.pBuffer->copyFrom(staging_buffer, num_bytes);
+
+    return true;
 }
 
 void Renderer::removeVertexBuffer(const unsigned id)
@@ -961,4 +958,11 @@ Renderer::IndexBufferInfo::IndexBufferInfo(IndexBufferInfo&& other) noexcept
     count = other.count;
     pBuffer = std::move(other.pBuffer);
     type = other.type;
+}
+
+Renderer::UniformBufferInfo::UniformBufferInfo(
+    const uint32_t binding,
+    std::vector<std::unique_ptr<Buffer>>&& buffer_ptr_per_frame)
+    : binding(binding), bufferPtrPerFrame(std::move(buffer_ptr_per_frame))
+{
 }

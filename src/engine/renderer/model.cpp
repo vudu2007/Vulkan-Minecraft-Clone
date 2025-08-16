@@ -73,3 +73,8 @@ void Model::translate(const glm::vec3 units)
         vertex.pos += units;
     }
 }
+
+Model::Vertex::Vertex(const glm::vec3& pos, const glm::vec3& normal, const glm::vec3& color, const glm::vec2& tex_coord)
+    : pos(pos), normal(normal), color(color), texCoord(tex_coord)
+{
+}
