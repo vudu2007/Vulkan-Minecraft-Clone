@@ -78,10 +78,6 @@ jobs:
       with:
         version: 1.4.309.0
         cache: true
-                
-    - name: Print Vulkan SDK path
-      run: echo "VULKAN_SDK is $VULKAN_SDK"
-      shell: bash
 
     - name: Clone vcpkg
       run: git clone https://github.com/microsoft/vcpkg.git
@@ -101,16 +97,6 @@ jobs:
 
     - name: Install GLFW via vcpkg
       run: ./vcpkg/vcpkg install glfw3
-      shell: bash
-
-    - name: Check for GLFW
-      run: find ./vcpkg -name glfw3.h
-      shell: bash
-
-    - name: Debug Vulkan paths
-      run: |
-        echo "VULKAN_SDK = $VULKAN_SDK"
-        ls "$VULKAN_SDK/"
       shell: bash
 
     - name: Configure CMake
