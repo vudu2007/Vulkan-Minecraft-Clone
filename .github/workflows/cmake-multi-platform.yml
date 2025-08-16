@@ -4,9 +4,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "add-github-actions" ]
+    branches: [ "master", "add-github-actions" ]
   pull_request:
-    branches: [ "add-github-actions" ]
+    branches: [ "master", "add-github-actions" ]
 
 jobs:
   build:
