@@ -99,7 +99,7 @@ void Game::unloadChunkModel(const Chunk& chunk)
 
 void Game::run()
 {
-    Texture* block_texture_ptr = renderer.createTexture("../../Vulkan-Minecraft-Clone/textures/cube_texture.jpg");
+    Texture* block_texture_ptr = renderer.createTexture("../../textures/cube_texture.jpg");
 
     world.addChunkLoadedCallback([this](const Chunk& chunk) { loadChunkModel(chunk); });
     world.addChunkUnloadedCallback([this](const Chunk& chunk) { unloadChunkModel(chunk); });
@@ -137,7 +137,7 @@ void Game::run()
         {
             accum_time = 0.0;
             double fps = 1.0 / delta_time.count();
-            // std::cout << "\rFPS: " << static_cast<int>(fps) << "     ";
+            std::cout << "\rFPS: " << static_cast<int>(fps) << "     ";
         }
 
         // Update uniforms.

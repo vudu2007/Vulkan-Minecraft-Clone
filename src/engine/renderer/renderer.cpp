@@ -316,8 +316,8 @@ VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) c
 void Renderer::createGraphicsPipeline()
 {
     // Load the shaders.
-    auto vert_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/shaders/shader_block_vert.spv");
-    auto frag_shader_code = VmcUtility::readFile("../../Vulkan-Minecraft-Clone/shaders/shader_block_frag.spv");
+    auto vert_shader_code = VmcUtility::readFile("../../shaders/shader_block_vert.spv");
+    auto frag_shader_code = VmcUtility::readFile("../../shaders/shader_block_frag.spv");
     VkShaderModule vert_shader_module = createShaderModule(vert_shader_code);
     VkShaderModule frag_shader_module = createShaderModule(frag_shader_code);
 
@@ -623,12 +623,14 @@ bool Renderer::updateIndexBuffer(
 
 void Renderer::removeVertexBuffer(const unsigned id)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
     vertexBuffers.erase(id);
     vertToIndexBuffers.erase(id); // Remove all index buffers associated with the given vertex buffer id.
 }
 
 void Renderer::removeIndexBuffer(const unsigned vertex_buffer_id, const unsigned index_buffer_id)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
     auto& index_buffers = vertToIndexBuffers[vertex_buffer_id];
     index_buffers.erase(index_buffer_id);
 }
@@ -926,7 +928,7 @@ void Renderer::drawFrame()
     present_info.pResults = nullptr; // Optional: good for more than 1 swap chain.
 
     result = vkQueuePresentKHR(device.getPresentQueue(), &present_info);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUBOPTIMAL_KHR || window.resized)
+    if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR) || window.resized)
     {
         window.resized = false;
         swapchain.recreate();

@@ -108,7 +108,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
+set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build/x64/")
 
 if(WIN32)
     message(STATUS "Creating build for Windows.")
