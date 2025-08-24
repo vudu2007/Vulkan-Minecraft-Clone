@@ -2,6 +2,8 @@
 
 #include "chunk.hpp"
 
+#include "engine/frustum.hpp"
+
 #include "BS_thread_pool.hpp"
 #include <glm/gtx/hash.hpp>
 
@@ -29,6 +31,8 @@ class World
     std::unordered_map<ChunkCenter, Chunk*> chunks;
     std::unordered_set<ChunkCenter> chunksToAdd;
     std::unordered_set<ChunkCenter> activeChunks;
+    std::unordered_set<ChunkCenter> chunksToShow;
+    std::unordered_set<ChunkCenter> visibleChunks;
 
     std::vector<std::function<void(const Chunk&)>> chunkLoadedCallbacks;
     std::vector<std::function<void(const Chunk&)>> chunkUnloadedCallbacks;
@@ -55,6 +59,8 @@ class World
         glm::vec3* normal = nullptr);
 
     void addChunk(const std::vector<glm::vec3> chunk_center);
+
+    void draw(const glm::vec3& origin, const unsigned radius, const Frustum& frustum);
     unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
 
     void addBlock(const glm::vec3 block_pos);

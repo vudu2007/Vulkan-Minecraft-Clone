@@ -152,6 +152,8 @@ Texture::Texture(const Device& device, const std::string& texture_file_path) : d
 
 Texture::~Texture()
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     vkDestroySampler(device.getLogicalDevice(), sampler, nullptr);
     vkDestroyImageView(device.getLogicalDevice(), imageView, nullptr);
     vmaDestroyImage(device.getAllocator(), image, allocation);

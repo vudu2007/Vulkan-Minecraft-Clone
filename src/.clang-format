@@ -10,4 +10,5 @@ AlignAfterOpenBracket: AlwaysBreak
 AlignArrayOfStructures: Left
 PointerAlignment: Left
 AllowAllArgumentsOnNextLine: false
+BreakTemplateDeclarations: Yes
 # ColumnLimit: 100

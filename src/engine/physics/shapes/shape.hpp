@@ -12,9 +12,10 @@ class Shape : public Geometry
     Geometry::Type type = Geometry::Type::SHAPE;
 
   public:
-    enum Type
+    enum class Type
     {
         AABB_3D,
+        PLANE_3D,
     };
 
     static std::string toString(const Shape::Type& type)
@@ -23,6 +24,8 @@ class Shape : public Geometry
         {
         case Type::AABB_3D:
             return "AABB_3D";
+        case Type::PLANE_3D:
+            return "PLANE_3D";
         default:
             return "UNDEFINED";
         }

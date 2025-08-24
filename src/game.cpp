@@ -152,6 +152,7 @@ void Game::run()
         renderer.updateUniformBuffer(ubo_idx_light_info, &ubo_lighting, sizeof(ubo_lighting));
 
         player.update(delta_time.count());
+        world.draw(player.getPosition(), player.getRenderDistance(), player.getCamera().getFrustum());
 
         {
             std::lock_guard<std::mutex> lock(updateMutex);

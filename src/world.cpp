@@ -3,8 +3,6 @@
 #include <cassert>
 #include <iostream>
 
-#include <glm/gtx/string_cast.hpp>
-
 void World::runChunkLoadedCallbacks(const Chunk& chunk)
 {
     for (const auto& callback : chunkLoadedCallbacks)
@@ -195,24 +193,19 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
             chunks[cc] = chunk;
             chunksToAdd.erase(cc);
         }
-
-        // Check if the chunk is still active; if so, notify that a chunk loaded.
-        if (activeChunks.contains(cc))
-        {
-            runChunkLoadedCallbacks(*chunks[cc]);
-        }
     }
 }
 
-unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
+void World::draw(const glm::vec3& origin, const unsigned radius, const Frustum& frustum)
 {
     // Load all chunks visible to the player.
     const int render_distance = static_cast<int>(radius);
     const float offset = static_cast<float>(render_distance * chunkSize);
 
-    std::unordered_set<ChunkCenter> inactive_chunks = activeChunks;
-    std::vector<ChunkCenter> chunk_centers;
+    std::unordered_set<ChunkCenter> hidden_chunks = visibleChunks;
+    const float chunk_extent = chunkSize * 0.5f;
 
+    // Iterate through new and/or old active chunks.
     float x = origin.x - offset;
     for (int i = 0; i <= (render_distance * 2); ++i)
     {
@@ -223,29 +216,16 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
             for (int k = 0; k <= (render_distance * 2); ++k)
             {
                 const ChunkCenter cc = getPosToChunkCenter({x, y, z});
-                inactive_chunks.erase(cc);
 
-                if (!activeChunks.contains(cc))
+                // Handle chunk visibility; whether this active chunk is visible according to the frustum.
+                const Aabb3d chunk_collider((cc - chunk_extent), (cc + chunk_extent));
+                const bool in_frustum = frustum.isAabbInside(chunk_collider);
+                if (in_frustum)
                 {
-                    // Make sure the chunk is marked as active even if it hasn't loaded.
-                    activeChunks.emplace(cc);
-
+                    hidden_chunks.erase(cc);
+                    if (!visibleChunks.contains(cc))
                     {
-                        std::lock_guard<std::mutex> lock(accessChunksMutex);
-                        if (!chunks.contains(cc))
-                        {
-                            if (!chunksToAdd.contains(cc))
-                            {
-                                // Create the chunk asynchrounously and add it later.
-                                chunksToAdd.emplace(cc);
-                                chunk_centers.emplace_back(cc);
-                            } // Else, don't add it to the set of chunks to add because it's already
-                              // in there.
-                        }
-                        else
-                        {
-                            runChunkLoadedCallbacks(*chunks[cc]);
-                        }
+                        chunksToShow.emplace(cc);
                     }
                 }
                 z += chunkSize;
@@ -255,27 +235,11 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
         x += chunkSize;
     }
 
-    if (!chunk_centers.empty())
+    // Remove now hidden chunks.
+    for (const auto& cc : hidden_chunks)
     {
-        // Give a batch of chunks to a `num_sections` async thread(s) to process.
-        const size_t num_sections = threadPool.get_thread_count(); // Guaranteed to be at least 1 thread.
-        const size_t section_size = chunk_centers.size() / num_sections;
-        for (size_t section_i = 0; section_i < num_sections - 1; ++section_i)
-        {
-            std::vector<ChunkCenter> section(
-                chunk_centers.begin() + section_size * section_i,
-                chunk_centers.begin() + section_size * (section_i + 1));
-            threadPool.detach_task([this, section]() { addChunk(section); });
-        }
-        std::vector<ChunkCenter> section(
-            chunk_centers.begin() + section_size * (num_sections - 1),
-            chunk_centers.end());
-        threadPool.detach_task([this, section]() { addChunk(section); });
-    }
+        visibleChunks.erase(cc);
 
-    // Remove now inactive chunks.
-    for (const auto& cc : inactive_chunks)
-    {
         {
             std::lock_guard<std::mutex> lock(accessChunksMutex);
 
@@ -284,11 +248,97 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
                 runChunkUnloadedCallbacks(*chunks[cc]);
             }
         }
-
-        activeChunks.erase(cc);
     }
 
-    return static_cast<unsigned>(chunk_centers.size());
+    // Add any visible chunks that are now ready.
+    if (!chunksToShow.empty())
+    {
+        std::vector<ChunkCenter> to_remove;
+        to_remove.reserve(chunksToShow.size());
+        for (const auto& cc : chunksToShow)
+        {
+            {
+                std::lock_guard<std::mutex> lock(accessChunksMutex);
+                if (chunks.contains(cc))
+                {
+                    visibleChunks.emplace(cc);
+                    to_remove.push_back(cc);
+                    runChunkLoadedCallbacks(*chunks[cc]);
+                }
+            }
+        }
+        for (const auto& cc : to_remove)
+        {
+            chunksToShow.erase(cc);
+        }
+    }
+}
+
+unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
+{
+    // Load all chunks visible to the player.
+    const int render_distance = static_cast<int>(radius);
+    const float offset = static_cast<float>(render_distance * chunkSize);
+
+    std::vector<ChunkCenter> new_chunk_centers;
+    activeChunks.clear();
+
+    // Iterate through new active chunks.
+    float x = origin.x - offset;
+    for (int i = 0; i <= (render_distance * 2); ++i)
+    {
+        float y = origin.y - offset;
+        for (int j = 0; j <= (render_distance * 2); ++j)
+        {
+            float z = origin.z - offset;
+            for (int k = 0; k <= (render_distance * 2); ++k)
+            {
+                const ChunkCenter cc = getPosToChunkCenter({x, y, z});
+
+                // Make sure the chunk is marked as active even if it hasn't loaded.
+                activeChunks.emplace(cc);
+
+                {
+                    std::lock_guard<std::mutex> lock(accessChunksMutex);
+                    if (!chunks.contains(cc))
+                    {
+                        if (!chunksToAdd.contains(cc))
+                        {
+                            // Create the chunk asynchrounously and add it later.
+                            chunksToAdd.emplace(cc);
+                            new_chunk_centers.emplace_back(cc);
+                        } // Else, don't add it to the set of chunks to add because it's already
+                          // in there.
+                    }
+                }
+
+                z += chunkSize;
+            }
+            y += chunkSize;
+        }
+        x += chunkSize;
+    }
+
+    // Add chunks in batches asynchronously.
+    if (!new_chunk_centers.empty())
+    {
+        // Give a batch of chunks to a `num_sections` async thread(s) to process.
+        const size_t num_sections = threadPool.get_thread_count(); // Guaranteed to be at least 1 thread.
+        const size_t section_size = new_chunk_centers.size() / num_sections;
+        for (size_t section_i = 0; section_i < num_sections - 1; ++section_i)
+        {
+            std::vector<ChunkCenter> section(
+                new_chunk_centers.begin() + section_size * section_i,
+                new_chunk_centers.begin() + section_size * (section_i + 1));
+            threadPool.detach_task([this, section]() { addChunk(section); });
+        }
+        std::vector<ChunkCenter> section(
+            new_chunk_centers.begin() + section_size * (num_sections - 1),
+            new_chunk_centers.end());
+        threadPool.detach_task([this, section]() { addChunk(section); });
+    }
+
+    return static_cast<unsigned>(new_chunk_centers.size());
 }
 
 void World::addBlock(const glm::vec3 block_pos)

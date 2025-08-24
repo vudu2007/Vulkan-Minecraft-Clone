@@ -215,7 +215,7 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
       camera(
           window,
           pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, 0.0f),
-          pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, -1.0f),
+          pos + glm::vec3(1.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, 0.0f),
           glm::vec3(0.0f, 1.0f, 0.0f),
           glm::radians(70.0f),
           (static_cast<float>(Window::DEFAULT_WIDTH) / static_cast<float>(Window::DEFAULT_HEIGHT)),

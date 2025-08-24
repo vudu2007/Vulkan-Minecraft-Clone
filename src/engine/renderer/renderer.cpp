@@ -130,6 +130,8 @@ bool Renderer::addVertexBuffer(
     const size_t instance_count,
     const size_t instance_capacity)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     // Bad if empty data OR the `id` is already in use OR the capacity is less than count.
     if ((count == 0) || (vertexBuffers.contains(id)) || (capacity < count) || (instance_capacity < instance_count))
     {
@@ -206,6 +208,8 @@ bool Renderer::addVertexBuffer(
 
 bool Renderer::updateVertexBuffer(const unsigned id, const void* data, const size_t data_type_size, const size_t count)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     // Ignore if `id` doesn't exist.
     if (!vertexBuffers.contains(id))
     {
@@ -255,6 +259,8 @@ bool Renderer::updateInstanceVertexBuffer(
     const size_t data_type_size,
     const size_t count)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     // Ignore if `id` doesn't exist.
     if ((!vertexBuffers.contains(id)))
     {
@@ -524,6 +530,8 @@ bool Renderer::addIndexBuffer(
     const size_t count,
     const size_t capacity)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     const bool is_vert_buff_exist = vertexBuffers.contains(vertex_buffer_id);
     const bool is_index_buff_exist = (vertToIndexBuffers.contains(vertex_buffer_id)) &&
                                      (vertToIndexBuffers[vertex_buffer_id].contains(index_buffer_id));
@@ -578,6 +586,8 @@ bool Renderer::updateIndexBuffer(
     const size_t data_type_size,
     const size_t count)
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     const bool is_buffers_not_exist = (!vertexBuffers.contains(vertex_buffer_id)) ||
                                       (!vertToIndexBuffers.contains(vertex_buffer_id)) ||
                                       (!vertToIndexBuffers[vertex_buffer_id].contains(index_buffer_id));
@@ -782,6 +792,8 @@ Renderer::Renderer(Window& window) : window(window), device(window), swapchain(d
 
 Renderer::~Renderer()
 {
+    vkDeviceWaitIdle(device.getLogicalDevice());
+
     vkDestroyPipelineLayout(device.getLogicalDevice(), pipelineLayout, nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -830,6 +842,7 @@ unsigned Renderer::addUniformBuffer(
 
 void Renderer::updateUniformBuffer(const unsigned index, const void* data, const size_t num_bytes)
 {
+    vkWaitForFences(device.getLogicalDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
     uniformBuffers[index].bufferPtrPerFrame[currentFrame]->write(data, num_bytes);
 }
 
@@ -908,9 +921,13 @@ void Renderer::drawFrame()
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = signal_semaphores;
 
-    if (vkQueueSubmit(device.getGraphicsQueue(), 1, &submit_info, inFlightFences[currentFrame]) != VK_SUCCESS)
+    const VkResult queue_submit_res =
+        vkQueueSubmit(device.getGraphicsQueue(), 1, &submit_info, inFlightFences[currentFrame]);
+    if (queue_submit_res != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to submit draw command buffer!");
+        std::stringstream err;
+        err << "failed to submit draw command buffer! VkResult = " << queue_submit_res;
+        throw std::runtime_error(err.str());
     }
 
     // 5.

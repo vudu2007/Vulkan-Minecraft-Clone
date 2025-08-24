@@ -2,6 +2,7 @@
 
 #include "ray/ray.hpp"
 #include "shapes/aabb.hpp"
+#include "shapes/plane.hpp"
 
 #include <any>
 #include <vector>
@@ -69,6 +70,8 @@ class CollisionHandler
         const glm::vec3& b_velocity,
         const float t,
         glm::ivec3* entry_face = nullptr);
+
+    static bool aabbToPlaneIntersect(const Aabb3d& aabb, const Plane3d& plane, const bool check_above_surface = false);
 
     CollisionHandler() = delete;
 };

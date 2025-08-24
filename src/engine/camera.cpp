@@ -8,23 +8,22 @@ Camera::Camera(
     const glm::vec3& eye_world,
     const glm::vec3& target_world,
     const glm::vec3& up_world,
-    const float fov,
+    const float fov_y,
     const float aspect,
     const float z_near,
     const float z_far)
-    : window(window), eye(eye_world), worldUp(up_world), fov(fov), aspect(aspect), zNear(z_near), zFar(z_far)
+    : window(window), eye(eye_world), worldUp(up_world), forward(glm::normalize(target_world - eye_world)),
+      right(glm::normalize(glm::cross(forward, worldUp))), up(glm::normalize(glm::cross(right, forward))), fovY(fov_y),
+      aspect(aspect), zNear(z_near), zFar(z_far), eulerAngles(glm::vec3(0.0f)),
+      frustum(eye_world, forward, up, right, z_near, z_far, aspect, fov_y)
 {
     window.addResizeCallback([this]() { this->updateAspectRatio(); });
 
-    forward = glm::normalize(target_world - eye_world);
-    right = glm::normalize(glm::cross(forward, worldUp));
-    up = glm::normalize(glm::cross(right, forward));
-
     // TODO: figure out initial Euler angles.
-    const float pitch = 0.0f;
-    const float yaw = 0.0f;
-    const float roll = 0.0f;
-    eulerAngles = glm::vec3(pitch, yaw, roll);
+    // const float pitch = 0.0f;
+    // const float yaw = 0.0f;
+    // const float roll = 0.0f;
+    // eulerAngles = glm::vec3(pitch, yaw, roll);
 }
 
 void Camera::updateAspectRatio()
@@ -34,9 +33,10 @@ void Camera::updateAspectRatio()
     aspect = static_cast<float>(width) / static_cast<float>(height);
 }
 
-void Camera::translate(const glm::vec3 translation)
+void Camera::translate(const glm::vec3 units)
 {
-    eye += translation;
+    eye += units;
+    frustum.translate(units);
 }
 
 void Camera::rotate(const float pitch, const float yaw, const float roll, const bool constrain_x_axis)
@@ -48,15 +48,20 @@ void Camera::rotate(const float pitch, const float yaw, const float roll, const 
         eulerAngles.x = glm::clamp(eulerAngles.x, minXAngleRad, maxXAngleRad);
     }
 
-    // Adjust forward
+    // Adjust forward.
     forward.x = glm::cos(eulerAngles.y) * glm::cos(eulerAngles.x);
     forward.y = glm::sin(eulerAngles.x);
     forward.z = glm::sin(eulerAngles.y) * glm::cos(eulerAngles.x);
     forward = glm::normalize(forward);
 
-    // Update right and up
+    // Update right and up.
     right = glm::normalize(glm::cross(forward, worldUp));
     up = glm::normalize(glm::cross(right, forward));
+
+    // Update the frustum.
+    // TODO: currently, creating a new frustum each time; maybe should add a rotation method,
+    // or maybe handle it after implementing a scene graph.
+    frustum = Frustum(eye, forward, up, right, zNear, zFar, aspect, fovY);
 }
 
 void Camera::moveForward(const float units)
@@ -144,6 +149,31 @@ glm::vec3 Camera::getWorldUp() const
     return worldUp;
 }
 
+float Camera::getFovY() const
+{
+    return fovY;
+}
+
+float Camera::getAspect() const
+{
+    return aspect;
+}
+
+float Camera::getNear() const
+{
+    return zNear;
+}
+
+float Camera::getFar() const
+{
+    return zFar;
+}
+
+const Frustum& Camera::getFrustum() const
+{
+    return frustum;
+}
+
 glm::mat4 Camera::viewMatrix() const
 {
     return glm::lookAt(eye, eye + forward, up);
@@ -151,5 +181,5 @@ glm::mat4 Camera::viewMatrix() const
 
 glm::mat4 Camera::projMatrix() const
 {
-    return glm::perspective(fov, aspect, zNear, zFar);
+    return glm::perspective(fovY, aspect, zNear, zFar);
 }

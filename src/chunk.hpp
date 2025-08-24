@@ -20,8 +20,6 @@ using ChunkCenter = glm::vec3;
 class Chunk
 {
   private:
-    using BlockContainer = std::vector<std::vector<std::vector<std::shared_ptr<Block>>>>;
-
     // Edge blocks refer to blocks in neighboring chunks.
     static constexpr int EDGE_OFFSET = 2;
 
@@ -35,8 +33,9 @@ class Chunk
     static constexpr int HEIGHT_RANGE = 100;
     static constexpr int HEIGHT_OFFSET = -50;
 
-    enum BlockType
+    enum class BlockType : uint8_t
     {
+        EMPTY,
         DEFAULT,
         RED,
         GRASS,
@@ -45,6 +44,7 @@ class Chunk
         SAND,
     };
     static inline const std::unordered_map<BlockType, std::shared_ptr<Block>> AVAILABLE_BLOCKS = {
+        {BlockType::EMPTY,   nullptr                               },
         {BlockType::DEFAULT, std::make_shared<Block>(COLOR_DEFAULT)},
         {BlockType::RED,     std::make_shared<Block>(COLOR_RED)    },
         {BlockType::GRASS,   std::make_shared<Block>(COLOR_GRASS)  },
@@ -61,12 +61,10 @@ class Chunk
     glm::vec3 minBounds;
     glm::vec3 maxBounds;
 
-    // Mesh info.
-    Model model;
-
     // Contains blocks in this chunk and edge blocks of neighboring chunks.
     // Will keep edge blocks up-to-date with neighbors based on player's interaction with the world.
     // Stored in the order x -> y -> z and maintain a size of (`size` + `EDGE_OFFSET` * 2) cubed.
+    using BlockContainer = std::vector<BlockType>;
     std::unique_ptr<BlockContainer> blocks;
 
     // Exclusive to only blocks in this chunk.
@@ -74,6 +72,8 @@ class Chunk
 
     void initContainer();
 
+    size_t getBlockIndex(const glm::vec3& global_pos) const;
+    BlockType getBlockType(const glm::vec3& global_pos) const;
     std::shared_ptr<Block> getBlock(const glm::vec3& global_pos) const;
     glm::vec3 getLocalPos(const glm::vec3& global_pos) const;
 
@@ -85,8 +85,6 @@ class Chunk
     bool isBlockHidden(const glm::vec3& global_pos) const;  // Hidden relative to other blocks.
     bool isInChunkBounds(const glm::vec3& block_pos) const;
     bool isInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
-
-    void generateMesh();
 
   public:
     Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size);
@@ -103,5 +101,5 @@ class Chunk
         glm::vec3* normal = nullptr) const;
 
     ChunkCenter getCenter() const;
-    const Model& getModel() const;
+    const Model getModel() const;
 };

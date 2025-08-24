@@ -1,5 +1,7 @@
 #include "collision-handler.hpp"
 
+#include "glm/gtx/component_wise.hpp"
+
 #include <array>
 #include <limits>
 #include <stdexcept>
@@ -367,4 +369,16 @@ float CollisionHandler::sweptAabbMinkowski(
     // Calculate the relative velocity from the perspective of `b` and run the Swept AABB algorithm.
     // Given that `a` and `b` are dynamic, we convert `b` to be static.
     return sweptAabbMinkowski(a, b, (a_velocity - b_velocity), t, entry_face);
+}
+
+bool CollisionHandler::aabbToPlaneIntersect(const Aabb3d& aabb, const Plane3d& plane, const bool check_above_surface)
+{
+    const glm::vec3 aabb_center = aabb.getCenter();
+    const glm::vec3 aabb_extents = aabb.getLength();
+
+    const float radius = glm::compAdd(aabb_extents * glm::abs(plane.getNormal()));
+
+    const float dist_center_to_plane = glm::dot(plane.getNormal(), aabb_center) - plane.getDistance();
+
+    return check_above_surface ? (dist_center_to_plane >= -radius) : (std::abs(dist_center_to_plane) <= radius);
 }

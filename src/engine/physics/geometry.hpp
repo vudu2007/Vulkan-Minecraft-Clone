@@ -2,7 +2,7 @@
 
 struct Geometry
 {
-    enum Type
+    enum class Type
     {
         SHAPE,
         RAY,
