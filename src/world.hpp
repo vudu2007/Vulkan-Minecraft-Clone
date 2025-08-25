@@ -7,7 +7,7 @@
 #include "BS_thread_pool.hpp"
 #include <glm/gtx/hash.hpp>
 
-#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -17,7 +17,7 @@ class World
 {
   private:
     BS::thread_pool<> threadPool;
-    std::mutex accessChunksMutex;
+    std::shared_mutex chunksMutex;
 
     FastNoiseLite terrainHeightNoise;
     unsigned seed;
@@ -34,16 +34,16 @@ class World
     std::unordered_set<ChunkCenter> chunksToShow;
     std::unordered_set<ChunkCenter> visibleChunks;
 
-    std::vector<std::function<void(const Chunk&, const std::array<const Chunk*, 6>&)>> chunkLoadedCallbacks;
+    std::vector<std::function<void(const Chunk&)>> chunkLoadedCallbacks;
     std::vector<std::function<void(const Chunk&)>> chunkUnloadedCallbacks;
     std::vector<std::function<void()>> chunksChangedCallbacks;
 
-    void runChunkLoadedCallbacks(const Chunk& chunk, const int propagation_depth);
+    void runChunkLoadedCallbacks(const Chunk& chunk);
     void runChunkUnloadedCallbacks(const Chunk& chunk);
 
     bool isChunkActive(const ChunkCenter& cc) const;
 
-    std::array<const Chunk*, 6> getNeighboringChunks(const ChunkCenter& cc) const;
+    std::array<Chunk*, 6> getNeighboringChunks(const ChunkCenter& cc) const;
 
   public:
     World(const unsigned seed, const int chunk_size, const unsigned num_threads = 1);
@@ -68,7 +68,7 @@ class World
     void addBlock(const glm::vec3 block_pos);
     void removeBlock(const glm::vec3 block_pos);
 
-    void addChunkLoadedCallback(const std::function<void(const Chunk&, const std::array<const Chunk*, 6>&)>& callback);
+    void addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback);
     void clearChunkLoadedCallbacks();
 
     void addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback);

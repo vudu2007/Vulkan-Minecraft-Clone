@@ -29,7 +29,7 @@ class Game
     std::queue<Chunk*> chunksToLoad;
     std::queue<Chunk*> chunksToUnload;
 
-    void loadChunkModel(const Chunk& chunk, const std::array<const Chunk*, 6>& neighboring_chunks);
+    void loadChunkModel(const Chunk& chunk);
     void unloadChunkModel(const Chunk& chunk);
 
   public:

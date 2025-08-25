@@ -50,6 +50,10 @@ class Chunk
         {BlockType::SAND,    std::make_shared<Block>(COLOR_SAND)   },
     };
 
+  public:
+    std::array<Chunk*, 6> neighboringChunks{}; // Order: +x, -x, +y, -y, +z, and -z.
+
+  private:
     ChunkCenter center;
     int size;
     int blockCount = 0; // Includes edge blocks.
@@ -77,14 +81,14 @@ class Chunk
 
     bool isBlockPresent(const glm::vec3& global_pos) const;
     bool isBlockVisible(const glm::vec3& global_pos) const;
+    bool isBlockHidden(const glm::vec3& global_pos) const;
     bool isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const;
-    bool isBlockHidden(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks) const;
     bool isInChunkBounds(const glm::vec3& block_pos) const;
 
   public:
     Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size);
 
-    void addBlock(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks);
+    void addBlock(const glm::vec3& global_pos);
     void removeBlock(const glm::vec3& global_pos);
     bool isBlockOnEdge(const glm::vec3& global_pos) const;
 
@@ -97,5 +101,5 @@ class Chunk
         glm::vec3* normal = nullptr) const;
 
     ChunkCenter getCenter() const;
-    const Model getModel(const std::array<const Chunk*, 6>& neighboring_chunks) const;
+    const Model getModel() const;
 };

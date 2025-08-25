@@ -11,10 +11,10 @@ struct LightingInfo
     alignas(16) glm::vec3 viewPos;
 };
 
-void Game::loadChunkModel(const Chunk& chunk, const std::array<const Chunk*, 6>& neighboring_chunks)
+void Game::loadChunkModel(const Chunk& chunk)
 {
     const ChunkCenter cc = chunk.getCenter();
-    const Model& chunk_model = chunk.getModel(neighboring_chunks);
+    const Model& chunk_model = chunk.getModel();
 
     const auto& chunk_vertices = chunk_model.getVertices();
     const auto& chunk_indices = chunk_model.getIndices();
@@ -101,9 +101,7 @@ void Game::run()
 {
     Texture* block_texture_ptr = renderer.createTexture("../../textures/cube_texture.jpg");
 
-    world.addChunkLoadedCallback([this](const Chunk& chunk, const std::array<const Chunk*, 6>& neighboring_chunks) {
-        loadChunkModel(chunk, neighboring_chunks);
-    });
+    world.addChunkLoadedCallback([this](const Chunk& chunk) { loadChunkModel(chunk); });
     world.addChunkUnloadedCallback([this](const Chunk& chunk) { unloadChunkModel(chunk); });
     world.init(DEFAULT_PLAYER_POS, DEFAULT_PLAYER_RENDER_DISTANCE);
     std::cout << "Number of vertex buffers in use = " << chunkToVertexBufferId.size() << std::endl;

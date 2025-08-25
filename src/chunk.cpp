@@ -26,8 +26,7 @@ int Chunk::getBlockIndex(const glm::vec3& global_pos) const
 
 Chunk::BlockType Chunk::getBlockType(const glm::vec3& global_pos) const
 {
-    int index = getBlockIndex(global_pos);
-    return (*blocks)[index];
+    return (*blocks)[getBlockIndex(global_pos)];
 }
 
 std::weak_ptr<Block> Chunk::getBlock(const glm::vec3& global_pos) const
@@ -74,29 +73,7 @@ bool Chunk::isBlockVisible(const glm::vec3& global_pos) const
     return visibleBlocks.contains(global_pos);
 }
 
-bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const
-{
-    const std::vector<glm::vec3> offsets = {
-        glm::vec3(1.0, 0.0, 0.0),  // +x
-        glm::vec3(-1.0, 0.0, 0.0), // -x
-        glm::vec3(0.0, 1.0, 0.0),  // +y
-        glm::vec3(0.0, -1.0, 0.0), // -y
-        glm::vec3(0.0, 0.0, 1.0),  // +z
-        glm::vec3(0.0, 0.0, -1.0), // -z
-    };
-    for (const auto& offset : offsets)
-    {
-        const glm::vec3 neighbor = global_pos + offset;
-        if (!isBlockPresent(neighbor) || !neighboring_blocks.contains(neighbor))
-        {
-            // There must be a visible face; therefore, a visible block.
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks) const
+bool Chunk::isBlockHidden(const glm::vec3& global_pos) const
 {
     const std::vector<glm::vec3> offsets = {
         glm::vec3(1.0, 0.0, 0.0),  // +x
@@ -109,7 +86,29 @@ bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::array<const Ch
     for (size_t i = 0; i < offsets.size(); ++i)
     {
         const glm::vec3 neighbor = global_pos + offsets[i];
-        if (!isBlockPresent(neighbor) || !neighboring_chunks[i]->isBlockPresent(neighbor))
+        if (!isBlockPresent(neighbor) || !neighboringChunks[i]->isBlockPresent(neighbor))
+        {
+            // There must be a visible face; therefore, a visible block.
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const
+{
+    const std::vector<glm::vec3> offsets = {
+        glm::vec3(1.0, 0.0, 0.0),  // +x
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, 1.0, 0.0),  // +y
+        glm::vec3(0.0, -1.0, 0.0), // -y
+        glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(0.0, 0.0, -1.0), // -z
+    };
+    for (size_t i = 0; i < offsets.size(); ++i)
+    {
+        const glm::vec3 neighbor = global_pos + offsets[i];
+        if (!isBlockPresent(neighbor) || !neighboring_blocks.contains(neighbor))
         {
             // There must be a visible face; therefore, a visible block.
             return false;
@@ -223,7 +222,7 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
     }
 }
 
-void Chunk::addBlock(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks)
+void Chunk::addBlock(const glm::vec3& global_pos)
 {
     // Ignore if it isn't in this chunk, or it already exist in this non-empty chunk.
     if (!isInChunkBounds(global_pos) || (blockCount > 0) && isBlockPresent(global_pos))
@@ -241,7 +240,7 @@ void Chunk::addBlock(const glm::vec3& global_pos, const std::array<const Chunk*,
     generateBlock(global_pos, BlockType::DEFAULT);
 
     // Add it to visible if it's not enclosed.
-    if (!isBlockHidden(global_pos, neighboring_chunks))
+    if (!isBlockHidden(global_pos))
     {
         visibleBlocks.emplace(global_pos);
     }
@@ -259,7 +258,7 @@ void Chunk::addBlock(const glm::vec3& global_pos, const std::array<const Chunk*,
     for (const auto& offset : offsets)
     {
         const glm::vec3 neighbor = global_pos + offset;
-        if (isInChunkBounds(neighbor) && isBlockVisible(neighbor) && isBlockHidden(neighbor, neighboring_chunks))
+        if (isInChunkBounds(neighbor) && isBlockVisible(neighbor) && isBlockHidden(neighbor))
         {
             visibleBlocks.erase(neighbor);
         }
@@ -401,7 +400,7 @@ ChunkCenter Chunk::getCenter() const
     return center;
 }
 
-const Model Chunk::getModel(const std::array<const Chunk*, 6>& neighboring_chunks) const
+const Model Chunk::getModel() const
 {
     std::vector<Model::Vertex> vertices;
     std::vector<Model::Index> indices;
@@ -437,8 +436,8 @@ const Model Chunk::getModel(const std::array<const Chunk*, 6>& neighboring_chunk
             // otherwise, if the neighbor is not in this chunk bounds and (the neighboring chunk `i` is not null or the
             // neighbor is present in the neighboring chunk), then we consider that there is a neighbor.
             const bool has_neighbor = isBlockPresent(neighbor) ||
-                                      (!isInChunkBounds(neighbor) && ((neighboring_chunks[i] == nullptr) ||
-                                                                      neighboring_chunks[i]->isBlockPresent(neighbor)));
+                                      (!isInChunkBounds(neighbor) && ((neighboringChunks[i] == nullptr) ||
+                                                                      neighboringChunks[i]->isBlockPresent(neighbor)));
             if (!has_neighbor)
             {
                 const glm::vec3 offset_to_face = offset / 2.0f; // Face is inbetween current and neighbor.
