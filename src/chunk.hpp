@@ -15,6 +15,16 @@
 #include <unordered_set>
 #include <vector>
 
+enum Axis : uint8_t
+{
+    POS_X = 0,
+    POS_Y = 1,
+    POS_Z = 2,
+    NEG_X = 3,
+    NEG_Y = 4,
+    NEG_Z = 5,
+};
+
 using ChunkCenter = glm::vec3;
 
 class Chunk
@@ -51,7 +61,7 @@ class Chunk
     };
 
   public:
-    std::array<Chunk*, 6> neighboringChunks{}; // Order: +x, -x, +y, -y, +z, and -z.
+    std::array<Chunk*, 6> neighboringChunks{}; // Order: +x, +y, +z, -x, -y, -z.
 
   private:
     ChunkCenter center;
@@ -90,6 +100,8 @@ class Chunk
 
     void addBlock(const glm::vec3& global_pos);
     void removeBlock(const glm::vec3& global_pos);
+
+    bool isBlockOnEdge(const glm::vec3& global_pos, const Axis axis) const;
     bool isBlockOnEdge(const glm::vec3& global_pos) const;
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;

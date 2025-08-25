@@ -45,6 +45,8 @@ class World
 
     std::array<Chunk*, 6> getNeighboringChunks(const ChunkCenter& cc) const;
 
+    void editBlock(const glm::vec3 block_pos, const bool should_add);
+
   public:
     World(const unsigned seed, const int chunk_size, const unsigned num_threads = 1);
     ~World();

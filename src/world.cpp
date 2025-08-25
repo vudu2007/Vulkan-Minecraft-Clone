@@ -30,10 +30,10 @@ std::array<Chunk*, 6> World::getNeighboringChunks(const ChunkCenter& cc) const
 
     std::vector<glm::vec3> offsets = {
         glm::vec3(chunkSize, 0.0f, 0.0f),  // +x
-        glm::vec3(-chunkSize, 0.0f, 0.0f), // -x
         glm::vec3(0.0f, chunkSize, 0.0f),  // +y
-        glm::vec3(0.0f, -chunkSize, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, chunkSize),  // +z
+        glm::vec3(-chunkSize, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, -chunkSize, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, -chunkSize), // -z
     };
 
@@ -49,6 +49,63 @@ std::array<Chunk*, 6> World::getNeighboringChunks(const ChunkCenter& cc) const
     }
 
     return neighboring_chunks;
+}
+
+void World::editBlock(const glm::vec3 block_pos, const bool should_add)
+{
+    const ChunkCenter cc = getPosToChunkCenter(block_pos);
+
+    {
+        std::shared_lock<std::shared_mutex> lock(chunksMutex);
+
+        // Ignore if the associated chunk is not active.
+        if (!isChunkActive(cc))
+        {
+            return;
+        }
+
+        // Be ready to notify neighboring chunk if this block is being added on the edge because it may affect the
+        // neighbor. Futhermore, if the neighbor is non-existent, do not add a block.
+        std::vector<Chunk*> affected_neighbors;
+        if (chunks[cc]->isBlockOnEdge(block_pos))
+        {
+            // Get neighbors.
+            auto neighbors = getNeighboringChunks(cc);
+
+            // Figure out which neighbor(s).
+            for (size_t i = 0; i < neighbors.size(); ++i)
+            {
+                if (chunks[cc]->isBlockOnEdge(block_pos, static_cast<Axis>(i)))
+                {
+                    // Cancel the addition if this necessary neighbor does not exist.
+                    if (neighbors[i] == nullptr)
+                    {
+                        return;
+                    }
+
+                    affected_neighbors.push_back(neighbors[i]);
+                }
+            }
+        }
+
+        // Add/remove the block and notify neighbors as needed.
+        if (should_add)
+        {
+            chunks[cc]->addBlock(block_pos);
+        }
+        else
+        {
+            chunks[cc]->removeBlock(block_pos);
+        }
+        runChunkLoadedCallbacks(*chunks[cc]);
+        for (auto& neighbor : affected_neighbors)
+        {
+            if (neighbor != nullptr)
+            {
+                runChunkLoadedCallbacks(*neighbor);
+            }
+        }
+    }
 }
 
 World::World(const unsigned seed, const int chunk_size, const unsigned num_threads)
@@ -238,13 +295,10 @@ void World::addChunk(const std::vector<glm::vec3> chunk_centers)
 
                 chunk->neighboringChunks[i] = neighbor;
 
-                // Order of `neighboringChunks` is +x, -x, +y, -y, +z, and -z.
-                // Observe that positive is an even number and that the neighboring chunk's neighbor position for this
-                // chunk will be the negation of the axis; therefore, if `i` is an even number, the neighbor for this
-                // chunk is positive, and thus, from the neighboring chunk's perspective, this chunk should be negative
-                // as a neighbor, hence, we increment `i`. If `i` is odd, we decrement `i` to get the negation of the
-                // axis.
-                const size_t j = (i % 2 == 0) ? (i + 1) : (i - 1); // Neighbor's perspective.
+                // Order of `neighboringChunks` is +x, +y, +z, -x, -y, and -z.
+                // Observe the positive axes are the first 3 while the last 3 are negative axes.
+                // The neighbor's neighbor (new chunk) will be the negation of this chunk's axis to its neighbor.
+                const size_t j = (i < 3) ? (i + 3) : (i - 3); // Neighbor's perspective.
                 neighbor->neighboringChunks[j] = chunk;
 
                 // Make sure the neighbor is reloaded if it has a newly loaded neighbor and is visible.
@@ -406,46 +460,12 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
 
 void World::addBlock(const glm::vec3 block_pos)
 {
-    // std::vector<glm::vec3> offsets = {
-    //     glm::vec3(0.0f, 0.0f, 0.0f),
-    //     glm::vec3(1.0f, 0.0f, 0.0f),
-    //     glm::vec3(-1.0f, 0.0f, 0.0f),
-    //     glm::vec3(0.0f, 1.0f, 0.0f),
-    //     glm::vec3(0.0f, -1.0f, 0.0f),
-    //     glm::vec3(0.0f, 0.0f, 1.0f),
-    //     glm::vec3(0.0f, 0.0f, -1.0f),
-    // };
-    // for (const auto& offset : offsets)
-    //{
-    //     const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
-    //     if (isChunkActive(cc))
-    //     {
-    //         chunks[cc]->addBlock(block_pos);
-    //         runChunkLoadedCallbacks(*chunks[cc]);
-    //     }
-    // }
+    editBlock(block_pos, true);
 }
 
 void World::removeBlock(const glm::vec3 block_pos)
 {
-    // std::vector<glm::vec3> offsets = {
-    //     glm::vec3(0.0f, 0.0f, 0.0f),
-    //     glm::vec3(1.0f, 0.0f, 0.0f),
-    //     glm::vec3(-1.0f, 0.0f, 0.0f),
-    //     glm::vec3(0.0f, 1.0f, 0.0f),
-    //     glm::vec3(0.0f, -1.0f, 0.0f),
-    //     glm::vec3(0.0f, 0.0f, 1.0f),
-    //     glm::vec3(0.0f, 0.0f, -1.0f),
-    // };
-    // for (const auto& offset : offsets)
-    //{
-    //     const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
-    //     if (isChunkActive(cc))
-    //     {
-    //         chunks[cc]->removeBlock(block_pos);
-    //         runChunkLoadedCallbacks(*chunks[cc]);
-    //     }
-    // }
+    editBlock(block_pos, false);
 }
 
 void World::addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback)

@@ -77,10 +77,10 @@ bool Chunk::isBlockHidden(const glm::vec3& global_pos) const
 {
     const std::vector<glm::vec3> offsets = {
         glm::vec3(1.0, 0.0, 0.0),  // +x
-        glm::vec3(-1.0, 0.0, 0.0), // -x
         glm::vec3(0.0, 1.0, 0.0),  // +y
-        glm::vec3(0.0, -1.0, 0.0), // -y
         glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, -1.0, 0.0), // -y
         glm::vec3(0.0, 0.0, -1.0), // -z
     };
     for (size_t i = 0; i < offsets.size(); ++i)
@@ -99,10 +99,10 @@ bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<
 {
     const std::vector<glm::vec3> offsets = {
         glm::vec3(1.0, 0.0, 0.0),  // +x
-        glm::vec3(-1.0, 0.0, 0.0), // -x
         glm::vec3(0.0, 1.0, 0.0),  // +y
-        glm::vec3(0.0, -1.0, 0.0), // -y
         glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, -1.0, 0.0), // -y
         glm::vec3(0.0, 0.0, -1.0), // -z
     };
     for (size_t i = 0; i < offsets.size(); ++i)
@@ -249,10 +249,10 @@ void Chunk::addBlock(const glm::vec3& global_pos)
     // Check if the neighbors are now fully enclosed.
     const std::vector<glm::vec3> offsets = {
         glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
         glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, -1.0f), // -z
     };
     for (const auto& offset : offsets)
@@ -280,10 +280,10 @@ void Chunk::removeBlock(const glm::vec3& global_pos)
     // Add new visible neighbor blocks.
     const std::vector<glm::vec3> offsets = {
         glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
         glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, -1.0f), // -z
     };
     for (const auto& offset : offsets)
@@ -303,10 +303,17 @@ void Chunk::removeBlock(const glm::vec3& global_pos)
     }
 }
 
+bool Chunk::isBlockOnEdge(const glm::vec3& global_pos, const Axis axis) const
+{
+    // 3 represents the 1st 3 positive axes in the enumeration.
+    return (axis < 3) ? (global_pos[axis] == maxBounds[axis]) : (global_pos[axis - 3] == minBounds[axis - 3]);
+}
+
 bool Chunk::isBlockOnEdge(const glm::vec3& global_pos) const
 {
-    return (global_pos.x == minBounds.x) || (global_pos.x == maxBounds.x) || (global_pos.y == minBounds.y) ||
-           (global_pos.y == maxBounds.y) || (global_pos.z == minBounds.z) || (global_pos.z == maxBounds.z);
+    return isBlockOnEdge(global_pos, Axis::POS_X) || isBlockOnEdge(global_pos, Axis::NEG_X) ||
+           isBlockOnEdge(global_pos, Axis::POS_Y) || isBlockOnEdge(global_pos, Axis::NEG_Y) ||
+           isBlockOnEdge(global_pos, Axis::POS_Z) || isBlockOnEdge(global_pos, Axis::NEG_Z);
 }
 
 const std::optional<glm::vec3> Chunk::getReachableBlock(const Ray& ray, glm::ivec3* face_entered) const
@@ -407,10 +414,10 @@ const Model Chunk::getModel() const
 
     constexpr std::array<glm::vec3, 6> offsets = {
         glm::vec3(1.0f, 0.0f, 0.0f),  // +x
-        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
         glm::vec3(0.0f, 1.0f, 0.0f),  // +y
-        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, 1.0f),  // +z
+        glm::vec3(-1.0f, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, -1.0f), // -z
     };
     constexpr std::array<glm::vec2, 4> uvs = {
@@ -455,15 +462,7 @@ const Model Chunk::getModel() const
                     normal = glm::vec3(1.0f, 0.0f, 0.0f);
                     break;
                 }
-                case 1: { // -x
-                    v_offsets[0] = glm::vec3(0.0f, 0.5f, -0.5f);
-                    v_offsets[1] = glm::vec3(0.0f, -0.5f, -0.5f);
-                    v_offsets[2] = glm::vec3(0.0f, -0.5f, 0.5f);
-                    v_offsets[3] = glm::vec3(0.0f, 0.5f, 0.5f);
-                    normal = glm::vec3(-1.0f, 0.0f, 0.0f);
-                    break;
-                }
-                case 2: { // +y
+                case 1: { // +y
                     v_offsets[0] = glm::vec3(-0.5f, 0.0f, -0.5f);
                     v_offsets[1] = glm::vec3(-0.5f, 0.0f, 0.5f);
                     v_offsets[2] = glm::vec3(0.5f, 0.0f, 0.5f);
@@ -471,20 +470,28 @@ const Model Chunk::getModel() const
                     normal = glm::vec3(0.0f, 1.0f, 0.0f);
                     break;
                 }
-                case 3: { // -y
-                    v_offsets[0] = glm::vec3(-0.5f, 0.0f, -0.5f);
-                    v_offsets[1] = glm::vec3(0.5f, 0.0f, -0.5f);
-                    v_offsets[2] = glm::vec3(0.5f, 0.0f, 0.5f);
-                    v_offsets[3] = glm::vec3(-0.5f, 0.0f, 0.5f);
-                    normal = glm::vec3(0.0f, -1.0f, 0.0f);
-                    break;
-                }
-                case 4: { // +z
+                case 2: { // +z
                     v_offsets[0] = glm::vec3(-0.5f, 0.5f, 0.0f);
                     v_offsets[1] = glm::vec3(-0.5f, -0.5f, 0.0f);
                     v_offsets[2] = glm::vec3(0.5f, -0.5f, 0.0f);
                     v_offsets[3] = glm::vec3(0.5f, 0.5f, 0.0f);
                     normal = glm::vec3(0.0f, 0.0f, 1.0f);
+                    break;
+                }
+                case 3: { // -x
+                    v_offsets[0] = glm::vec3(0.0f, 0.5f, -0.5f);
+                    v_offsets[1] = glm::vec3(0.0f, -0.5f, -0.5f);
+                    v_offsets[2] = glm::vec3(0.0f, -0.5f, 0.5f);
+                    v_offsets[3] = glm::vec3(0.0f, 0.5f, 0.5f);
+                    normal = glm::vec3(-1.0f, 0.0f, 0.0f);
+                    break;
+                }
+                case 4: { // -y
+                    v_offsets[0] = glm::vec3(-0.5f, 0.0f, -0.5f);
+                    v_offsets[1] = glm::vec3(0.5f, 0.0f, -0.5f);
+                    v_offsets[2] = glm::vec3(0.5f, 0.0f, 0.5f);
+                    v_offsets[3] = glm::vec3(-0.5f, 0.0f, 0.5f);
+                    normal = glm::vec3(0.0f, -1.0f, 0.0f);
                     break;
                 }
                 case 5: { // -z
