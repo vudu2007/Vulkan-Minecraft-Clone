@@ -3,11 +3,24 @@
 #include <cassert>
 #include <iostream>
 
-void World::runChunkLoadedCallbacks(const Chunk& chunk)
+void World::runChunkLoadedCallbacks(const Chunk& chunk, const int propagation_depth)
 {
+    std::array<const Chunk*, 6> neighboring_chunks = getNeighboringChunks(chunk.getCenter());
     for (const auto& callback : chunkLoadedCallbacks)
     {
-        callback(chunk);
+        callback(chunk, neighboring_chunks);
+    }
+
+    // Tell the neighbors to update if they're still visible.
+    if (propagation_depth > 0)
+    {
+        for (const auto c : neighboring_chunks)
+        {
+            if (c != nullptr && visibleChunks.contains(c->getCenter()))
+            {
+                runChunkLoadedCallbacks(*c, propagation_depth - 1);
+            }
+        }
     }
 }
 
@@ -22,6 +35,33 @@ void World::runChunkUnloadedCallbacks(const Chunk& chunk)
 bool World::isChunkActive(const ChunkCenter& cc) const
 {
     return activeChunks.contains(cc) && chunks.contains(cc);
+}
+
+std::array<const Chunk*, 6> World::getNeighboringChunks(const ChunkCenter& cc) const
+{
+    std::array<const Chunk*, 6> neighboring_chunks{};
+
+    std::vector<glm::vec3> offsets = {
+        glm::vec3(chunkSize, 0.0f, 0.0f),  // +x
+        glm::vec3(-chunkSize, 0.0f, 0.0f), // -x
+        glm::vec3(0.0f, chunkSize, 0.0f),  // +y
+        glm::vec3(0.0f, -chunkSize, 0.0f), // -y
+        glm::vec3(0.0f, 0.0f, chunkSize),  // +z
+        glm::vec3(0.0f, 0.0f, -chunkSize), // -z
+    };
+
+    for (size_t i = 0; i < offsets.size(); ++i)
+    {
+        const glm::vec3 offset = offsets[i];
+        const ChunkCenter neighbor_cc = getPosToChunkCenter(cc + offset);
+
+        if (chunks.contains(neighbor_cc))
+        {
+            neighboring_chunks[i] = chunks.at(neighbor_cc);
+        }
+    }
+
+    return neighboring_chunks;
 }
 
 World::World(const unsigned seed, const int chunk_size, const unsigned num_threads)
@@ -263,7 +303,7 @@ void World::draw(const glm::vec3& origin, const unsigned radius, const Frustum& 
                 {
                     visibleChunks.emplace(cc);
                     to_remove.push_back(cc);
-                    runChunkLoadedCallbacks(*chunks[cc]);
+                    runChunkLoadedCallbacks(*chunks[cc], 0);
                 }
             }
         }
@@ -343,49 +383,50 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
 
 void World::addBlock(const glm::vec3 block_pos)
 {
-    std::vector<glm::vec3> offsets = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(-1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f),
-    };
-    for (const auto& offset : offsets)
-    {
-        const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
-        if (isChunkActive(cc))
-        {
-            chunks[cc]->addBlock(block_pos);
-            runChunkLoadedCallbacks(*chunks[cc]);
-        }
-    }
+    // std::vector<glm::vec3> offsets = {
+    //     glm::vec3(0.0f, 0.0f, 0.0f),
+    //     glm::vec3(1.0f, 0.0f, 0.0f),
+    //     glm::vec3(-1.0f, 0.0f, 0.0f),
+    //     glm::vec3(0.0f, 1.0f, 0.0f),
+    //     glm::vec3(0.0f, -1.0f, 0.0f),
+    //     glm::vec3(0.0f, 0.0f, 1.0f),
+    //     glm::vec3(0.0f, 0.0f, -1.0f),
+    // };
+    // for (const auto& offset : offsets)
+    //{
+    //     const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
+    //     if (isChunkActive(cc))
+    //     {
+    //         chunks[cc]->addBlock(block_pos);
+    //         runChunkLoadedCallbacks(*chunks[cc]);
+    //     }
+    // }
 }
 
 void World::removeBlock(const glm::vec3 block_pos)
 {
-    std::vector<glm::vec3> offsets = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(-1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, -1.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f),
-    };
-    for (const auto& offset : offsets)
-    {
-        const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
-        if (isChunkActive(cc))
-        {
-            chunks[cc]->removeBlock(block_pos);
-            runChunkLoadedCallbacks(*chunks[cc]);
-        }
-    }
+    // std::vector<glm::vec3> offsets = {
+    //     glm::vec3(0.0f, 0.0f, 0.0f),
+    //     glm::vec3(1.0f, 0.0f, 0.0f),
+    //     glm::vec3(-1.0f, 0.0f, 0.0f),
+    //     glm::vec3(0.0f, 1.0f, 0.0f),
+    //     glm::vec3(0.0f, -1.0f, 0.0f),
+    //     glm::vec3(0.0f, 0.0f, 1.0f),
+    //     glm::vec3(0.0f, 0.0f, -1.0f),
+    // };
+    // for (const auto& offset : offsets)
+    //{
+    //     const ChunkCenter cc = getPosToChunkCenter(block_pos + offset);
+    //     if (isChunkActive(cc))
+    //     {
+    //         chunks[cc]->removeBlock(block_pos);
+    //         runChunkLoadedCallbacks(*chunks[cc]);
+    //     }
+    // }
 }
 
-void World::addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback)
+void World::addChunkLoadedCallback(
+    const std::function<void(const Chunk&, const std::array<const Chunk*, 6>&)>& callback)
 {
     chunkLoadedCallbacks.push_back(callback);
 }
@@ -415,39 +456,39 @@ const ChunkCenter World::getPosToChunkCenter(const glm::vec3& pos) const
     return ChunkCenter(x, y, z);
 }
 
-const Model World::getModel() const
-{
-    std::vector<Model::Vertex> vertices;
-    std::vector<Model::Index> indices;
-    size_t vertices_size = 0;
-    size_t indices_size = 0;
-    for (const auto& cc : activeChunks)
-    {
-        const Model& chunk_model = chunks.at(cc)->getModel();
-        vertices_size += chunk_model.getVertices().size();
-        indices_size += chunk_model.getIndices().size();
-    }
-    vertices.reserve(vertices_size);
-    indices.reserve(indices_size);
-    Model::Index accum = 0;
-    for (const auto& cc : activeChunks)
-    {
-        const Model& chunk_model = chunks.at(cc)->getModel();
-
-        const auto& chunk_vertices = chunk_model.getVertices();
-        vertices.insert(vertices.end(), chunk_vertices.begin(), chunk_vertices.end());
-
-        std::vector<Model::Index> chunk_indices = chunk_model.getIndices();
-        for (auto& chunk_index : chunk_indices)
-        {
-            chunk_index += accum;
-        }
-        indices.insert(indices.end(), chunk_indices.begin(), chunk_indices.end());
-        accum += static_cast<Model::Index>(chunk_vertices.size());
-    }
-
-    return Model(vertices, indices);
-}
+// const Model World::getModel() const
+//{
+//     std::vector<Model::Vertex> vertices;
+//     std::vector<Model::Index> indices;
+//     size_t vertices_size = 0;
+//     size_t indices_size = 0;
+//     for (const auto& cc : activeChunks)
+//     {
+//         const Model& chunk_model = chunks.at(cc)->getModel();
+//         vertices_size += chunk_model.getVertices().size();
+//         indices_size += chunk_model.getIndices().size();
+//     }
+//     vertices.reserve(vertices_size);
+//     indices.reserve(indices_size);
+//     Model::Index accum = 0;
+//     for (const auto& cc : activeChunks)
+//     {
+//         const Model& chunk_model = chunks.at(cc)->getModel();
+//
+//         const auto& chunk_vertices = chunk_model.getVertices();
+//         vertices.insert(vertices.end(), chunk_vertices.begin(), chunk_vertices.end());
+//
+//         std::vector<Model::Index> chunk_indices = chunk_model.getIndices();
+//         for (auto& chunk_index : chunk_indices)
+//         {
+//             chunk_index += accum;
+//         }
+//         indices.insert(indices.end(), chunk_indices.begin(), chunk_indices.end());
+//         accum += static_cast<Model::Index>(chunk_vertices.size());
+//     }
+//
+//     return Model(vertices, indices);
+// }
 
 float World::getGravity() const
 {

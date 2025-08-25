@@ -20,9 +20,6 @@ using ChunkCenter = glm::vec3;
 class Chunk
 {
   private:
-    // Edge blocks refer to blocks in neighboring chunks.
-    static constexpr int EDGE_OFFSET = 2;
-
     static constexpr glm::vec3 COLOR_DEFAULT{1.0f};
     static constexpr glm::vec3 COLOR_RED{1.0f, 0.0f, 0.0f};
     static constexpr glm::vec3 COLOR_GRASS{0.349f, 0.651f, 0.290f};
@@ -43,7 +40,7 @@ class Chunk
         STONE,
         SAND,
     };
-    static inline const std::unordered_map<BlockType, std::shared_ptr<Block>> AVAILABLE_BLOCKS = {
+    static inline const std::unordered_map<BlockType, std::shared_ptr<Block>> BLOCK_PALETTE = {
         {BlockType::EMPTY,   nullptr                               },
         {BlockType::DEFAULT, std::make_shared<Block>(COLOR_DEFAULT)},
         {BlockType::RED,     std::make_shared<Block>(COLOR_RED)    },
@@ -61,36 +58,35 @@ class Chunk
     glm::vec3 minBounds;
     glm::vec3 maxBounds;
 
-    // Contains blocks in this chunk and edge blocks of neighboring chunks.
-    // Will keep edge blocks up-to-date with neighbors based on player's interaction with the world.
-    // Stored in the order x -> y -> z and maintain a size of (`size` + `EDGE_OFFSET` * 2) cubed.
+    // Contains blocks in this chunk.
     using BlockContainer = std::vector<BlockType>;
     std::unique_ptr<BlockContainer> blocks;
 
-    // Exclusive to only blocks in this chunk.
+    // Stores an index into `blocks`.
     std::unordered_set<glm::vec3> visibleBlocks;
 
     void initContainer();
 
-    size_t getBlockIndex(const glm::vec3& global_pos) const;
+    int getBlockIndex(const glm::vec3& global_pos) const;
     BlockType getBlockType(const glm::vec3& global_pos) const;
-    std::shared_ptr<Block> getBlock(const glm::vec3& global_pos) const;
-    glm::vec3 getLocalPos(const glm::vec3& global_pos) const;
+    std::weak_ptr<Block> getBlock(const glm::vec3& global_pos) const;
+    glm::ivec3 getLocalPos(const glm::vec3& global_pos) const;
 
-    void generateBlock(const glm::vec3& global_pos, const BlockType type);
-    void resetBlock(const glm::vec3& global_pos);
+    bool generateBlock(const glm::vec3& global_pos, const BlockType type);
+    bool resetBlock(const glm::vec3& global_pos);
 
-    bool doesBlockExist(const glm::vec3& global_pos) const;
-    bool isBlockVisible(const glm::vec3& global_pos) const; // In the visible blocks set.
-    bool isBlockHidden(const glm::vec3& global_pos) const;  // Hidden relative to other blocks.
+    bool isBlockPresent(const glm::vec3& global_pos) const;
+    bool isBlockVisible(const glm::vec3& global_pos) const;
+    bool isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const;
+    bool isBlockHidden(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks) const;
     bool isInChunkBounds(const glm::vec3& block_pos) const;
-    bool isInEdgeBounds(const glm::vec3& block_pos) const; // Chunk bounds but includes neighboring edge blocks.
 
   public:
     Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size);
 
-    void addBlock(const glm::vec3& global_pos);
+    void addBlock(const glm::vec3& global_pos, const std::array<const Chunk*, 6>& neighboring_chunks);
     void removeBlock(const glm::vec3& global_pos);
+    bool isBlockOnEdge(const glm::vec3& global_pos) const;
 
     const std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr) const;
     bool doesEntityIntersect(
@@ -101,5 +97,5 @@ class Chunk
         glm::vec3* normal = nullptr) const;
 
     ChunkCenter getCenter() const;
-    const Model getModel() const;
+    const Model getModel(const std::array<const Chunk*, 6>& neighboring_chunks) const;
 };
