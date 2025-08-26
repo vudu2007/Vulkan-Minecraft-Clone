@@ -81,6 +81,11 @@ class Chunk
 
     void initContainer();
 
+    // --- TODO: TEMP methods and variables.
+    const FastNoiseLite& heightNoise;
+    void init();
+    // --- TODO: END OF TEMP.
+
     int getBlockIndex(const glm::vec3& global_pos) const;
     BlockType getBlockType(const glm::vec3& global_pos) const;
     std::weak_ptr<Block> getBlock(const glm::vec3& global_pos) const;

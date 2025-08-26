@@ -18,120 +18,9 @@ void Chunk::initContainer()
     blocks->resize(num_blocks, BlockType::EMPTY);
 }
 
-int Chunk::getBlockIndex(const glm::vec3& global_pos) const
+void Chunk::init()
 {
-    const glm::ivec3 local_pos = getLocalPos(global_pos);
-    return local_pos.x + (local_pos.y * size) + (local_pos.z * size * size);
-}
-
-Chunk::BlockType Chunk::getBlockType(const glm::vec3& global_pos) const
-{
-    return (*blocks)[getBlockIndex(global_pos)];
-}
-
-std::weak_ptr<Block> Chunk::getBlock(const glm::vec3& global_pos) const
-{
-    return BLOCK_PALETTE.at(getBlockType(global_pos));
-}
-
-glm::ivec3 Chunk::getLocalPos(const glm::vec3& global_pos) const
-{
-    return static_cast<glm::ivec3>(global_pos - minBounds);
-}
-
-bool Chunk::generateBlock(const glm::vec3& global_pos, const BlockType type)
-{
-    if (!isInChunkBounds(global_pos))
-    {
-        return false;
-    }
-
-    (*blocks)[getBlockIndex(global_pos)] = type;
-    ++blockCount;
-    return true;
-}
-
-bool Chunk::resetBlock(const glm::vec3& global_pos)
-{
-    if (!isInChunkBounds(global_pos))
-    {
-        return false;
-    }
-
-    (*blocks)[getBlockIndex(global_pos)] = BlockType::EMPTY;
-    --blockCount;
-    return true;
-}
-
-bool Chunk::isBlockPresent(const glm::vec3& global_pos) const
-{
-    return (blockCount > 0) && (isInChunkBounds(global_pos)) && (getBlockType(global_pos) != BlockType::EMPTY);
-}
-
-bool Chunk::isBlockVisible(const glm::vec3& global_pos) const
-{
-    return visibleBlocks.contains(global_pos);
-}
-
-bool Chunk::isBlockHidden(const glm::vec3& global_pos) const
-{
-    const std::vector<glm::vec3> offsets = {
-        glm::vec3(1.0, 0.0, 0.0),  // +x
-        glm::vec3(0.0, 1.0, 0.0),  // +y
-        glm::vec3(0.0, 0.0, 1.0),  // +z
-        glm::vec3(-1.0, 0.0, 0.0), // -x
-        glm::vec3(0.0, -1.0, 0.0), // -y
-        glm::vec3(0.0, 0.0, -1.0), // -z
-    };
-    for (size_t i = 0; i < offsets.size(); ++i)
-    {
-        const glm::vec3 neighbor = global_pos + offsets[i];
-        if (!isBlockPresent(neighbor) || !neighboringChunks[i]->isBlockPresent(neighbor))
-        {
-            // There must be a visible face; therefore, a visible block.
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const
-{
-    const std::vector<glm::vec3> offsets = {
-        glm::vec3(1.0, 0.0, 0.0),  // +x
-        glm::vec3(0.0, 1.0, 0.0),  // +y
-        glm::vec3(0.0, 0.0, 1.0),  // +z
-        glm::vec3(-1.0, 0.0, 0.0), // -x
-        glm::vec3(0.0, -1.0, 0.0), // -y
-        glm::vec3(0.0, 0.0, -1.0), // -z
-    };
-    for (size_t i = 0; i < offsets.size(); ++i)
-    {
-        const glm::vec3 neighbor = global_pos + offsets[i];
-        if (!isBlockPresent(neighbor) || !neighboring_blocks.contains(neighbor))
-        {
-            // There must be a visible face; therefore, a visible block.
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Chunk::isInChunkBounds(const glm::vec3& global_pos) const
-{
-    const bool in_x_bounds = (global_pos.x >= minBounds.x) && (global_pos.x <= maxBounds.x);
-    const bool in_y_bounds = (global_pos.y >= minBounds.y) && (global_pos.y <= maxBounds.y);
-    const bool in_z_bounds = (global_pos.z >= minBounds.z) && (global_pos.z <= maxBounds.z);
-    return in_x_bounds && in_y_bounds && in_z_bounds;
-}
-
-Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size)
-    : center(center_pos), size(size)
-{
-    const float half_size = (static_cast<float>(size) * 0.5f);
-
-    minBounds = center_pos - glm::vec3(half_size);
-    maxBounds = center_pos + glm::vec3(half_size - 1.0f);
+    blockCount = 0;
 
     const glm::ivec3 start = static_cast<glm::ivec3>(minBounds);
     const glm::ivec3 end = static_cast<glm::ivec3>(maxBounds);
@@ -151,7 +40,7 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
         for (int x = start.x - neighbor_chunk_offset; x <= end.x + neighbor_chunk_offset; ++x)
         {
             // At this moment, height is the global height; tallest point at this xz-position.
-            const float noise_val = (height_noise.GetNoise(static_cast<float>(x), static_cast<float>(z)) + 1.0f) * 0.5f;
+            const float noise_val = (heightNoise.GetNoise(static_cast<float>(x), static_cast<float>(z)) + 1.0f) * 0.5f;
             const int global_height = static_cast<int>(std::floor(noise_val * HEIGHT_RANGE)) + HEIGHT_OFFSET;
 
             // Make sure the height is within the chunk and that it exist.
@@ -213,13 +102,140 @@ Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, con
             for (int z = start.z; z <= end.z; ++z)
             {
                 const glm::vec3 global_pos(x, y, z);
-                if (isBlockPresent(global_pos) && !isBlockHidden(global_pos, neighboring_chunk_blocks))
+                if (isBlockPresent(global_pos) &&
+                    (!isBlockHidden(global_pos, neighboring_chunk_blocks) || !isBlockHidden(global_pos)))
                 {
                     visibleBlocks.emplace(global_pos);
                 }
             }
         }
     }
+
+    // Don't store blocks in the container if there are no visible blocks.
+    if (visibleBlocks.empty())
+    {
+        blocks.reset();
+        return;
+    }
+}
+
+int Chunk::getBlockIndex(const glm::vec3& global_pos) const
+{
+    const glm::ivec3 local_pos = getLocalPos(global_pos);
+    return local_pos.x + (local_pos.y * size) + (local_pos.z * size * size);
+}
+
+Chunk::BlockType Chunk::getBlockType(const glm::vec3& global_pos) const
+{
+    return (*blocks)[getBlockIndex(global_pos)];
+}
+
+std::weak_ptr<Block> Chunk::getBlock(const glm::vec3& global_pos) const
+{
+    return BLOCK_PALETTE.at(getBlockType(global_pos));
+}
+
+glm::ivec3 Chunk::getLocalPos(const glm::vec3& global_pos) const
+{
+    return static_cast<glm::ivec3>(global_pos - minBounds);
+}
+
+bool Chunk::generateBlock(const glm::vec3& global_pos, const BlockType type)
+{
+    if (!isInChunkBounds(global_pos))
+    {
+        return false;
+    }
+
+    (*blocks)[getBlockIndex(global_pos)] = type;
+    ++blockCount;
+    return true;
+}
+
+bool Chunk::resetBlock(const glm::vec3& global_pos)
+{
+    if (!isInChunkBounds(global_pos))
+    {
+        return false;
+    }
+
+    (*blocks)[getBlockIndex(global_pos)] = BlockType::EMPTY;
+    --blockCount;
+    return true;
+}
+
+bool Chunk::isBlockPresent(const glm::vec3& global_pos) const
+{
+    return (blockCount > 0) && (isInChunkBounds(global_pos)) &&
+           (blocks == nullptr || getBlockType(global_pos) != BlockType::EMPTY);
+}
+
+bool Chunk::isBlockVisible(const glm::vec3& global_pos) const
+{
+    return visibleBlocks.contains(global_pos);
+}
+
+bool Chunk::isBlockHidden(const glm::vec3& global_pos) const
+{
+    const std::vector<glm::vec3> offsets = {
+        glm::vec3(1.0, 0.0, 0.0),  // +x
+        glm::vec3(0.0, 1.0, 0.0),  // +y
+        glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, -1.0, 0.0), // -y
+        glm::vec3(0.0, 0.0, -1.0), // -z
+    };
+    for (size_t i = 0; i < offsets.size(); ++i)
+    {
+        const glm::vec3 neighbor = global_pos + offsets[i];
+        if (!isBlockPresent(neighbor) && (neighboringChunks[i] != nullptr) &&
+            !neighboringChunks[i]->isBlockPresent(neighbor))
+        {
+            // There must be a visible face; therefore, a visible block.
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Chunk::isBlockHidden(const glm::vec3& global_pos, const std::unordered_set<glm::vec3>& neighboring_blocks) const
+{
+    const std::vector<glm::vec3> offsets = {
+        glm::vec3(1.0, 0.0, 0.0),  // +x
+        glm::vec3(0.0, 1.0, 0.0),  // +y
+        glm::vec3(0.0, 0.0, 1.0),  // +z
+        glm::vec3(-1.0, 0.0, 0.0), // -x
+        glm::vec3(0.0, -1.0, 0.0), // -y
+        glm::vec3(0.0, 0.0, -1.0), // -z
+    };
+    for (size_t i = 0; i < offsets.size(); ++i)
+    {
+        const glm::vec3 neighbor = global_pos + offsets[i];
+        if (!isBlockPresent(neighbor) && !neighboring_blocks.contains(neighbor))
+        {
+            // There must be a visible face; therefore, a visible block.
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Chunk::isInChunkBounds(const glm::vec3& global_pos) const
+{
+    const bool in_x_bounds = (global_pos.x >= minBounds.x) && (global_pos.x <= maxBounds.x);
+    const bool in_y_bounds = (global_pos.y >= minBounds.y) && (global_pos.y <= maxBounds.y);
+    const bool in_z_bounds = (global_pos.z >= minBounds.z) && (global_pos.z <= maxBounds.z);
+    return in_x_bounds && in_y_bounds && in_z_bounds;
+}
+
+Chunk::Chunk(const FastNoiseLite& height_noise, const glm::vec3& center_pos, const int size)
+    : center(center_pos), size(size), heightNoise(height_noise)
+{
+    const float half_size = (static_cast<float>(size) * 0.5f);
+    minBounds = center_pos - glm::vec3(half_size);
+    maxBounds = center_pos + glm::vec3(half_size - 1.0f);
+
+    init();
 }
 
 void Chunk::addBlock(const glm::vec3& global_pos)
@@ -286,13 +302,27 @@ void Chunk::removeBlock(const glm::vec3& global_pos)
         glm::vec3(0.0f, -1.0f, 0.0f), // -y
         glm::vec3(0.0f, 0.0f, -1.0f), // -z
     };
-    for (const auto& offset : offsets)
+    for (size_t i = 0; i < offsets.size(); ++i)
     {
+        const glm::vec3& offset = offsets[i];
         const glm::vec3 neighbor = global_pos + offset;
         // Check (1) within chunk bounds, (2) already exists, and (3) is not visible.
         if (isInChunkBounds(neighbor) && isBlockPresent(neighbor) && !isBlockVisible(neighbor))
         {
             visibleBlocks.emplace(neighbor);
+        }
+        else if (!isInChunkBounds(neighbor) && neighboringChunks[i] != nullptr)
+        {
+            // TODO: instead of regenerating if needed, try to get it from persistent storage.
+            // TODO: don't like how a chunk can modify its neighbors.
+            if (neighboringChunks[i]->blockCount > 0 && neighboringChunks[i]->blocks == nullptr)
+            {
+                neighboringChunks[i]->init();
+            }
+            if (neighboringChunks[i]->isBlockPresent(neighbor) && !neighboringChunks[i]->isBlockVisible(neighbor))
+            {
+                neighboringChunks[i]->visibleBlocks.emplace(neighbor);
+            }
         }
     }
 
