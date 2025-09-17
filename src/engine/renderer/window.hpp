@@ -1,7 +1,7 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_WINDOW_HPP
-#define VMC_SRC_ENGINE_RENDERER_WINDOW_HPP
+#pragma once
 
-#define GLFW_INCLUDE_VULKAN
+#include <volk.h>
+
 #include <GLFW/glfw3.h>
 
 #include <functional>
@@ -60,5 +60,3 @@ class Window
     void addMouseButtonCallback(const std::function<void(int, int, int)>& callback);
     void clearMouseButtonCallbacks();
 };
-
-#endif // VMC_SRC_ENGINE_RENDERER_WINDOW_HPP

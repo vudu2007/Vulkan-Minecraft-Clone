@@ -1,4 +1,5 @@
 #include "game.hpp"
+#include "utility.hpp"
 #include "world.hpp"
 
 #include <chrono>
@@ -99,7 +100,7 @@ void Game::unloadChunkModel(const Chunk& chunk)
 
 void Game::run()
 {
-    Texture* block_texture_ptr = renderer.createTexture("../../textures/cube_texture.jpg");
+    Texture* block_texture_ptr = renderer.createTexture(VmcUtility::getAssetPath("textures/cube_texture.jpg").string());
 
     world.addChunkLoadedCallback([this](const Chunk& chunk) { loadChunkModel(chunk); });
     world.addChunkUnloadedCallback([this](const Chunk& chunk) { unloadChunkModel(chunk); });

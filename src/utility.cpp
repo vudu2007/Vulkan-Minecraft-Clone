@@ -24,3 +24,13 @@ std::vector<char> VmcUtility::readFile(const std::string& filename)
 
     return buffer;
 }
+
+std::filesystem::path VmcUtility::getAssetPath(const std::string& filename)
+{
+    if (!std::filesystem::exists(ASSETS_PATH / filename))
+    {
+        throw std::runtime_error("failed to get asset: (" + filename + ")!");
+    }
+
+    return ASSETS_PATH / filename;
+}

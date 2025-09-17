@@ -73,30 +73,11 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Setup Vulkan SDK
-      uses: humbletim/install-vulkan-sdk@0ef43dbc8af56d77bcb1e8b1ebbbaa8718ead524
-      with:
-        version: 1.4.309.0
-        cache: true
-
-    - name: Clone vcpkg
-      run: git clone https://github.com/microsoft/vcpkg.git
-
-    - name: Bootstrap vcpkg
-      run: ./vcpkg/bootstrap-vcpkg.sh
-      shell: bash
-
     - name: (Ubuntu) Install GLFW dependencies
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          libxinerama-dev libxcursor-dev libx11-dev libglu1-mesa-dev pkg-config \
-          libx11-xcb-dev libxcb1-dev libxcb-glx0-dev libxrandr-dev libxi-dev
-      shell: bash
-
-    - name: Install GLFW via vcpkg
-      run: ./vcpkg/vcpkg install glfw3
+        sudo apt-get install libwayland-dev libxkbcommon-dev xorg-dev
       shell: bash
 
     - name: Configure CMake
@@ -107,7 +88,6 @@ jobs:
         -DCMAKE_CXX_COMPILER="${{ matrix.cpp_compiler }}"
         -DCMAKE_C_COMPILER="${{ matrix.c_compiler }}"
         -DCMAKE_BUILD_TYPE="${{ matrix.build_type }}"
-        -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake"
         -S "${{ github.workspace }}"
       shell: bash
 
