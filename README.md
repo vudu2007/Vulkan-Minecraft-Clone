@@ -2,6 +2,8 @@
 An exploratory project on the Vulkan API (using v.1.1 features) by implementing a Minecraft like game as the goal.  
 As of now, the project has only been tested on Windows 11 using Visual Studio 2022.  
 
+![alt tag](https://raw.githubusercontent.com/vudu2007/Vulkan-Minecraft-Clone/master/images/screenshot.png)
+
 ## Controls
 - `W`/`A`/`S`/`D` to move.
 - `Left-Shift` to descend.
