@@ -279,7 +279,7 @@ void Device::createInstance()
     app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     app_info.pEngineName = "No Engine";
     app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_0;
+    app_info.apiVersion = VK_API_VERSION_1_1;
 
     VkInstanceCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -414,13 +414,34 @@ void Device::createLogicalDevice()
 
 void Device::createAllocator()
 {
+    // https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk
+    VmaVulkanFunctions vma_vulkan_func{};
+    vma_vulkan_func.vkAllocateMemory = vkAllocateMemory;
+    vma_vulkan_func.vkBindBufferMemory = vkBindBufferMemory;
+    vma_vulkan_func.vkBindImageMemory = vkBindImageMemory;
+    vma_vulkan_func.vkCreateBuffer = vkCreateBuffer;
+    vma_vulkan_func.vkCreateImage = vkCreateImage;
+    vma_vulkan_func.vkDestroyBuffer = vkDestroyBuffer;
+    vma_vulkan_func.vkDestroyImage = vkDestroyImage;
+    vma_vulkan_func.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
+    vma_vulkan_func.vkFreeMemory = vkFreeMemory;
+    vma_vulkan_func.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
+    vma_vulkan_func.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2;
+    vma_vulkan_func.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
+    vma_vulkan_func.vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges;
+    vma_vulkan_func.vkMapMemory = vkMapMemory;
+    vma_vulkan_func.vkUnmapMemory = vkUnmapMemory;
+    vma_vulkan_func.vkCmdCopyBuffer = vkCmdCopyBuffer;
+
     VmaAllocatorCreateInfo create_info{};
     create_info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     create_info.vulkanApiVersion = VK_API_VERSION_1_0;
     create_info.physicalDevice = physicalDevice;
     create_info.device = logicalDevice;
     create_info.instance = instance;
-    create_info.pVulkanFunctions = nullptr;
+    create_info.pVulkanFunctions = &vma_vulkan_func;
 
     if (vmaCreateAllocator(&create_info, &allocator) != VK_SUCCESS)
     {
@@ -450,11 +471,19 @@ bool Device::hasStencilComponent(const VkFormat format) const
 
 Device::Device(const Window& window) : window(window)
 {
+    // Load Vulkan function pointers (without instance yet).
+    if (volkInitialize() != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to initialize volk!");
+    }
+
     createInstance();
+    volkLoadInstance(instance);
     setupDebugMessenger();
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    volkLoadDevice(logicalDevice);
     createAllocator();
     createCommandPool();
 }

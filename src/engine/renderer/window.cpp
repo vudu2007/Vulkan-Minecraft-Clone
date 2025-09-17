@@ -1,6 +1,7 @@
 #include "window.hpp"
 
 #include <stdexcept>
+#include <iostream>
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
