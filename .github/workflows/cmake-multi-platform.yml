@@ -77,9 +77,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          libxinerama-dev libxcursor-dev libx11-dev libglu1-mesa-dev pkg-config \
-          libx11-xcb-dev libxcb1-dev libxcb-glx0-dev libxrandr-dev libxi-dev
+        sudo apt-get install libwayland-dev libxkbcommon-dev xorg-dev
       shell: bash
 
     - name: Configure CMake
