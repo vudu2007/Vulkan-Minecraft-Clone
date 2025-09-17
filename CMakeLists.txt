@@ -61,6 +61,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build/x64/")
+set_property(DIRECTORY  ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
 
 if(WIN32)
     message(STATUS "Creating build for Windows.")
@@ -71,18 +72,15 @@ if(WIN32)
     )
 
     target_link_libraries(${PROJECT_NAME} PRIVATE glfw volk)
-# elseif (UNIX)
-#     message(STATUS "Creating build for Unix.")
+elseif (UNIX)
+    message(STATUS "Creating build for Unix.")
 
-#     target_include_directories(${PROJECT_NAME} PUBLIC
-#       ${PROJECT_SOURCE_DIR}/src
-#       ${ALL_EXTERNAL_PATHS}
-#     )
-#     if(Vulkan_FOUND_VIA_PACKAGE)
-#         target_link_libraries(${PROJECT_NAME} glfw Vulkan::Vulkan)
-#     else()
-#         target_link_libraries(${PROJECT_NAME} glfw ${Vulkan_LIBRARIES})
-#     endif()
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        ${PROJECT_SOURCE_DIR}/src
+        ${ALL_EXTERNAL_PATHS}
+    )
+
+    target_link_libraries(${PROJECT_NAME} PRIVATE glfw volk)
 else()
     message(FATAL_ERROR "Currently, CMake not configured for current target system!")
 endif()
