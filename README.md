@@ -21,19 +21,26 @@ As of now, the project has only been tested on Windows 11 using Visual Studio 20
 - [Vulkan-Headers](https://github.com/KhronosGroup/Vulkan-Headers) (n/a)
 - [Vulkan Memory Allocator](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator) (v.3.3.0)
 
-## Optional dependencies to install for development
+## Depedencies to install
+- [GLFW dependencies](https://www.glfw.org/docs/latest/compile.html); you may need to install additional packages if your build is failing, such as not having Wayland.
+
+## Optional dependencies to install
 - [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) (tested with v.1.4.303)
 
 ## Build and Run with CMake
 Make sure your compiler supports `C++20`!  
 Optionally, install the Vulkan SDK (tested with v.1.4.303) for development tools, such as validation layers.  
 
+(**0**) Install required dependencies.  
+Currently, only GLFW dependencies; from the documents on GLFW,  
+"The C/C++ development environments in Visual Studio, Xcode and MinGW come with all necessary dependencies for compiling GLFW, but on Unix-like systems like Linux and FreeBSD you will need a few extra packages".
+
 (**1**) Compile the shaders.  
 Go to the shaders folder, currently in `Vulkan-Minecraft-Clone/assets/shaders/compiler/` and compile the shaders.  
 You can use `glslc` (included in repository as a Windows executable, but can use one in Vulkan SDK if you do not trust the one here); if you are on Windows, you can use the batch file also located there: `Vulkan-Minecraft-Clone/assets/shaders/compiler/compile.bat`.  
 
 (**2**) Build and run it.  
-In the top-level directory with your default generator (optionally, specify with `-G` flag with a generator to choose one):
+In the top-level directory with your default generator (optionally, specify with `-G` flag with a generator to choose one) (there are other flags to look into, such selecting the compiler):
 ```
 cmake -B build
 ```  
