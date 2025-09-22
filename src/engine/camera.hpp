@@ -1,8 +1,8 @@
 #pragma once
 
 #include "frustum.hpp"
-#include "renderer/window.hpp"
 #include "usage/glm-usage.hpp"
+#include "window.hpp"
 
 class Camera
 {

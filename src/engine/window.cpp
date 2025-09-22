@@ -4,35 +4,32 @@
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
-    auto container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-    container->resized = true;
-    for (const auto& callback : container->resizeCallbacks)
-    {
-        callback();
-    }
+    Window* container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    container->isResized = true;
+    container->runResizeCallbacks();
 }
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    auto container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-    for (const auto& callback : container->keyCallbacks)
-    {
-        callback(key, scancode, action, mods);
-    }
+    Window* container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    container->runKeyCallbacks(key, scancode, action, mods);
 }
 
 static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    auto container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-    for (const auto& callback : container->mouseButtonCallbacks)
-    {
-        callback(button, action, mods);
-    }
+    Window* container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    container->runMouseButtonCallbacks(button, action, mods);
 }
+
+Window::Window() : Window(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_TITLE)
+{}
 
 Window::Window(const int width, const int height, const std::string& title) : width(width), height(height), title(title)
 {
-    glfwInit();
+    if (!glfwInit())
+    {
+        throw std::runtime_error("failed to initialize GLFW!");
+    }
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
@@ -62,6 +59,21 @@ VkSurfaceKHR Window::createSurface(VkInstance instance) const
         throw std::runtime_error("failed to create a window surface!");
     }
     return surface;
+}
+
+int Window::getWidth() const
+{
+    return width;
+}
+
+int Window::getHeight() const
+{
+    return height;
+}
+
+std::string Window::getTitle() const
+{
+    return title;
 }
 
 void Window::pollEvents() const
@@ -104,32 +116,32 @@ void Window::setInputMode(const int mode, const int value)
     glfwSetInputMode(pWindow, mode, value);
 }
 
-void Window::addResizeCallback(const std::function<void()>& callback)
+SubscriberId Window::addResizeCallback(const std::function<void()>& callback)
 {
-    resizeCallbacks.push_back(callback);
+    return resizeCallbacks.subscribe(callback);
 }
 
-void Window::clearResizeCallbacks()
+SubscriberId Window::addKeyCallback(const std::function<void(int, int, int, int)>& callback)
 {
-    resizeCallbacks.clear();
+    return keyCallbacks.subscribe(callback);
 }
 
-void Window::addKeyCallback(const std::function<void(int, int, int, int)>& callback)
+SubscriberId Window::addMouseButtonCallback(const std::function<void(int, int, int)>& callback)
 {
-    keyCallbacks.push_back(callback);
+    return mouseButtonCallbacks.subscribe(callback);
 }
 
-void Window::clearKeyCallbacks()
+void Window::runResizeCallbacks()
 {
-    keyCallbacks.clear();
+    resizeCallbacks.notify();
 }
 
-void Window::addMouseButtonCallback(const std::function<void(int, int, int)>& callback)
+void Window::runKeyCallbacks(const int key, const int scancode, const int action, const int mods)
 {
-    mouseButtonCallbacks.push_back(callback);
+    keyCallbacks.notify(key, scancode, action, mods);
 }
 
-void Window::clearMouseButtonCallbacks()
+void Window::runMouseButtonCallbacks(const int button, const int action, const int mods)
 {
-    mouseButtonCallbacks.clear();
+    mouseButtonCallbacks.notify(button, action, mods);
 }

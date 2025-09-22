@@ -12,3 +12,6 @@ PointerAlignment: Left
 AllowAllArgumentsOnNextLine: false
 BreakTemplateDeclarations: Yes
 # ColumnLimit: 100
+BreakBeforeBraces: Custom
+BraceWrapping:
+	SplitEmptyFunction: false

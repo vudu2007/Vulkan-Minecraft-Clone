@@ -4,7 +4,7 @@
 #include "engine/camera.hpp"
 #include "engine/physics/ray/ray.hpp"
 #include "engine/physics/shapes/aabb.hpp"
-#include "engine/renderer/window.hpp"
+#include "engine/window.hpp"
 #include "world.hpp"
 
 class Player

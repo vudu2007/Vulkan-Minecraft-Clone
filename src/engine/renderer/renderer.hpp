@@ -1,6 +1,6 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
-#define VMC_SRC_ENGINE_RENDERER_RENDERER_HPP
+#pragma once
 
+#include "../window.hpp"
 #include "buffer.hpp"
 #include "descriptor.hpp"
 #include "device.hpp"
@@ -8,7 +8,6 @@
 #include "pipeline.hpp"
 #include "swapchain.hpp"
 #include "texture.hpp"
-#include "window.hpp"
 
 #include <memory>
 
@@ -155,5 +154,3 @@ class Renderer
 
     void drawFrame();
 };
-
-#endif // VMC_SRC_ENGINE_RENDERER_RENDERER_HPP

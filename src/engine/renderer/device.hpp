@@ -1,7 +1,6 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_DEVICE_HPP
-#define VMC_SRC_ENGINE_RENDERER_DEVICE_HPP
+#pragma once
 
-#include "window.hpp"
+#include "../window.hpp"
 
 #include "vk_mem_alloc.h"
 
@@ -97,5 +96,3 @@ class Device
     const VkQueue getGraphicsQueue() const;
     const VkQueue getPresentQueue() const;
 };
-
-#endif // VMC_SRC_ENGINE_RENDERER_DEVICE_HPP

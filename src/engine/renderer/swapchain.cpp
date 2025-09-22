@@ -65,12 +65,12 @@ void Swapchain::createSwapchain()
     // Request at least 1 more than minimum in case driver is unable to get
     // another image in a timely manner.
     uint32_t image_count =
-        std::max(swap_chain_support.capabilities.minImageCount + 1, swap_chain_support.capabilities.maxImageCount);
+        std::min(swap_chain_support.capabilities.minImageCount + 1, swap_chain_support.capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     create_info.surface = device.getSurface();
-    create_info.minImageCount = image_count;
+    create_info.minImageCount = image_count; // validation error caused here.
     create_info.imageFormat = surface_format.format;
     create_info.imageColorSpace = surface_format.colorSpace;
     create_info.imageExtent = extent;

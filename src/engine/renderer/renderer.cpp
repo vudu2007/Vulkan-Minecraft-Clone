@@ -945,9 +945,9 @@ void Renderer::drawFrame()
     present_info.pResults = nullptr; // Optional: good for more than 1 swap chain.
 
     result = vkQueuePresentKHR(device.getPresentQueue(), &present_info);
-    if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR) || window.resized)
+    if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR) || window.isResized)
     {
-        window.resized = false;
+        window.isResized = false;
         swapchain.recreate();
     }
     else if (result != VK_SUCCESS)
@@ -960,8 +960,7 @@ void Renderer::drawFrame()
 
 Renderer::IndexBufferInfo::IndexBufferInfo(size_t count, std::unique_ptr<Buffer> p_buffer, VkIndexType type)
     : count(count), pBuffer(std::move(p_buffer)), type(type)
-{
-}
+{}
 
 Renderer::IndexBufferInfo::IndexBufferInfo(const IndexBufferInfo& other)
 {
@@ -983,5 +982,4 @@ Renderer::UniformBufferInfo::UniformBufferInfo(
     const uint32_t binding,
     std::vector<std::unique_ptr<Buffer>>&& buffer_ptr_per_frame)
     : binding(binding), bufferPtrPerFrame(std::move(buffer_ptr_per_frame))
-{
-}
+{}
