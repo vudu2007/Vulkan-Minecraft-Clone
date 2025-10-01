@@ -6,6 +6,7 @@ As of now, the project has only been tested on Windows 11 using Visual Studio 20
 
 ## Controls
 - `W`/`A`/`S`/`D` to move.
+- `Left-Mouse`/`Right-Mouse` to place/destroy blocks.
 - `Left-Shift` to descend.
 - `Space` to ascend.
 - Hold `Left-Control` to speed up.
