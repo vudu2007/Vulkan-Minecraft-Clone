@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../window.hpp"
+#include "vulkan_instance.hpp"
 
 #include "vk_mem_alloc.h"
 
@@ -25,11 +25,6 @@ struct SwapchainSupportDetails
 class Device
 {
   private:
-    const Window& window;
-
-    VkInstance instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice logicalDevice = VK_NULL_HANDLE;
     VmaAllocator allocator = VK_NULL_HANDLE;
@@ -40,20 +35,18 @@ class Device
 
     VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    void createInstance();
-    void setupDebugMessenger();
-    void createSurface();
-    void pickPhysicalDevice();
-    void createLogicalDevice();
-    void createAllocator();
-    void createCommandPool();
+    void pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface);
+    void createLogicalDevice(const VkSurfaceKHR surface);
+    void createAllocator(const VkInstance instance);
+    void createCommandPool(const VkSurfaceKHR surface);
 
     bool hasStencilComponent(const VkFormat format) const;
 
   public:
-    Device(const Window& window);
+    Device(const VkInstance instance, const VkSurfaceKHR surface);
     Device(const Device& other) = delete;
     Device(Device&& other) = delete;
+
     ~Device();
 
     Device& operator=(const Device& other) = delete;
@@ -81,14 +74,11 @@ class Device
         const VkFormatFeatureFlags features) const;
     uint32_t findMemoryType(const uint32_t type_filter, const VkMemoryPropertyFlags properties) const;
 
-    const QueueFamilyIndices getQueueFamilies() const;
-    const SwapchainSupportDetails getSwapchainSupportDetails() const;
+    const QueueFamilyIndices getQueueFamilies(const VkSurfaceKHR surface) const;
+    const SwapchainSupportDetails getSwapchainSupportDetails(const VkSurfaceKHR surface) const;
     const VkSampleCountFlagBits getMsaaSamples() const;
     const VkPhysicalDeviceProperties getPhysicalDeviceProperties() const;
 
-    const Window& getWindow() const;
-    const VkInstance getInstance() const;
-    const VkSurfaceKHR getSurface() const;
     const VkPhysicalDevice getPhysicalDevice() const;
     const VkDevice getLogicalDevice() const;
     const VmaAllocator getAllocator() const;

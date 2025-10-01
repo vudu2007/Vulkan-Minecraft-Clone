@@ -21,8 +21,9 @@ class Game
     std::vector<unsigned> reusableIds; // TODO: std::stack doesn't like being down here.
     std::unordered_map<ChunkCenter, unsigned> chunkToVertexBufferId;
 
-    Window window;
-    Renderer renderer{window};
+    VulkanInstance instance{};
+    Window window{instance.getHandle(), 800, 600, "Vulkan Minecraft Clone"};
+    Renderer renderer{instance.getHandle(), window};
     World world{727, CHUNK_SIZE, static_cast<unsigned>(std::thread::hardware_concurrency() * 0.25)};
     Player player{window, world, DEFAULT_PLAYER_POS, 4.0f, DEFAULT_PLAYER_RENDER_DISTANCE};
 

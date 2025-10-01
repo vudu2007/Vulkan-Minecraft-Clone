@@ -7,6 +7,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include <array>
+#include <string>
 
 class Model
 {
@@ -123,7 +124,8 @@ class Model
 namespace std
 {
 
-template <> struct hash<Model::Vertex>
+template <>
+struct hash<Model::Vertex>
 {
     size_t operator()(Model::Vertex const& vertex) const
     {

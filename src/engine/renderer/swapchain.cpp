@@ -56,11 +56,11 @@ static VkExtent2D chooseSwapExtent(const Window& window, const VkSurfaceCapabili
 
 void Swapchain::createSwapchain()
 {
-    const SwapchainSupportDetails swap_chain_support = device.getSwapchainSupportDetails();
+    const SwapchainSupportDetails swap_chain_support = device.getSwapchainSupportDetails(window.getSurface());
 
     const VkSurfaceFormatKHR surface_format = chooseSwapSurfaceFormat(swap_chain_support.formats);
     const VkPresentModeKHR present_mode = chooseSwapPresentMode(swap_chain_support.presentModes);
-    const VkExtent2D extent = chooseSwapExtent(device.getWindow(), swap_chain_support.capabilities);
+    const VkExtent2D extent = chooseSwapExtent(window, swap_chain_support.capabilities);
 
     // Request at least 1 more than minimum in case driver is unable to get
     // another image in a timely manner.
@@ -69,7 +69,7 @@ void Swapchain::createSwapchain()
 
     VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.surface = device.getSurface();
+    create_info.surface = window.getSurface();
     create_info.minImageCount = image_count; // validation error caused here.
     create_info.imageFormat = surface_format.format;
     create_info.imageColorSpace = surface_format.colorSpace;
@@ -77,7 +77,7 @@ void Swapchain::createSwapchain()
     create_info.imageArrayLayers = 1;
     create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    const QueueFamilyIndices indices = device.getQueueFamilies();
+    const QueueFamilyIndices indices = device.getQueueFamilies(window.getSurface());
     const uint32_t queue_family_indices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
     if (indices.graphicsFamily != indices.presentFamily)
     {
@@ -401,7 +401,7 @@ const VkFormat Swapchain::findDepthFormat()
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-Swapchain::Swapchain(const Device& device) : device(device)
+Swapchain::Swapchain(const Window& window, const Device& device) : window(window), device(device)
 {
     createSwapchain();
     createImageViews();
@@ -421,10 +421,10 @@ void Swapchain::recreate()
 {
     // Handle window minimization; window is paused until back in foreground.
     int width = -1, height = -1;
-    device.getWindow().getFrameBufferSize(width, height);
+    window.getFrameBufferSize(width, height);
     while (width == 0 || height == 0)
     {
-        device.getWindow().getFrameBufferSize(width, height);
+        window.getFrameBufferSize(width, height);
         glfwWaitEvents();
     }
 

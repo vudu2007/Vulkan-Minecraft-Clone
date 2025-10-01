@@ -3,6 +3,8 @@
 
 #include "device.hpp"
 
+#include <string>
+
 class Texture
 {
   private:

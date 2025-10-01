@@ -1,11 +1,14 @@
 #include "window.hpp"
 
+#include <cassert>
 #include <stdexcept>
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
     Window* container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
     container->isResized = true;
+    container->setWidth(width);
+    container->setHeight(height);
     container->runResizeCallbacks();
 }
 
@@ -21,22 +24,20 @@ static void mouseButtonCallback(GLFWwindow* window, int button, int action, int 
     container->runMouseButtonCallbacks(button, action, mods);
 }
 
-Window::Window() : Window(DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_TITLE)
-{}
-
-Window::Window(const int width, const int height, const std::string& title) : width(width), height(height), title(title)
+Window::Window(const VkInstance instance, const int width, const int height, const std::string& title)
+    : width(width), height(height), title(title), instance(instance)
 {
-    if (!glfwInit())
-    {
-        throw std::runtime_error("failed to initialize GLFW!");
-    }
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
     pWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (pWindow == nullptr)
     {
-        throw std::runtime_error("failed to create a window!");
+        throw std::runtime_error("Failed to create a window!");
+    }
+
+    // Create the Vulkan surface.
+    VkResult res = glfwCreateWindowSurface(instance, pWindow, nullptr, &surface);
+    if (res != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create a window surface!");
     }
 
     glfwSetWindowUserPointer(pWindow, this);
@@ -47,17 +48,14 @@ Window::Window(const int width, const int height, const std::string& title) : wi
 
 Window::~Window()
 {
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     glfwDestroyWindow(pWindow);
     glfwTerminate();
 }
 
-VkSurfaceKHR Window::createSurface(VkInstance instance) const
+VkSurfaceKHR Window::getSurface() const
 {
-    VkSurfaceKHR surface;
-    if (glfwCreateWindowSurface(instance, pWindow, nullptr, &surface) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create a window surface!");
-    }
+    assert(surface != VK_NULL_HANDLE && "Window's surface should be initialized when this window was initialized!");
     return surface;
 }
 
@@ -66,9 +64,21 @@ int Window::getWidth() const
     return width;
 }
 
+void Window::setWidth(const int width)
+{
+    assert(width >= 0 && "Window width cannot be negative!");
+    this->width = width;
+}
+
 int Window::getHeight() const
 {
     return height;
+}
+
+void Window::setHeight(const int height)
+{
+    assert(height >= 0 && "Window height cannot be negative!");
+    this->height = height;
 }
 
 std::string Window::getTitle() const

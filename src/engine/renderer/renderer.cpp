@@ -784,7 +784,8 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
     }
 }
 
-Renderer::Renderer(Window& window) : window(window), device(window), swapchain(device)
+Renderer::Renderer(const VkInstance instance, Window& window)
+    : window(window), device(instance, window.getSurface()), swapchain(window, device)
 {
     createCommandBuffers();
     createSyncObjects();

@@ -1,11 +1,13 @@
 #pragma once
 
+#include "../window.hpp"
 #include "device.hpp"
 
 class Swapchain
 {
   private:
     const Device& device;
+    const Window& window;
 
     VkSwapchainKHR swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> images;
@@ -38,7 +40,7 @@ class Swapchain
     const VkFormat findDepthFormat();
 
   public:
-    Swapchain(const Device& device);
+    Swapchain(const Window& window, const Device& device);
     Swapchain(const Swapchain& other) = delete;
     Swapchain(Swapchain&& other) = delete;
     ~Swapchain();

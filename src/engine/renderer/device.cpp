@@ -4,118 +4,9 @@
 #include <iostream>
 #include <set>
 
-#ifdef NDEBUG
-static const bool ENABLE_VALIDATION_LAYERS = false;
-#else
-static const bool ENABLE_VALIDATION_LAYERS = true;
-#endif
-
-static const std::vector<const char*> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
-static const std::vector<const char*> DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
 bool QueueFamilyIndices::isComplete() const
 {
     return graphicsFamily.has_value() && presentFamily.has_value();
-}
-
-static VkResult CreateDebugUtilsMessengerEXT(
-    VkInstance instance,
-    const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
-    const VkAllocationCallbacks* p_allocator,
-    VkDebugUtilsMessengerEXT* p_debug_messenger)
-{
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr)
-    {
-        return func(instance, p_create_info, p_allocator, p_debug_messenger);
-    }
-    else
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-static void DestroyDebugUtilsMessengerEXT(
-    VkInstance instance,
-    VkDebugUtilsMessengerEXT debug_messenger,
-    const VkAllocationCallbacks* p_allocator)
-{
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr)
-    {
-        func(instance, debug_messenger, p_allocator);
-    }
-}
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-    VkDebugUtilsMessageTypeFlagsEXT message_type,
-    const VkDebugUtilsMessengerCallbackDataEXT* p_callback_data,
-    void* p_user_data)
-{
-    std::cerr << "validation layer: " << p_callback_data->pMessage << std::endl;
-
-    return VK_FALSE;
-}
-
-static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create_info)
-{
-    create_info = {};
-    create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    create_info.pfnUserCallback = debugCallback;
-    create_info.pUserData = nullptr; // Optional.
-}
-
-static bool checkValidationLayerSupport()
-{
-    uint32_t layer_count = 0;
-    vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-
-    std::vector<VkLayerProperties> available_layers(layer_count);
-    vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
-
-    for (const char* layer_name : VALIDATION_LAYERS)
-    {
-        bool layer_found = false;
-
-        for (const auto& layer_properties : available_layers)
-        {
-            if (strcmp(layer_name, layer_properties.layerName) == 0)
-            {
-                layer_found = true;
-                break;
-            }
-        }
-
-        if (!layer_found)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static std::vector<const char*> getRequiredExtensions()
-{
-    uint32_t glfw_extension_count = 0;
-    const char** glfw_extensions = nullptr;
-    glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-
-    std::vector<const char*> extensions(glfw_extensions, glfw_extensions + glfw_extension_count);
-
-    if (ENABLE_VALIDATION_LAYERS)
-    {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    }
-
-    return extensions;
 }
 
 static QueueFamilyIndices findQueueFamilies(VkSurfaceKHR surface, VkPhysicalDevice device)
@@ -236,8 +127,8 @@ static VkSampleCountFlagBits getMaxUsuableSampleCount(VkPhysicalDevice device)
     VkPhysicalDeviceProperties physical_device_properties;
     vkGetPhysicalDeviceProperties(device, &physical_device_properties);
 
-    VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts &
-                                physical_device_properties.limits.framebufferDepthSampleCounts;
+    const VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts &
+                                      physical_device_properties.limits.framebufferDepthSampleCounts;
     if (counts & VK_SAMPLE_COUNT_64_BIT)
     {
         return VK_SAMPLE_COUNT_64_BIT;
@@ -262,77 +153,10 @@ static VkSampleCountFlagBits getMaxUsuableSampleCount(VkPhysicalDevice device)
     {
         return VK_SAMPLE_COUNT_2_BIT;
     }
-
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-void Device::createInstance()
-{
-    if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport())
-    {
-        throw std::runtime_error("validation layers requested, but not available!");
-    }
-
-    VkApplicationInfo app_info{};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "Vulkan Minecraft Clone";
-    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "No Engine";
-    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_1;
-
-    VkInstanceCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    create_info.pApplicationInfo = &app_info;
-
-    const auto extensions = getRequiredExtensions();
-    create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    create_info.ppEnabledExtensionNames = extensions.data();
-
-    VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
-    if (ENABLE_VALIDATION_LAYERS)
-    {
-        create_info.enabledLayerCount = static_cast<uint32_t>(VALIDATION_LAYERS.size());
-        create_info.ppEnabledLayerNames = VALIDATION_LAYERS.data();
-
-        populateDebugMessengerCreateInfo(debug_create_info);
-        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
-    }
-    else
-    {
-        create_info.enabledLayerCount = 0;
-
-        create_info.pNext = nullptr;
-    }
-
-    if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create instance!");
-    }
-}
-
-void Device::setupDebugMessenger()
-{
-    if (!ENABLE_VALIDATION_LAYERS)
-    {
-        return;
-    }
-
-    VkDebugUtilsMessengerCreateInfoEXT create_info{};
-    populateDebugMessengerCreateInfo(create_info);
-
-    if (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debugMessenger) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
-}
-
-void Device::createSurface()
-{
-    surface = window.createSurface(instance);
-}
-
-void Device::pickPhysicalDevice()
+void Device::pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface)
 {
     uint32_t device_count = 0;
     vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
@@ -359,7 +183,7 @@ void Device::pickPhysicalDevice()
     }
 }
 
-void Device::createLogicalDevice()
+void Device::createLogicalDevice(const VkSurfaceKHR surface)
 {
     // Specify queues to create.
     QueueFamilyIndices indices = findQueueFamilies(surface, physicalDevice);
@@ -412,7 +236,7 @@ void Device::createLogicalDevice()
     vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void Device::createAllocator()
+void Device::createAllocator(const VkInstance instance)
 {
     // https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk
     VmaVulkanFunctions vma_vulkan_func{};
@@ -449,9 +273,9 @@ void Device::createAllocator()
     }
 }
 
-void Device::createCommandPool()
+void Device::createCommandPool(const VkSurfaceKHR surface)
 {
-    const QueueFamilyIndices queue_family_indices = getQueueFamilies();
+    const QueueFamilyIndices queue_family_indices = getQueueFamilies(surface);
 
     VkCommandPoolCreateInfo pool_info{};
     pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -469,23 +293,14 @@ bool Device::hasStencilComponent(const VkFormat format) const
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-Device::Device(const Window& window) : window(window)
+Device::Device(const VkInstance instance, const VkSurfaceKHR surface)
 {
-    // Load Vulkan function pointers (without instance yet).
-    if (volkInitialize() != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to initialize volk!");
-    }
-
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
+    pickPhysicalDevice(instance, surface);
+    createLogicalDevice(surface);
     volkLoadDevice(logicalDevice);
-    createAllocator();
-    createCommandPool();
+
+    createAllocator(instance);
+    createCommandPool(surface);
 }
 
 Device::~Device()
@@ -493,12 +308,6 @@ Device::~Device()
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
     vmaDestroyAllocator(allocator);
     vkDestroyDevice(logicalDevice, nullptr);
-    if (ENABLE_VALIDATION_LAYERS)
-    {
-        DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-    }
-    vkDestroySurfaceKHR(instance, surface, nullptr);
-    vkDestroyInstance(instance, nullptr);
 }
 
 VkCommandBuffer Device::beginSingleTimeCommands() const
@@ -774,12 +583,12 @@ uint32_t Device::findMemoryType(const uint32_t type_filter, const VkMemoryProper
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
-const QueueFamilyIndices Device::getQueueFamilies() const
+const QueueFamilyIndices Device::getQueueFamilies(const VkSurfaceKHR surface) const
 {
     return findQueueFamilies(surface, physicalDevice);
 }
 
-const SwapchainSupportDetails Device::getSwapchainSupportDetails() const
+const SwapchainSupportDetails Device::getSwapchainSupportDetails(const VkSurfaceKHR surface) const
 {
     return querySwapChainSupport(surface, physicalDevice);
 }
@@ -794,21 +603,6 @@ const VkPhysicalDeviceProperties Device::getPhysicalDeviceProperties() const
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
     return properties;
-}
-
-const Window& Device::getWindow() const
-{
-    return window;
-}
-
-const VkInstance Device::getInstance() const
-{
-    return instance;
-}
-
-const VkSurfaceKHR Device::getSurface() const
-{
-    return surface;
 }
 
 const VkPhysicalDevice Device::getPhysicalDevice() const

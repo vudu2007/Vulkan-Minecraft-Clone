@@ -11,13 +11,15 @@ class Publisher
 {
   private:
     using Handler = std::function<Return(Arguments...)>;
-    std::unordered_map<SubscriberId, Handler> subscribers;
-    SubscriberId nextAvailableId = 0;
 
   public:
     SubscriberId subscribe(const Handler& handler);
     bool unsubscribe(const SubscriberId id);
     auto notify(Arguments... args);
+
+  private:
+    std::unordered_map<SubscriberId, Handler> subscribers;
+    SubscriberId nextAvailableId = 0;
 };
 
 template <typename Return, typename... Arguments>

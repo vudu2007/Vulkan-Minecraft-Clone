@@ -1,10 +1,7 @@
 #pragma once
 
-#include "event-handler.hpp"
-
-#include <volk.h>
-
-#include <GLFW/glfw3.h>
+#include "event_handler.hpp"
+#include "renderer/vulkan_instance.hpp"
 
 #include <functional>
 #include <string>
@@ -15,8 +12,11 @@ class Window
   public:
     bool isResized = false;
 
-    Window();
-    Window(const int width, const int height, const std::string& title);
+    Window(
+        const VkInstance instance,
+        const int width = DEFAULT_WIDTH,
+        const int height = DEFAULT_HEIGHT,
+        const std::string& title = DEFAULT_TITLE);
     Window(const Window& other) = delete;
     Window(Window&& other) = delete;
 
@@ -25,10 +25,14 @@ class Window
     Window& operator=(const Window& other) = delete;
     Window& operator=(Window&& other) = delete;
 
-    VkSurfaceKHR createSurface(VkInstance instance) const;
+    VkSurfaceKHR getSurface() const;
 
     int getWidth() const;
+    void setWidth(const int width);
+
     int getHeight() const;
+    void setHeight(const int height);
+
     std::string getTitle() const;
 
     void pollEvents() const;
@@ -58,6 +62,9 @@ class Window
     Publisher<void> resizeCallbacks;
     Publisher<void, int, int, int, int> keyCallbacks;
     Publisher<void, int, int, int> mouseButtonCallbacks;
+
+    VkInstance instance = VK_NULL_HANDLE;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
 
     GLFWwindow* pWindow;
 

@@ -88,7 +88,7 @@ class Renderer
     void recordCommandBuffer(const VkCommandBuffer command_buffer, const uint32_t image_index);
 
   public:
-    Renderer(Window& window);
+    Renderer(const VkInstance instance, Window& window);
     Renderer(const Renderer& other) = delete;
     Renderer(Renderer&& other) = delete;
     ~Renderer();
