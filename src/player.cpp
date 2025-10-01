@@ -218,8 +218,7 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
           pos + glm::vec3(1.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, 0.0f),
           glm::vec3(0.0f, 1.0f, 0.0f),
           glm::radians(70.0f),
-          (static_cast<float>(window.getWidth()) /
-           static_cast<float>(window.getHeight())), // TODO: should varying aspect ratios affect this?
+          (static_cast<float>(window.getWidth()) / static_cast<float>(window.getHeight())),
           0.1f,
           1000.0f),
       position(pos), prevPosition(pos), speed(speed), renderDistance(render_distance),
@@ -275,11 +274,6 @@ void Player::update(const double delta)
     }
 
     updatePosition();
-
-    // std::cout << "@pos " << glm::to_string(position) << "     "
-    //           << "\n@vel " << glm::to_string(velocity) << "     "
-    //           << "\n@is on floor? " << (isOnFloor ? "(T)" : "(F)") << "     "
-    //           << "\033[F\033[F" << "\r";
 }
 
 const Camera& Player::getCamera() const
