@@ -1,31 +1,16 @@
 #pragma once
 
-#include "vulkan_instance.hpp"
+#include "physical_device.hpp"
+#include "vulkan_helpers.hpp"
 
 #include "vk_mem_alloc.h"
 
-#include <optional>
 #include <vector>
-
-struct QueueFamilyIndices
-{
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete() const;
-};
-
-struct SwapchainSupportDetails
-{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
 
 class Device
 {
   private:
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    PhysicalDevice physicalDevice;
     VkDevice logicalDevice = VK_NULL_HANDLE;
     VmaAllocator allocator = VK_NULL_HANDLE;
     VkCommandPool commandPool = VK_NULL_HANDLE;
@@ -33,9 +18,6 @@ class Device
     VkQueue graphicsQueue = VK_NULL_HANDLE;
     VkQueue presentQueue = VK_NULL_HANDLE;
 
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-
-    void pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface);
     void createLogicalDevice(const VkSurfaceKHR surface);
     void createAllocator(const VkInstance instance);
     void createCommandPool(const VkSurfaceKHR surface);

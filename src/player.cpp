@@ -207,7 +207,7 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
 
 void Player::eventMouseControls(const int button, const int action, const int mods)
 {
-    // TODO: add something for attacking mobs.
+    // TODO: something like add something for attacking mobs, etc.
 }
 
 Player::Player(Window& window, World& world, const glm::vec3& pos, const float speed, const unsigned render_distance)
@@ -263,7 +263,7 @@ void Player::update(const double delta)
     {
         if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
         {
-            // TODO: handle block addition.
+            // TODO: handle block addition, e.g., cooldowns.
             world.addBlock(block_pos.value() + static_cast<glm::vec3>(face_entered));
         }
         else if (window.getMouseButtonState(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
