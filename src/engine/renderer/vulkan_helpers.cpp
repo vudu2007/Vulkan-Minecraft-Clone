@@ -5,7 +5,7 @@ bool QueueFamilyIndices::isComplete() const
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-QueueFamilyIndices findQueueFamilies(const VkSurfaceKHR surface, const VkPhysicalDevice device)
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     QueueFamilyIndices indices{};
 
@@ -15,35 +15,36 @@ QueueFamilyIndices findQueueFamilies(const VkSurfaceKHR surface, const VkPhysica
     std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
 
-    int i = 0;
-    for (const auto& queue_family : queue_families)
+    for (size_t i = 0; i < queue_families.size(); ++i)
     {
         // Check for graphics support.
-        if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        if (queue_families[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             indices.graphicsFamily = i;
         }
 
-        // Check for present support.
-        VkBool32 present_support = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
-        if (present_support)
+        // (Optional) Check for present support.
+        if (surface != VK_NULL_HANDLE)
         {
-            indices.presentFamily = i;
+            VkBool32 present_support = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
+            if (present_support)
+            {
+                indices.presentFamily = i;
+            }
         }
 
         if (indices.isComplete())
         {
+            // Found the desired queue family.
             break;
         }
-
-        ++i;
     }
 
     return indices;
 }
 
-SwapchainSupportDetails querySwapChainSupport(const VkSurfaceKHR surface, const VkPhysicalDevice device)
+SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     SwapchainSupportDetails details{};
 

@@ -5,7 +5,7 @@
 class PhysicalDevice
 {
   public:
-    PhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface);
+    PhysicalDevice(VkInstance instance, VkSurfaceKHR surface);
     PhysicalDevice(const PhysicalDevice& other) = delete;
     PhysicalDevice(PhysicalDevice&& other) = delete;
 

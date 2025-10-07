@@ -6,6 +6,7 @@
 
 struct QueueFamilyIndices
 {
+    // TODO: handle other queue families: compute, transfer, sparse binding, etc.
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
 
@@ -19,5 +20,5 @@ struct SwapchainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-QueueFamilyIndices findQueueFamilies(const VkSurfaceKHR surface, const VkPhysicalDevice device);
-SwapchainSupportDetails querySwapChainSupport(const VkSurfaceKHR surface, const VkPhysicalDevice device);
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface = VK_NULL_HANDLE);
+SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);

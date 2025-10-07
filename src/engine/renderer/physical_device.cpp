@@ -24,14 +24,14 @@ static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
     return required_extensions.empty();
 }
 
-static bool isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device)
+static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
 {
     // TODO: add criteria to determine if a physical device is usable for this
     // program.
     VkPhysicalDeviceProperties device_properties;
     vkGetPhysicalDeviceProperties(device, &device_properties);
 
-    QueueFamilyIndices indices = findQueueFamilies(surface, device);
+    QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
     // Evaluate device extensions.
     bool extensions_supported = checkDeviceExtensionSupport(device);
@@ -40,7 +40,7 @@ static bool isDeviceSuitable(VkSurfaceKHR surface, VkPhysicalDevice device)
     bool swap_chain_adequate = false;
     if (extensions_supported)
     {
-        SwapchainSupportDetails swap_chain_support = querySwapChainSupport(surface, device);
+        SwapchainSupportDetails swap_chain_support = querySwapChainSupport(device, surface);
         swap_chain_adequate = !swap_chain_support.formats.empty() && !swap_chain_support.presentModes.empty();
     }
 
@@ -60,34 +60,28 @@ static VkSampleCountFlagBits getMaxUsuableSampleCount(VkPhysicalDevice device)
 
     const VkSampleCountFlags counts = physical_device_properties.limits.framebufferColorSampleCounts &
                                       physical_device_properties.limits.framebufferDepthSampleCounts;
-    if (counts & VK_SAMPLE_COUNT_64_BIT)
+
+    // Must descend since finding max count.
+    const VkSampleCountFlagBits sample_counts[] = {
+        VK_SAMPLE_COUNT_64_BIT,
+        VK_SAMPLE_COUNT_32_BIT,
+        VK_SAMPLE_COUNT_16_BIT,
+        VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_SAMPLE_COUNT_2_BIT,
+    };
+    for (const VkSampleCountFlagBits sample_count : sample_counts)
     {
-        return VK_SAMPLE_COUNT_64_BIT;
+        if (counts & sample_count)
+        {
+            return sample_count;
+        }
     }
-    if (counts & VK_SAMPLE_COUNT_32_BIT)
-    {
-        return VK_SAMPLE_COUNT_32_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_16_BIT)
-    {
-        return VK_SAMPLE_COUNT_16_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_8_BIT)
-    {
-        return VK_SAMPLE_COUNT_8_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_4_BIT)
-    {
-        return VK_SAMPLE_COUNT_4_BIT;
-    }
-    if (counts & VK_SAMPLE_COUNT_2_BIT)
-    {
-        return VK_SAMPLE_COUNT_2_BIT;
-    }
+
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-PhysicalDevice::PhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface)
+PhysicalDevice::PhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
     uint32_t device_count = 0;
     vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
@@ -100,7 +94,7 @@ PhysicalDevice::PhysicalDevice(const VkInstance instance, const VkSurfaceKHR sur
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
     for (const auto& device : devices)
     {
-        if (isDeviceSuitable(surface, device))
+        if (isDeviceSuitable(device, surface))
         {
             this->device = device;
             msaaSamples = getMaxUsuableSampleCount(this->device);

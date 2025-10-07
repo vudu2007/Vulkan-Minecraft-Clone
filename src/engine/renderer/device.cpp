@@ -2,60 +2,6 @@
 
 #include <cstring>
 #include <iostream>
-#include <set>
-
-void Device::createLogicalDevice(const VkSurfaceKHR surface)
-{
-    // Specify queues to create.
-    QueueFamilyIndices indices = findQueueFamilies(surface, physicalDevice.getHandle());
-
-    std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-    std::set<uint32_t> unique_queue_families = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-    float queue_priority = 1.0f;
-    for (uint32_t queue_family : unique_queue_families)
-    {
-        VkDeviceQueueCreateInfo queue_create_info{};
-        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info.queueFamilyIndex = queue_family;
-        queue_create_info.queueCount = 1;
-        queue_create_info.pQueuePriorities = &queue_priority;
-        queue_create_infos.push_back(queue_create_info);
-    }
-
-    // Specify device features.
-    VkPhysicalDeviceFeatures device_features{};
-    device_features.samplerAnisotropy = VK_TRUE;
-    device_features.sampleRateShading = VK_FALSE;
-    device_features.fillModeNonSolid = VK_TRUE;
-
-    // Create the logical device.
-    VkDeviceCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    create_info.pQueueCreateInfos = queue_create_infos.data();
-    create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
-    create_info.pEnabledFeatures = &device_features;
-    create_info.ppEnabledExtensionNames = DEVICE_EXTENSIONS.data();
-    create_info.enabledExtensionCount = static_cast<uint32_t>(DEVICE_EXTENSIONS.size());
-    if (ENABLE_VALIDATION_LAYERS)
-    {
-        create_info.enabledLayerCount = static_cast<uint32_t>(VALIDATION_LAYERS.size());
-        create_info.ppEnabledLayerNames = VALIDATION_LAYERS.data();
-    }
-    else
-    {
-        create_info.enabledLayerCount = 0;
-    }
-
-    if (vkCreateDevice(physicalDevice.getHandle(), &create_info, nullptr, &logicalDevice) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create logical device!");
-    }
-
-    // Retrieve queue handles.
-    vkGetDeviceQueue(logicalDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(logicalDevice, indices.presentFamily.value(), 0, &presentQueue);
-}
 
 void Device::createAllocator(const VkInstance instance)
 {
@@ -84,7 +30,7 @@ void Device::createAllocator(const VkInstance instance)
     create_info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     create_info.vulkanApiVersion = VK_API_VERSION_1_0;
     create_info.physicalDevice = physicalDevice.getHandle();
-    create_info.device = logicalDevice;
+    create_info.device = logicalDevice.getHandle();
     create_info.instance = instance;
     create_info.pVulkanFunctions = &vma_vulkan_func;
 
@@ -103,7 +49,7 @@ void Device::createCommandPool(const VkSurfaceKHR surface)
     pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     pool_info.queueFamilyIndex = queue_family_indices.graphicsFamily.value();
 
-    if (vkCreateCommandPool(logicalDevice, &pool_info, nullptr, &commandPool) != VK_SUCCESS)
+    if (vkCreateCommandPool(logicalDevice.getHandle(), &pool_info, nullptr, &commandPool) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create command pool!");
     }
@@ -114,20 +60,17 @@ bool Device::hasStencilComponent(const VkFormat format) const
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-Device::Device(const VkInstance instance, const VkSurfaceKHR surface) : physicalDevice(instance, surface)
+Device::Device(const VkInstance instance, const VkSurfaceKHR surface)
+    : physicalDevice(instance, surface), logicalDevice(physicalDevice.getHandle(), surface)
 {
-    createLogicalDevice(surface);
-    volkLoadDevice(logicalDevice);
-
     createAllocator(instance);
     createCommandPool(surface);
 }
 
 Device::~Device()
 {
-    vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+    vkDestroyCommandPool(logicalDevice.getHandle(), commandPool, nullptr);
     vmaDestroyAllocator(allocator);
-    vkDestroyDevice(logicalDevice, nullptr);
 }
 
 VkCommandBuffer Device::beginSingleTimeCommands() const
@@ -139,7 +82,7 @@ VkCommandBuffer Device::beginSingleTimeCommands() const
     alloc_info.commandBufferCount = 1;
 
     VkCommandBuffer command_buffer;
-    vkAllocateCommandBuffers(logicalDevice, &alloc_info, &command_buffer);
+    vkAllocateCommandBuffers(logicalDevice.getHandle(), &alloc_info, &command_buffer);
 
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -160,10 +103,10 @@ void Device::endSingleTimeCommands(const VkCommandBuffer command_buffer) const
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buffer;
 
-    vkQueueSubmit(graphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(graphicsQueue);
+    vkQueueSubmit(logicalDevice.getGraphicsQueue(), 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(logicalDevice.getGraphicsQueue());
 
-    vkFreeCommandBuffers(logicalDevice, commandPool, 1, &command_buffer);
+    vkFreeCommandBuffers(logicalDevice.getHandle(), commandPool, 1, &command_buffer);
 }
 
 void Device::transitionImageLayout(
@@ -403,12 +346,12 @@ uint32_t Device::findMemoryType(const uint32_t type_filter, const VkMemoryProper
 
 const QueueFamilyIndices Device::getQueueFamilies(const VkSurfaceKHR surface) const
 {
-    return findQueueFamilies(surface, physicalDevice.getHandle());
+    return findQueueFamilies(physicalDevice.getHandle(), surface);
 }
 
 const SwapchainSupportDetails Device::getSwapchainSupportDetails(const VkSurfaceKHR surface) const
 {
-    return querySwapChainSupport(surface, physicalDevice.getHandle());
+    return querySwapChainSupport(physicalDevice.getHandle(), surface);
 }
 
 const VkSampleCountFlagBits Device::getMsaaSamples() const
@@ -428,7 +371,7 @@ const VkPhysicalDevice Device::getPhysicalDevice() const
 
 const VkDevice Device::getLogicalDevice() const
 {
-    return logicalDevice;
+    return logicalDevice.getHandle();
 }
 
 const VmaAllocator Device::getAllocator() const
@@ -443,10 +386,10 @@ const VkCommandPool Device::getCommandPool() const
 
 const VkQueue Device::getGraphicsQueue() const
 {
-    return graphicsQueue;
+    return logicalDevice.getGraphicsQueue();
 }
 
 const VkQueue Device::getPresentQueue() const
 {
-    return presentQueue;
+    return logicalDevice.getPresentQueue();
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logical_device.hpp"
 #include "physical_device.hpp"
 #include "vulkan_helpers.hpp"
 
@@ -11,14 +12,10 @@ class Device
 {
   private:
     PhysicalDevice physicalDevice;
-    VkDevice logicalDevice = VK_NULL_HANDLE;
+    LogicalDevice logicalDevice;
     VmaAllocator allocator = VK_NULL_HANDLE;
     VkCommandPool commandPool = VK_NULL_HANDLE;
 
-    VkQueue graphicsQueue = VK_NULL_HANDLE;
-    VkQueue presentQueue = VK_NULL_HANDLE;
-
-    void createLogicalDevice(const VkSurfaceKHR surface);
     void createAllocator(const VkInstance instance);
     void createCommandPool(const VkSurfaceKHR surface);
 
