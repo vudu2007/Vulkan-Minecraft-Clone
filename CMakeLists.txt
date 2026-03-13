@@ -56,6 +56,8 @@ foreach(FILE_PATH ${SOURCES} ${HEADERS})
     source_group("${GROUP_PATH}" FILES "${FILE_PATH}")
 endforeach()
 
+add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
+
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
