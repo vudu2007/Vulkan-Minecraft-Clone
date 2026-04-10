@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
+static bool checkDeviceExtensionSupport(const VkPhysicalDevice device)
 {
     uint32_t extension_count = 0;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
@@ -24,17 +24,18 @@ static bool checkDeviceExtensionSupport(VkPhysicalDevice device)
     return required_extensions.empty();
 }
 
-static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
+static bool isDeviceSuitable(const VkPhysicalDevice device, const VkSurfaceKHR surface)
 {
-    // TODO: add criteria to determine if a physical device is usable for this
-    // program.
-    VkPhysicalDeviceProperties device_properties;
-    vkGetPhysicalDeviceProperties(device, &device_properties);
+    // TODO: add criteria to determine if a physical device is usable for this program.
+    VkPhysicalDeviceProperties2 device_properties{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+    };
+    vkGetPhysicalDeviceProperties2(device, &device_properties);
 
     QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
     // Evaluate device extensions.
-    bool extensions_supported = checkDeviceExtensionSupport(device);
+    const bool extensions_supported = checkDeviceExtensionSupport(device);
 
     // Check swap chain support.
     bool swap_chain_adequate = false;
@@ -49,11 +50,11 @@ static bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface)
     vkGetPhysicalDeviceFeatures(device, &supported_features);
     const bool features_supported = supported_features.samplerAnisotropy && supported_features.fillModeNonSolid;
 
-    return (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) && indices.isComplete() &&
+    return (device_properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) && indices.isComplete() &&
            extensions_supported && swap_chain_adequate && features_supported;
 }
 
-static VkSampleCountFlagBits getMaxUsuableSampleCount(VkPhysicalDevice device)
+static VkSampleCountFlagBits getMaxUsuableSampleCount(const VkPhysicalDevice device)
 {
     VkPhysicalDeviceProperties physical_device_properties;
     vkGetPhysicalDeviceProperties(device, &physical_device_properties);
@@ -81,17 +82,17 @@ static VkSampleCountFlagBits getMaxUsuableSampleCount(VkPhysicalDevice device)
     return VK_SAMPLE_COUNT_1_BIT;
 }
 
-PhysicalDevice::PhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
+PhysicalDevice::PhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface)
 {
     uint32_t device_count = 0;
-    vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+    checkVkResult(vkEnumeratePhysicalDevices(instance, &device_count, nullptr));
     if (device_count == 0)
     {
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(device_count);
-    vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+    checkVkResult(vkEnumeratePhysicalDevices(instance, &device_count, devices.data()));
     for (const auto& device : devices)
     {
         if (isDeviceSuitable(device, surface))

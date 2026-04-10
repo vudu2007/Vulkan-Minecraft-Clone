@@ -11,10 +11,74 @@
 
 #include <memory>
 
-inline const int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
 class Renderer
 {
+  public:
+    Renderer(const VkInstance instance, Window& window);
+    Renderer(const Renderer& other) = delete;
+    Renderer(Renderer&& other) = delete;
+
+    ~Renderer();
+
+    Renderer& operator=(const Renderer& other) = delete;
+    Renderer& operator=(Renderer&& other) = delete;
+
+    [[nodiscard]] Texture* createTexture(const std::string& path) const;
+
+    void createDescriptorSetLayout();
+    void createGraphicsPipeline();
+    void createDescriptorSets();
+
+    bool addVertexBuffer(
+        unsigned id,
+        const void* data,
+        size_t data_type_size,
+        size_t count,
+        size_t capacity,
+        const void* instance_data = nullptr,
+        size_t instance_data_type_size = 0,
+        size_t instance_count = 1,
+        size_t instance_capacity = 1);
+    bool updateVertexBuffer(unsigned id, const void* data, size_t data_type_size, size_t count);
+    bool updateInstanceVertexBuffer(unsigned id, const void* data, size_t data_type_size, size_t count);
+
+    bool addIndexBuffer(
+        unsigned vertex_buffer_id,
+        unsigned index_buffer_id,
+        const void* data,
+        size_t data_type_size,
+        size_t count,
+        size_t capacity);
+    bool updateIndexBuffer(
+        unsigned vertex_buffer_id,
+        unsigned index_buffer_id,
+        const void* data,
+        size_t data_type_size,
+        size_t count);
+
+    void removeVertexBuffer(unsigned id);
+    void removeIndexBuffer(unsigned vertex_buffer_id, unsigned index_buffer_id);
+
+    // unsigned addUniformBufferArray();
+    unsigned addUniformBuffer(
+        const uint32_t binding,
+        const size_t byte_size,
+        const VkShaderStageFlagBits stage_flags,
+        const uint32_t array_size = 1);
+    void updateUniformBuffer(const unsigned index, const void* data, const size_t byte_size);
+
+    // void addCombinedImageSamplerArray();
+    void addCombinedImageSampler(
+        uint32_t binding,
+        const Texture* texture,
+        VkShaderStageFlagBits stage_flags,
+        uint32_t array_size = 1,
+        const VkSampler* immutable_samplers = nullptr);
+
+    void drawFrame();
+
   private:
     uint32_t currentFrame = 0;
     Window& window;
@@ -62,7 +126,7 @@ class Renderer
         uint32_t binding;
         std::vector<std::unique_ptr<Buffer>> bufferPtrPerFrame;
 
-        UniformBufferInfo(const uint32_t binding, std::vector<std::unique_ptr<Buffer>>&& buffer_ptr_per_frame);
+        UniformBufferInfo(uint32_t binding, std::vector<std::unique_ptr<Buffer>>&& buffer_ptr_per_frame);
     };
     std::vector<UniformBufferInfo> uniformBuffers;
 
@@ -85,72 +149,5 @@ class Renderer
     void createCommandBuffers();
     void createSyncObjects();
 
-    void recordCommandBuffer(const VkCommandBuffer command_buffer, const uint32_t image_index);
-
-  public:
-    Renderer(const VkInstance instance, Window& window);
-    Renderer(const Renderer& other) = delete;
-    Renderer(Renderer&& other) = delete;
-    ~Renderer();
-
-    Renderer& operator=(const Renderer& other) = delete;
-    Renderer& operator=(Renderer&& other) = delete;
-
-    [[nodiscard]] Texture* createTexture(const std::string& path) const;
-
-    void createDescriptorSetLayout();
-    void createGraphicsPipeline();
-    void createDescriptorSets();
-
-    bool addVertexBuffer(
-        const unsigned id,
-        const void* data,
-        const size_t data_type_size,
-        const size_t count,
-        const size_t capacity,
-        const void* instance_data = nullptr,
-        const size_t instance_data_type_size = 0,
-        const size_t instance_count = 1,
-        const size_t instance_capacity = 1);
-    bool updateVertexBuffer(const unsigned id, const void* data, const size_t data_type_size, const size_t count);
-    bool updateInstanceVertexBuffer(
-        const unsigned id,
-        const void* data,
-        const size_t data_type_size,
-        const size_t count);
-
-    bool addIndexBuffer(
-        const unsigned vertex_buffer_id,
-        const unsigned index_buffer_id,
-        const void* data,
-        const size_t data_type_size,
-        const size_t count,
-        const size_t capacity);
-    bool updateIndexBuffer(
-        const unsigned vertex_buffer_id,
-        const unsigned index_buffer_id,
-        const void* data,
-        const size_t data_type_size,
-        const size_t count);
-
-    void removeVertexBuffer(const unsigned id);
-    void removeIndexBuffer(const unsigned vertex_buffer_id, const unsigned index_buffer_id);
-
-    // unsigned addUniformBufferArray();
-    unsigned addUniformBuffer(
-        const uint32_t binding,
-        const size_t byte_size,
-        const VkShaderStageFlagBits stage_flags,
-        const uint32_t array_size = 1);
-    void updateUniformBuffer(const unsigned index, const void* data, const size_t byte_size);
-
-    // void addCombinedImageSamplerArray();
-    void addCombinedImageSampler(
-        const uint32_t binding,
-        const Texture* texture,
-        const VkShaderStageFlagBits stage_flags,
-        const uint32_t array_size = 1,
-        const VkSampler* immutable_samplers = nullptr);
-
-    void drawFrame();
+    void recordCommandBuffer(VkCommandBuffer command_buffer, uint32_t image_index);
 };

@@ -5,54 +5,54 @@
 
 void Device::createAllocator(const VkInstance instance)
 {
-    // https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk
-    VmaVulkanFunctions vma_vulkan_func{};
-    vma_vulkan_func.vkAllocateMemory = vkAllocateMemory;
-    vma_vulkan_func.vkBindBufferMemory = vkBindBufferMemory;
-    vma_vulkan_func.vkBindImageMemory = vkBindImageMemory;
-    vma_vulkan_func.vkCreateBuffer = vkCreateBuffer;
-    vma_vulkan_func.vkCreateImage = vkCreateImage;
-    vma_vulkan_func.vkDestroyBuffer = vkDestroyBuffer;
-    vma_vulkan_func.vkDestroyImage = vkDestroyImage;
-    vma_vulkan_func.vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges;
-    vma_vulkan_func.vkFreeMemory = vkFreeMemory;
-    vma_vulkan_func.vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements;
-    vma_vulkan_func.vkGetImageMemoryRequirements = vkGetImageMemoryRequirements;
-    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
-    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2;
-    vma_vulkan_func.vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties;
-    vma_vulkan_func.vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges;
-    vma_vulkan_func.vkMapMemory = vkMapMemory;
-    vma_vulkan_func.vkUnmapMemory = vkUnmapMemory;
-    vma_vulkan_func.vkCmdCopyBuffer = vkCmdCopyBuffer;
+    // "https://stackoverflow.com/questions/73512602/using-vulkan-memory-allocator-with-volk".
+    const VmaVulkanFunctions vma_vk_funcs{
+        .vkGetInstanceProcAddr = vkGetInstanceProcAddr,
+        .vkGetDeviceProcAddr = vkGetDeviceProcAddr,
+        .vkGetPhysicalDeviceProperties = vkGetPhysicalDeviceProperties,
+        .vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties,
+        .vkAllocateMemory = vkAllocateMemory,
+        .vkFreeMemory = vkFreeMemory,
+        .vkMapMemory = vkMapMemory,
+        .vkUnmapMemory = vkUnmapMemory,
+        .vkFlushMappedMemoryRanges = vkFlushMappedMemoryRanges,
+        .vkInvalidateMappedMemoryRanges = vkInvalidateMappedMemoryRanges,
+        .vkBindBufferMemory = vkBindBufferMemory,
+        .vkBindImageMemory = vkBindImageMemory,
+        .vkGetBufferMemoryRequirements = vkGetBufferMemoryRequirements,
+        .vkGetImageMemoryRequirements = vkGetImageMemoryRequirements,
+        .vkCreateBuffer = vkCreateBuffer,
+        .vkDestroyBuffer = vkDestroyBuffer,
+        .vkCreateImage = vkCreateImage,
+        .vkDestroyImage = vkDestroyImage,
+        .vkCmdCopyBuffer = vkCmdCopyBuffer,
+        .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
+    };
 
-    VmaAllocatorCreateInfo create_info{};
-    create_info.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
-    create_info.vulkanApiVersion = VK_API_VERSION_1_0;
-    create_info.physicalDevice = physicalDevice.getHandle();
-    create_info.device = logicalDevice.getHandle();
-    create_info.instance = instance;
-    create_info.pVulkanFunctions = &vma_vulkan_func;
+    const VmaAllocatorCreateInfo create_info{
+        .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+        .physicalDevice = physicalDevice.getHandle(),
+        .device = logicalDevice.getHandle(),
+        .pVulkanFunctions = &vma_vk_funcs,
+        .instance = instance,
+    };
 
-    if (vmaCreateAllocator(&create_info, &allocator) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create VMA allocator!");
-    }
+    checkVkResult(vmaCreateAllocator(&create_info, &allocator), "Failed to create VMA allocator!");
 }
 
 void Device::createCommandPool(const VkSurfaceKHR surface)
 {
     const QueueFamilyIndices queue_family_indices = getQueueFamilies(surface);
 
-    VkCommandPoolCreateInfo pool_info{};
-    pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    pool_info.queueFamilyIndex = queue_family_indices.graphicsFamily.value();
+    const VkCommandPoolCreateInfo pool_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = queue_family_indices.graphicsFamily.value(),
+    };
 
-    if (vkCreateCommandPool(logicalDevice.getHandle(), &pool_info, nullptr, &commandPool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create command pool!");
-    }
+    checkVkResult(
+        vkCreateCommandPool(logicalDevice.getHandle(), &pool_info, nullptr, &commandPool),
+        "Failed to create command pool!");
 }
 
 bool Device::hasStencilComponent(const VkFormat format) const
@@ -75,20 +75,22 @@ Device::~Device()
 
 VkCommandBuffer Device::beginSingleTimeCommands() const
 {
-    VkCommandBufferAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandPool = commandPool;
-    alloc_info.commandBufferCount = 1;
+    const VkCommandBufferAllocateInfo alloc_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = commandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
 
     VkCommandBuffer command_buffer;
-    vkAllocateCommandBuffers(logicalDevice.getHandle(), &alloc_info, &command_buffer);
+    checkVkResult(vkAllocateCommandBuffers(logicalDevice.getHandle(), &alloc_info, &command_buffer));
 
-    VkCommandBufferBeginInfo begin_info{};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    const VkCommandBufferBeginInfo begin_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
 
-    vkBeginCommandBuffer(command_buffer, &begin_info);
+    checkVkResult(vkBeginCommandBuffer(command_buffer, &begin_info));
 
     return command_buffer;
 }
@@ -104,7 +106,7 @@ void Device::endSingleTimeCommands(const VkCommandBuffer command_buffer) const
     submit_info.pCommandBuffers = &command_buffer;
 
     vkQueueSubmit(logicalDevice.getGraphicsQueue(), 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(logicalDevice.getGraphicsQueue());
+    vkQueueWaitIdle(logicalDevice.getGraphicsQueue()); // TODO: use a fence instead!
 
     vkFreeCommandBuffers(logicalDevice.getHandle(), commandPool, 1, &command_buffer);
 }
@@ -309,24 +311,28 @@ void Device::generateMipmaps(
     endSingleTimeCommands(command_buffer);
 }
 
-const VkFormat Device::findSupportedFormat(
+VkFormat Device::findSupportedFormat(
     const std::vector<VkFormat>& candidates,
     const VkImageTiling tiling,
     const VkFormatFeatureFlags features) const
 {
     for (VkFormat format : candidates)
     {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice.getHandle(), format, &properties);
+        VkFormatProperties2 properties{
+            .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+        };
+        vkGetPhysicalDeviceFormatProperties2(physicalDevice.getHandle(), format, &properties);
 
-        if (((tiling == VK_IMAGE_TILING_LINEAR) && ((properties.linearTilingFeatures & features) == features)) ||
-            ((tiling == VK_IMAGE_TILING_OPTIMAL) && ((properties.optimalTilingFeatures & features) == features)))
+        if (((tiling == VK_IMAGE_TILING_LINEAR) &&
+             ((properties.formatProperties.linearTilingFeatures & features) == features)) ||
+            ((tiling == VK_IMAGE_TILING_OPTIMAL) &&
+             ((properties.formatProperties.optimalTilingFeatures & features) == features)))
         {
             return format;
         }
     }
 
-    throw std::runtime_error("failed to find supported format!");
+    throw std::runtime_error("Failed to find supported format!");
 }
 
 uint32_t Device::findMemoryType(const uint32_t type_filter, const VkMemoryPropertyFlags properties) const
@@ -341,55 +347,55 @@ uint32_t Device::findMemoryType(const uint32_t type_filter, const VkMemoryProper
         }
     }
 
-    throw std::runtime_error("failed to find suitable memory type!");
+    throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-const QueueFamilyIndices Device::getQueueFamilies(const VkSurfaceKHR surface) const
+QueueFamilyIndices Device::getQueueFamilies(const VkSurfaceKHR surface) const
 {
     return findQueueFamilies(physicalDevice.getHandle(), surface);
 }
 
-const SwapchainSupportDetails Device::getSwapchainSupportDetails(const VkSurfaceKHR surface) const
+SwapchainSupportDetails Device::getSwapchainSupportDetails(const VkSurfaceKHR surface) const
 {
     return querySwapChainSupport(physicalDevice.getHandle(), surface);
 }
 
-const VkSampleCountFlagBits Device::getMsaaSamples() const
+VkSampleCountFlagBits Device::getMsaaSamples() const
 {
     return physicalDevice.getMsaaSamples();
 }
 
-const VkPhysicalDeviceProperties Device::getPhysicalDeviceProperties() const
+VkPhysicalDeviceProperties Device::getPhysicalDeviceProperties() const
 {
     return physicalDevice.getProperties();
 }
 
-const VkPhysicalDevice Device::getPhysicalDevice() const
+VkPhysicalDevice Device::getPhysicalDevice() const
 {
     return physicalDevice.getHandle();
 }
 
-const VkDevice Device::getLogicalDevice() const
+VkDevice Device::getLogicalDevice() const
 {
     return logicalDevice.getHandle();
 }
 
-const VmaAllocator Device::getAllocator() const
+VmaAllocator Device::getAllocator() const
 {
     return allocator;
 }
 
-const VkCommandPool Device::getCommandPool() const
+VkCommandPool Device::getCommandPool() const
 {
     return commandPool;
 }
 
-const VkQueue Device::getGraphicsQueue() const
+VkQueue Device::getGraphicsQueue() const
 {
     return logicalDevice.getGraphicsQueue();
 }
 
-const VkQueue Device::getPresentQueue() const
+VkQueue Device::getPresentQueue() const
 {
     return logicalDevice.getPresentQueue();
 }

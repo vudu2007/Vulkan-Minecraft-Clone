@@ -10,19 +10,8 @@
 
 class Device
 {
-  private:
-    PhysicalDevice physicalDevice;
-    LogicalDevice logicalDevice;
-    VmaAllocator allocator = VK_NULL_HANDLE;
-    VkCommandPool commandPool = VK_NULL_HANDLE;
-
-    void createAllocator(const VkInstance instance);
-    void createCommandPool(const VkSurfaceKHR surface);
-
-    bool hasStencilComponent(const VkFormat format) const;
-
   public:
-    Device(const VkInstance instance, const VkSurfaceKHR surface);
+    Device(VkInstance instance, VkSurfaceKHR surface);
     Device(const Device& other) = delete;
     Device(Device&& other) = delete;
 
@@ -35,33 +24,44 @@ class Device
     void endSingleTimeCommands(const VkCommandBuffer command_buffer) const;
 
     void transitionImageLayout(
-        const VkImage image,
-        const VkFormat format,
-        const VkImageLayout old_layout,
-        const VkImageLayout new_layout,
-        const uint32_t mip_levels) const;
+        VkImage image,
+        VkFormat format,
+        VkImageLayout old_layout,
+        VkImageLayout new_layout,
+        uint32_t mip_levels) const;
     void generateMipmaps(
-        const VkImage image,
-        const VkFormat image_format,
-        const int32_t tex_width,
-        const int32_t tex_height,
-        const uint32_t mip_levels) const;
+        VkImage image,
+        VkFormat image_format,
+        int32_t tex_width,
+        int32_t tex_height,
+        uint32_t mip_levels) const;
 
-    const VkFormat findSupportedFormat(
+    VkFormat findSupportedFormat(
         const std::vector<VkFormat>& candidates,
-        const VkImageTiling tiling,
-        const VkFormatFeatureFlags features) const;
-    uint32_t findMemoryType(const uint32_t type_filter, const VkMemoryPropertyFlags properties) const;
+        VkImageTiling tiling,
+        VkFormatFeatureFlags features) const;
+    uint32_t findMemoryType(uint32_t type_filter, VkMemoryPropertyFlags properties) const;
 
-    const QueueFamilyIndices getQueueFamilies(const VkSurfaceKHR surface) const;
-    const SwapchainSupportDetails getSwapchainSupportDetails(const VkSurfaceKHR surface) const;
-    const VkSampleCountFlagBits getMsaaSamples() const;
-    const VkPhysicalDeviceProperties getPhysicalDeviceProperties() const;
+    QueueFamilyIndices getQueueFamilies(VkSurfaceKHR surface) const;
+    SwapchainSupportDetails getSwapchainSupportDetails(VkSurfaceKHR surface) const;
+    VkSampleCountFlagBits getMsaaSamples() const;
+    VkPhysicalDeviceProperties getPhysicalDeviceProperties() const;
 
-    const VkPhysicalDevice getPhysicalDevice() const;
-    const VkDevice getLogicalDevice() const;
-    const VmaAllocator getAllocator() const;
-    const VkCommandPool getCommandPool() const;
-    const VkQueue getGraphicsQueue() const;
-    const VkQueue getPresentQueue() const;
+    VkPhysicalDevice getPhysicalDevice() const;
+    VkDevice getLogicalDevice() const;
+    VmaAllocator getAllocator() const;
+    VkCommandPool getCommandPool() const;
+    VkQueue getGraphicsQueue() const;
+    VkQueue getPresentQueue() const;
+
+  private:
+    PhysicalDevice physicalDevice;
+    LogicalDevice logicalDevice;
+    VmaAllocator allocator = VK_NULL_HANDLE;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
+
+    void createAllocator(VkInstance instance);
+    void createCommandPool(VkSurfaceKHR surface);
+
+    bool hasStencilComponent(VkFormat format) const;
 };

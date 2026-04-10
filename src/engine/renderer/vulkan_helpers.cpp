@@ -5,7 +5,7 @@ bool QueueFamilyIndices::isComplete() const
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+QueueFamilyIndices findQueueFamilies(const VkPhysicalDevice device, const VkSurfaceKHR surface)
 {
     QueueFamilyIndices indices{};
 
@@ -27,7 +27,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
         if (surface != VK_NULL_HANDLE)
         {
             VkBool32 present_support = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support);
+            checkVkResult(vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &present_support));
             if (present_support)
             {
                 indices.presentFamily = i;
@@ -44,16 +44,16 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
     return indices;
 }
 
-SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
+SwapchainSupportDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSurfaceKHR surface)
 {
     SwapchainSupportDetails details{};
 
     // Capabilities.
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    checkVkResult(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities));
 
     // Formats.
     uint32_t format_count = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr);
+    checkVkResult(vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &format_count, nullptr));
     if (format_count != 0)
     {
         details.formats.resize(format_count);
@@ -62,11 +62,15 @@ SwapchainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurface
 
     // Presentation modes.
     uint32_t present_mode_count = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr);
+    checkVkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, nullptr));
     if (present_mode_count != 0)
     {
         details.presentModes.resize(present_mode_count);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_mode_count, details.presentModes.data());
+        checkVkResult(vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device,
+            surface,
+            &present_mode_count,
+            details.presentModes.data()));
     }
 
     return details;

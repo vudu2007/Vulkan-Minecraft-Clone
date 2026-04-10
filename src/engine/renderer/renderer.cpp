@@ -6,6 +6,7 @@
 #include <iostream>
 #include <stdexcept>
 
+// TODO: look into "bindless" descriptors.
 void Renderer::createDescriptorSetLayout()
 {
     pDescriptorSetLayout = std::make_unique<DescriptorSetLayout>(device, descriptorSetLayoutBindings);
@@ -303,6 +304,7 @@ bool Renderer::updateInstanceVertexBuffer(
     return true;
 }
 
+// TODO: look into "VK_KHR_maintenance5" extension; can avoid shader modules and instead do direct passing in pipeline.
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) const
 {
     VkShaderModuleCreateInfo create_info{};
@@ -479,9 +481,19 @@ void Renderer::createGraphicsPipeline()
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
+    // Dynamic rendering.
+    const VkPipelineRenderingCreateInfo rendering_create_info{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .colorAttachmentCount = 1,
+        .pColorAttachmentFormats = &swapchain.getFormatRef(),
+        .depthAttachmentFormat = swapchain.getDepthFormat(),
+    };
+
     // Create the graphics pipeline.
-    VkGraphicsPipelineCreateInfo pipeline_info{};
-    pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    VkGraphicsPipelineCreateInfo pipeline_info{
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = &rendering_create_info, // Use dynamic rendering.
+    };
 
     // Shader stages.
     pipeline_info.stageCount = 2;
@@ -499,10 +511,6 @@ void Renderer::createGraphicsPipeline()
 
     // Layout.
     pipeline_info.layout = pipelineLayout;
-
-    // Render passes.
-    pipeline_info.renderPass = swapchain.getRenderPass();
-    pipeline_info.subpass = 0; // Index of subpass.
 
     // Pipeline derivative.
     // "These values are only used if the `VK_PIPELINE_CREATE_DERIVATIVE_BIT` flag is also specified in the flags
@@ -681,40 +689,63 @@ void Renderer::createSyncObjects()
             (vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) ||
             (vkCreateFence(logical_device, &fence_info, nullptr, &inFlightFences[i]) != VK_SUCCESS))
         {
-            throw std::runtime_error("failed to create synchronization objects!");
+            throw std::runtime_error("Failed to create synchronization objects!");
         }
     }
 }
 
-void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const uint32_t image_index)
+void Renderer::recordCommandBuffer(VkCommandBuffer command_buffer, const uint32_t image_index)
 {
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = 0;                  // Optional.
     begin_info.pInheritanceInfo = nullptr; // Optional.
 
-    if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to begin recording command buffer!");
-    }
+    checkVkResult(vkBeginCommandBuffer(command_buffer, &begin_info), "Failed to begin recording command buffer!");
 
-    // Start a render pass.
-    VkRenderPassBeginInfo render_pass_info{};
-    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    render_pass_info.renderPass = swapchain.getRenderPass();
-    render_pass_info.framebuffer = swapchain.getFramebuffers()[image_index];
-    render_pass_info.renderArea.offset = {0, 0};
-    render_pass_info.renderArea.extent = swapchain.getExtent();
+    // Dynamic rendering.
+    // Transition layout to something more optimal for render attachments.
+    swapchain.transitionImageLayoutToAttachment(command_buffer, image_index);
 
-    std::array<VkClearValue, 2> clear_values{};
-    clear_values[0].color = {
-        {0.43f, 0.7f, 0.92f, 1.0f}
+    const VkRenderingAttachmentInfo color_attachment_info{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+
+        .imageView = swapchain.getColorImageViews()[image_index],
+        .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+
+        .resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT,
+        .resolveImageView = swapchain.getImageViews()[image_index],
+        .resolveImageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue{
+            .color{0.43f, 0.7f, 0.92f, 1.0f},
+        },
     };
-    clear_values[1].depthStencil = {1.0f, 0};
-    render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-    render_pass_info.pClearValues = clear_values.data();
+    const VkRenderingAttachmentInfo depth_attachment_info{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView = swapchain.getDepthImageView(),
+        .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .clearValue =
+            {
+                .depthStencil = {1.0f, 0},
+            },
+    };
+    const VkRenderingInfo rendering_info{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea{
+            .extent = swapchain.getExtent(),
+        },
+        .layerCount = 1,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &color_attachment_info,
+        .pDepthAttachment = &depth_attachment_info,
+    };
 
-    vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRendering(command_buffer, &rendering_info);
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pGraphicsPipeline->getPipeline());
 
@@ -776,7 +807,10 @@ void Renderer::recordCommandBuffer(const VkCommandBuffer command_buffer, const u
         }
     }
 
-    vkCmdEndRenderPass(command_buffer);
+    vkCmdEndRendering(command_buffer);
+
+    // Transition layout to presentation ready.
+    swapchain.transitionImageLayoutToPresent(command_buffer, image_index);
 
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
     {
@@ -895,7 +929,7 @@ void Renderer::drawFrame()
     }
     else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     {
-        throw std::runtime_error("failed to acquire swap chain image!");
+        throw std::runtime_error("Failed to acquire swapchain image!");
     }
 
     // Only reset the fence if we are submitting work.

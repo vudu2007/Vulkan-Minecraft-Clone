@@ -1,7 +1,6 @@
 #include "vulkan_instance.hpp"
 
 #include <iostream>
-#include <stdexcept>
 
 static VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance,
@@ -105,17 +104,6 @@ static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT&
 
 VulkanInstance::VulkanInstance()
 {
-    // Load Vulkan function pointers (without instance yet).
-    if (volkInitialize() != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to initialize volk!");
-    }
-
-    if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport())
-    {
-        throw std::runtime_error("Validation layers requested, but not available!");
-    }
-
     // Initialize GLFW.
     if (!glfwInit())
     {
@@ -124,43 +112,49 @@ VulkanInstance::VulkanInstance()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+    // Load Vulkan function pointers.
+    checkVkResult(volkInitialize(), "Failed to initialize volk!");
+
+    if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport())
+    {
+        throw std::runtime_error("Validation layers requested, but not available!");
+    }
+
     // Create a Vulkan instance.
-    VkApplicationInfo app_info{};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "Vulkan Application";
-    app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "No Engine";
-    app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.apiVersion = VK_API_VERSION_1_1;
-
-    VkInstanceCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    create_info.pApplicationInfo = &app_info;
-
-    const auto extensions = getRequiredExtensions();
-    create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    create_info.ppEnabledExtensionNames = extensions.data();
+    const VkApplicationInfo app_info{
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = "Application",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName = "Engine",
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion = VK_API_VERSION_1_4,
+    };
 
     VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
+    uint32_t enabled_layer_count = 0;
+    const char* const* pp_enabled_layer_names = nullptr;
+    const void* p_next = nullptr;
     if (ENABLE_VALIDATION_LAYERS)
     {
-        create_info.enabledLayerCount = static_cast<uint32_t>(VALIDATION_LAYERS.size());
-        create_info.ppEnabledLayerNames = VALIDATION_LAYERS.data();
+        enabled_layer_count = static_cast<uint32_t>(VALIDATION_LAYERS.size());
+        pp_enabled_layer_names = VALIDATION_LAYERS.data();
 
         populateDebugMessengerCreateInfo(debug_create_info);
-        create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
-    }
-    else
-    {
-        create_info.enabledLayerCount = 0;
-
-        create_info.pNext = nullptr;
+        p_next = (VkDebugUtilsMessengerCreateInfoEXT*)&debug_create_info;
     }
 
-    if (vkCreateInstance(&create_info, nullptr, &instance) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create a Vulkan instance!");
-    }
+    const auto extensions = getRequiredExtensions();
+    const VkInstanceCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pNext = p_next,
+        .pApplicationInfo = &app_info,
+        .enabledLayerCount = enabled_layer_count,
+        .ppEnabledLayerNames = pp_enabled_layer_names,
+        .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data(),
+    };
+
+    checkVkResult(vkCreateInstance(&create_info, nullptr, &instance), "Failed to create a Vulkan instance!");
 
     // Load global function pointers with Volk using newly created instance.
     volkLoadInstance(instance);
@@ -193,8 +187,7 @@ void VulkanInstance::setupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
     populateDebugMessengerCreateInfo(create_info);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debugMessenger) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to set up debug messenger!");
-    }
+    checkVkResult(
+        CreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debugMessenger),
+        "Failed to set up debug messenger!");
 }

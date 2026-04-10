@@ -24,31 +24,21 @@ and some Vulkan functions have explicit flags to specify that you want to do thi
 
 #include "buffer.hpp"
 
-#include <cassert>
-#include <sstream>
-#include <cstring>
-#include <stdexcept>
-
 Buffer::Buffer(
     const Device& device,
     const VkBufferCreateInfo& create_info,
     const VmaMemoryUsage mem_usage,
-    const VmaAllocationCreateFlagBits mem_flags,
+    const VmaAllocationCreateFlags mem_flags,
     const VkDeviceSize mem_offset)
     : device(device), size(create_info.size)
 {
-    VmaAllocationCreateInfo alloc_info{};
-    alloc_info.usage = mem_usage;
-    alloc_info.flags = mem_flags;
-
-    const VkResult res =
-        vmaCreateBuffer(device.getAllocator(), &create_info, &alloc_info, &buffer, &allocation, nullptr);
-    if (res != VK_SUCCESS)
-    {
-        std::stringstream err;
-        err << "failed to create buffer! code: " << res;
-        throw std::runtime_error(err.str());
-    }
+    VmaAllocationCreateInfo alloc_info{
+        .flags = mem_flags,
+        .usage = mem_usage,
+    };
+    checkVkResult(
+        vmaCreateBuffer(device.getAllocator(), &create_info, &alloc_info, &buffer, &allocation, nullptr),
+        "Failed to create buffer!");
 }
 
 Buffer::~Buffer()
@@ -121,12 +111,12 @@ void Buffer::copyToImage(const VkImage dst_image, const uint32_t width, const ui
     device.endSingleTimeCommands(command_buffer);
 }
 
-const VkBuffer Buffer::getBuffer() const
+VkBuffer Buffer::getBuffer() const
 {
     return buffer;
 }
 
-const size_t Buffer::getSize() const
+size_t Buffer::getSize() const
 {
     return size;
 }

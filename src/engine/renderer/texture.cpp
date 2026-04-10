@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 
+// TODO: consider KTX.
 void Texture::createImage(const std::string& texture_file_path)
 {
     int tex_width, tex_height, tex_channels;
