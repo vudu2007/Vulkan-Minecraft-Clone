@@ -40,25 +40,48 @@ set(ALL_EXTERNAL_PATHS
 
 ####################################################################################################
 # (2) Prepare them for a build.
-file(GLOB_RECURSE SOURCES ${PROJECT_SOURCE_DIR}/src/*.cpp)
-file(GLOB_RECURSE HEADERS ${PROJECT_SOURCE_DIR}/src/*.hpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cpp)
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.hpp)
+file(GLOB_RECURSE ASSETS CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/assets/*)
+set(TOP_LEVEL_DOCS
+    ${PROJECT_SOURCE_DIR}/README.md
+    ${PROJECT_SOURCE_DIR}/.gitignore
+    ${PROJECT_SOURCE_DIR}/.gitattributes
+)
 
-foreach(FILE_PATH ${SOURCES} ${HEADERS})
-    # Get the relative path to the file from the project root.
-    # E.g., ${FILE_PATH} is `project/src/main.cpp` and ${CMAKE_SOURCE_DIR} is `project/`, then it
-    # will set ${REL_PATH} to `src/main.cpp`.
-    file(RELATIVE_PATH REL_PATH "${CMAKE_SOURCE_DIR}" "${FILE_PATH}")
-
-    # Get the directory part of the relative path.
-    # E.g., using the previous comment, it takes ${REL_PATH} and sets ${GROUP_PATH} to `src/`.
-    get_filename_component(GROUP_PATH "${REL_PATH}" PATH)
-
-    source_group("${GROUP_PATH}" FILES "${FILE_PATH}")
-endforeach()
+# Create a directory structure for IDE.
+source_group(
+    TREE ${PROJECT_SOURCE_DIR}
+    FILES ${TOP_LEVEL_DOCS}
+)
+source_group(
+    TREE ${PROJECT_SOURCE_DIR}/src
+    PREFIX "src"
+    FILES ${SOURCES} ${HEADERS}
+)
+source_group(
+    TREE ${PROJECT_SOURCE_DIR}/assets
+    PREFIX "assets"
+    FILES ${ASSETS}
+)
 
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
 
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+add_executable(${PROJECT_NAME} 
+    ${SOURCES} 
+    ${HEADERS}
+)
+
+target_sources(${PROJECT_NAME} PRIVATE
+    ${TOP_LEVEL_DOCS}
+    ${ASSETS}
+)
+set_source_files_properties(
+    ${ASSETS} 
+    ${TOP_LEVEL_DOCS} 
+    PROPERTIES
+        HEADER_FILE_ONLY TRUE
+)
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 
