@@ -32,7 +32,7 @@ Buffer::Buffer(
     const VkDeviceSize mem_offset)
     : device(device), size(create_info.size)
 {
-    VmaAllocationCreateInfo alloc_info{
+    const VmaAllocationCreateInfo alloc_info{
         .flags = mem_flags,
         .usage = mem_usage,
     };
@@ -52,10 +52,7 @@ Buffer::~Buffer()
 
 void Buffer::map(const VkDeviceSize offset, const VkDeviceSize size)
 {
-    if (vmaMapMemory(device.getAllocator(), allocation, &mappedMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to map memory to buffer!");
-    }
+    checkVkResult(vmaMapMemory(device.getAllocator(), allocation, &mappedMemory), "Failed to map memory to buffer!");
 }
 
 void Buffer::unmap()
@@ -79,10 +76,11 @@ void Buffer::copyFrom(
 {
     VkCommandBuffer command_buffer = device.beginSingleTimeCommands();
 
-    VkBufferCopy copy_region{};
-    copy_region.srcOffset = src_offset; // Optional
-    copy_region.dstOffset = offset;     // Optional
-    copy_region.size = size;
+    const VkBufferCopy copy_region{
+        .srcOffset = src_offset,
+        .dstOffset = offset,
+        .size = size,
+    };
     vkCmdCopyBuffer(command_buffer, src.buffer, buffer, 1, &copy_region);
 
     device.endSingleTimeCommands(command_buffer);
@@ -92,20 +90,22 @@ void Buffer::copyToImage(const VkImage dst_image, const uint32_t width, const ui
 {
     VkCommandBuffer command_buffer = device.beginSingleTimeCommands();
 
-    // TODO: generalize region
-    VkBufferImageCopy region{};
-    region.bufferOffset = 0;
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
+    // TODO: generalize region.
+    const VkBufferImageCopy region{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
 
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.mipLevel = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount = 1;
+        .imageSubresource{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
 
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {width, height, 1};
-
+        .imageOffset{0, 0, 0},
+        .imageExtent{width, height, 1},
+    };
     vkCmdCopyBufferToImage(command_buffer, buffer, dst_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     device.endSingleTimeCommands(command_buffer);

@@ -9,7 +9,7 @@ std::vector<char> VmcUtility::readFile(const std::string& filename)
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
     if (!file.is_open())
     {
-        throw std::runtime_error("failed to open file!");
+        throw std::runtime_error("Failed to open file!");
     }
 
     size_t file_size = static_cast<size_t>(file.tellg());
@@ -29,7 +29,7 @@ std::filesystem::path VmcUtility::getAssetPath(const std::string& filename)
 {
     if (!std::filesystem::exists(ASSETS_PATH / filename))
     {
-        throw std::runtime_error("failed to get asset: (" + filename + ")!");
+        throw std::runtime_error("Failed to get asset: (" + filename + ")!");
     }
 
     return ASSETS_PATH / filename;

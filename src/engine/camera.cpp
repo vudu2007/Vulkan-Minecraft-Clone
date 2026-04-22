@@ -12,18 +12,20 @@ Camera::Camera(
     const float aspect,
     const float z_near,
     const float z_far)
-    : window(window), eye(eye_world), worldUp(up_world), forward(glm::normalize(target_world - eye_world)),
-      right(glm::normalize(glm::cross(forward, worldUp))), up(glm::normalize(glm::cross(right, forward))), fovY(fov_y),
-      aspect(aspect), zNear(z_near), zFar(z_far), eulerAngles(glm::vec3(0.0f)),
+    : window(window),
+      eye(eye_world),
+      worldUp(up_world),
+      forward(glm::normalize(target_world - eye_world)),
+      right(glm::normalize(glm::cross(forward, worldUp))),
+      up(glm::normalize(glm::cross(right, forward))),
+      fovY(fov_y),
+      aspect(aspect),
+      zNear(z_near),
+      zFar(z_far),
+      eulerAngles(glm::vec3(asin(forward.y), atan2(forward.x, forward.z), atan2(right.y, up.y))),
       frustum(eye_world, forward, up, right, z_near, z_far, aspect, fov_y)
 {
     window.addResizeCallback([this]() { this->updateAspectRatio(); });
-
-    // TODO: figure out initial Euler angles.
-    // const float pitch = 0.0f;
-    // const float yaw = 0.0f;
-    // const float roll = 0.0f;
-    // eulerAngles = glm::vec3(pitch, yaw, roll);
 }
 
 void Camera::updateAspectRatio()
@@ -33,7 +35,7 @@ void Camera::updateAspectRatio()
     aspect = static_cast<float>(width) / static_cast<float>(height);
 }
 
-void Camera::translate(const glm::vec3 units)
+void Camera::translate(const glm::vec3& units)
 {
     eye += units;
     frustum.translate(units);
@@ -149,9 +151,24 @@ glm::vec3 Camera::getWorldUp() const
     return worldUp;
 }
 
-float Camera::getFovY() const
+float Camera::getFovYRad() const
 {
     return fovY;
+}
+
+void Camera::setFovYRad(float radians)
+{
+    fovY = radians;
+}
+
+float Camera::getFovYDeg() const
+{
+    return glm::degrees(fovY);
+}
+
+void Camera::setFovYDeg(const float degrees)
+{
+    fovY = glm::radians(degrees);
 }
 
 float Camera::getAspect() const

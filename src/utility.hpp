@@ -1,5 +1,4 @@
-#ifndef VMC_SRC_UTILITY_HPP
-#define VMC_SRC_UTILITY_HPP
+#pragma once
 
 #include <filesystem>
 #include <string>
@@ -23,13 +22,13 @@ std::filesystem::path getAssetsDir()
 
         if (!curr_path.has_parent_path())
         {
-            throw std::runtime_error("failed to find assets directory!");
+            throw std::runtime_error("Failed to find assets directory!");
         }
 
         curr_path = curr_path.parent_path();
     }
 
-    throw std::runtime_error("failed to find assets directory due to exceeding max depth!");
+    throw std::runtime_error("Failed to find assets directory due to exceeding max depth!");
 }
 
 std::filesystem::path ASSETS_PATH = getAssetsDir();
@@ -43,5 +42,3 @@ std::vector<char> readFile(const std::string& filename);
 std::filesystem::path getAssetPath(const std::string& filename);
 
 } // namespace VmcUtility
-
-#endif // VMC_SRC_UTILITY_HPP

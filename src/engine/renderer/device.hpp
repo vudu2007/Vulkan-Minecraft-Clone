@@ -21,7 +21,7 @@ class Device
     Device& operator=(Device&& other) = delete;
 
     VkCommandBuffer beginSingleTimeCommands() const;
-    void endSingleTimeCommands(const VkCommandBuffer command_buffer) const;
+    void endSingleTimeCommands(VkCommandBuffer command_buffer) const;
 
     void transitionImageLayout(
         VkImage image,

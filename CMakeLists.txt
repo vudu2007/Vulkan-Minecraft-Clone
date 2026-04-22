@@ -38,6 +38,7 @@ set(ALL_EXTERNAL_PATHS
     ${VMA_PATH}
 )
 
+
 ####################################################################################################
 # (2) Prepare them for a build.
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${PROJECT_SOURCE_DIR}/src/*.cpp)
@@ -76,9 +77,10 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${TOP_LEVEL_DOCS}
     ${ASSETS}
 )
+# Exclude directory structure from compilation.
 set_source_files_properties(
-    ${ASSETS} 
     ${TOP_LEVEL_DOCS} 
+    ${ASSETS} 
     PROPERTIES
         HEADER_FILE_ONLY TRUE
 )

@@ -7,15 +7,14 @@ DescriptorSetLayout::DescriptorSetLayout(
     const std::vector<VkDescriptorSetLayoutBinding>& bindings)
     : device(device)
 {
-    VkDescriptorSetLayoutCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    create_info.bindingCount = static_cast<uint32_t>(bindings.size());
-    create_info.pBindings = bindings.data();
-
-    if (vkCreateDescriptorSetLayout(device.getLogicalDevice(), &create_info, nullptr, &layout) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor set layout");
-    }
+    const VkDescriptorSetLayoutCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(bindings.size()),
+        .pBindings = bindings.data(),
+    };
+    checkVkResult(
+        vkCreateDescriptorSetLayout(device.getLogicalDevice(), &create_info, nullptr, &layout),
+        "Failed to create descriptor set layout");
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
@@ -34,16 +33,15 @@ DescriptorPool::DescriptorPool(
     const uint32_t max_sets)
     : device(device)
 {
-    VkDescriptorPoolCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    create_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
-    create_info.pPoolSizes = pool_sizes.data();
-    create_info.maxSets = max_sets;
-
-    if (vkCreateDescriptorPool(device.getLogicalDevice(), &create_info, nullptr, &pool) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create descriptor pool!");
-    }
+    const VkDescriptorPoolCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = max_sets,
+        .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+        .pPoolSizes = pool_sizes.data(),
+    };
+    checkVkResult(
+        vkCreateDescriptorPool(device.getLogicalDevice(), &create_info, nullptr, &pool),
+        "Failed to create descriptor pool!");
 }
 
 DescriptorPool::~DescriptorPool()
@@ -55,18 +53,18 @@ std::vector<VkDescriptorSet> DescriptorPool::allocateDescriptorSets(
     const DescriptorSetLayout& layout,
     const size_t num_sets) const
 {
-    std::vector<VkDescriptorSetLayout> layouts(num_sets, layout.getLayout());
-    VkDescriptorSetAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    alloc_info.descriptorPool = pool;
-    alloc_info.descriptorSetCount = static_cast<uint32_t>(num_sets);
-    alloc_info.pSetLayouts = layouts.data();
+    const std::vector<VkDescriptorSetLayout> layouts(num_sets, layout.getLayout());
+    const VkDescriptorSetAllocateInfo alloc_info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = pool,
+        .descriptorSetCount = static_cast<uint32_t>(num_sets),
+        .pSetLayouts = layouts.data(),
+    };
 
     std::vector<VkDescriptorSet> descriptor_sets(num_sets);
-    if (vkAllocateDescriptorSets(device.getLogicalDevice(), &alloc_info, descriptor_sets.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate descriptor sets!");
-    }
+    checkVkResult(
+        vkAllocateDescriptorSets(device.getLogicalDevice(), &alloc_info, descriptor_sets.data()),
+        "Failed to allocate descriptor sets!");
 
     return descriptor_sets;
 }
@@ -77,7 +75,7 @@ void DescriptorPool::freeDescriptorSets(std::vector<VkDescriptorSet>& sets) cons
     sets.clear(); // Make sure the sets can't be used after freeing.
 }
 
-void DescriptorPool::updateDescriptorSets(std::vector<VkWriteDescriptorSet> descriptor_writes) const
+void DescriptorPool::updateDescriptorSets(const std::vector<VkWriteDescriptorSet>& descriptor_writes) const
 {
     vkUpdateDescriptorSets(
         device.getLogicalDevice(),

@@ -14,7 +14,7 @@ class Publisher
 
   public:
     SubscriberId subscribe(const Handler& handler);
-    bool unsubscribe(const SubscriberId id);
+    bool unsubscribe(SubscriberId id);
     auto notify(Arguments... args);
 
   private:

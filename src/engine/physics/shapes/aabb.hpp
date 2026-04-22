@@ -4,10 +4,6 @@
 
 class Aabb3d : public Shape3d
 {
-  private:
-    glm::vec3 minBounds;
-    glm::vec3 maxBounds;
-
   public:
     Aabb3d(const glm::vec3& min_bounds, const glm::vec3& max_bounds);
 
@@ -18,4 +14,8 @@ class Aabb3d : public Shape3d
     glm::vec3 getCenter() const;
     glm::vec3 getLength() const;
     glm::vec3 getDim() const;
+
+  private:
+    glm::vec3 minBounds;
+    glm::vec3 maxBounds;
 };

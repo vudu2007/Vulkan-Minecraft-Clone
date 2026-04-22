@@ -176,6 +176,7 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
     // TODO: move somewhere else that is UI related.
     if (action == GLFW_PRESS)
     {
+        // Cursor/focus.
         if (key == GLFW_KEY_LEFT_ALT)
         {
             if (window.getInputMode(GLFW_CURSOR) != GLFW_CURSOR_NORMAL)
@@ -188,19 +189,38 @@ void Player::eventKeyboardControls(const int key, const int scancode, const int 
             }
         }
 
+        // Gamemodes.
         if (key == GLFW_KEY_F1)
         {
             switch (gameMode)
             {
             case GameMode::Creative: {
                 gameMode = GameMode::Survival;
+                spdlog::info("Changed gamemode to SURVIVAL");
                 break;
             }
             case GameMode::Survival: {
                 gameMode = GameMode::Creative;
+                spdlog::info("Changed gamemode to CREATIVE");
                 break;
             }
             }
+        }
+
+        // FOV.
+        if (key == GLFW_KEY_F2 || key == GLFW_KEY_F3)
+        {
+            int fov_delta = 1;
+            if (key == GLFW_KEY_F3)
+            {
+                fov_delta *= -1;
+            }
+            if (mods & GLFW_MOD_CONTROL)
+            {
+                fov_delta *= 10;
+            }
+            camera.setFovYDeg(std::clamp((camera.getFovYDeg() + fov_delta), 30.0f, 110.0f));
+            spdlog::info("Changed FOV to ({})", camera.getFovYDeg());
         }
     }
 }
@@ -211,7 +231,8 @@ void Player::eventMouseControls(const int button, const int action, const int mo
 }
 
 Player::Player(Window& window, World& world, const glm::vec3& pos, const float speed, const unsigned render_distance)
-    : window(window), world(world),
+    : window(window),
+      world(world),
       camera(
           window,
           pos + glm::vec3(0.0f, DEFAULT_PLAYER_HEIGHT - 0.18f, 0.0f),
@@ -221,7 +242,10 @@ Player::Player(Window& window, World& world, const glm::vec3& pos, const float s
           (static_cast<float>(window.getWidth()) / static_cast<float>(window.getHeight())),
           0.1f,
           1000.0f),
-      position(pos), prevPosition(pos), speed(speed), renderDistance(render_distance),
+      position(pos),
+      prevPosition(pos),
+      speed(speed),
+      renderDistance(render_distance),
       reach(pos + camera.getEye(), camera.getForward(), 0.0f, 2.0f),
       hitbox(pos + glm::vec3(-0.3f, 0.0f, -0.3f), pos + glm::vec3(0.3f, DEFAULT_PLAYER_HEIGHT, 0.3f)),
       chunkCenter(world.getPosToChunkCenter(getPosition()))

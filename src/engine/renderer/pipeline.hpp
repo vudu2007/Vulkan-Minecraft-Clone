@@ -1,5 +1,4 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_PIPELINE_HPP
-#define VMC_SRC_ENGINE_RENDERER_PIPELINE_HPP
+#pragma once
 
 #include "device.hpp"
 
@@ -21,5 +20,3 @@ class GraphicsPipeline
 
     const VkPipeline getPipeline() const;
 };
-
-#endif // VMC_SRC_ENGINE_RENDERER_PIPELINE_HPP

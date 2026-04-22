@@ -15,6 +15,39 @@
 
 class World
 {
+  public:
+    World(unsigned seed, int chunk_size, unsigned num_threads = 1);
+    ~World();
+
+    void init(const glm::vec3& origin, unsigned radius);
+
+    std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
+    bool doesEntityIntersect(
+        const glm::vec3& pos,
+        const glm::vec3& velocity,
+        float delta,
+        const Aabb3d& hitbox,
+        float& new_delta,
+        glm::vec3* normal = nullptr);
+
+    void addChunk(const std::vector<glm::vec3>& chunk_center);
+
+    void draw(const glm::vec3& origin, unsigned radius, const Frustum& frustum);
+    unsigned updateChunks(const glm::vec3& origin, unsigned radius);
+
+    void addBlock(const glm::vec3& block_pos);
+    void removeBlock(const glm::vec3& block_pos);
+
+    void addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback);
+    void clearChunkLoadedCallbacks();
+
+    void addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback);
+    void clearChunkUnloadedCallbacks();
+
+    const ChunkCenter getPosToChunkCenter(const glm::vec3& pos) const;
+
+    float getGravity() const;
+
   private:
     BS::thread_pool<> threadPool;
     std::shared_mutex chunksMutex;
@@ -45,38 +78,5 @@ class World
 
     std::array<Chunk*, 6> getNeighboringChunks(const ChunkCenter& cc) const;
 
-    void editBlock(const glm::vec3 block_pos, const bool should_add);
-
-  public:
-    World(const unsigned seed, const int chunk_size, const unsigned num_threads = 1);
-    ~World();
-
-    void init(const glm::vec3& origin, const unsigned radius);
-
-    std::optional<glm::vec3> getReachableBlock(const Ray& ray, glm::ivec3* face_entered = nullptr);
-    bool doesEntityIntersect(
-        const glm::vec3& pos,
-        const glm::vec3& velocity,
-        const float delta,
-        const Aabb3d& hitbox,
-        float& new_delta,
-        glm::vec3* normal = nullptr);
-
-    void addChunk(const std::vector<glm::vec3> chunk_center);
-
-    void draw(const glm::vec3& origin, const unsigned radius, const Frustum& frustum);
-    unsigned updateChunks(const glm::vec3& origin, const unsigned radius);
-
-    void addBlock(const glm::vec3 block_pos);
-    void removeBlock(const glm::vec3 block_pos);
-
-    void addChunkLoadedCallback(const std::function<void(const Chunk&)>& callback);
-    void clearChunkLoadedCallbacks();
-
-    void addChunkUnloadedCallback(const std::function<void(const Chunk&)>& callback);
-    void clearChunkUnloadedCallbacks();
-
-    const ChunkCenter getPosToChunkCenter(const glm::vec3& pos) const;
-
-    float getGravity() const;
+    void editBlock(const glm::vec3& block_pos, bool should_add);
 };

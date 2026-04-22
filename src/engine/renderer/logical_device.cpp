@@ -11,7 +11,10 @@ LogicalDevice::LogicalDevice(const VkPhysicalDevice physical_device, const VkSur
     QueueFamilyIndices indices = findQueueFamilies(physical_device, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
-    std::set<uint32_t> unique_queue_families = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> unique_queue_families{
+        indices.graphicsFamily.value(),
+        indices.presentFamily.value(),
+    };
 
     float queue_priority = 1.0f;
     for (uint32_t queue_family : unique_queue_families)

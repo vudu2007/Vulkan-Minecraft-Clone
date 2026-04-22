@@ -13,9 +13,9 @@ class Window
     bool isResized = false;
 
     Window(
-        const VkInstance instance,
-        const int width = DEFAULT_WIDTH,
-        const int height = DEFAULT_HEIGHT,
+        VkInstance instance,
+        int width = DEFAULT_WIDTH,
+        int height = DEFAULT_HEIGHT,
         const std::string& title = DEFAULT_TITLE);
     Window(const Window& other) = delete;
     Window(Window&& other) = delete;
@@ -28,10 +28,10 @@ class Window
     VkSurfaceKHR getSurface() const;
 
     int getWidth() const;
-    void setWidth(const int width);
+    void setWidth(int width);
 
     int getHeight() const;
-    void setHeight(const int height);
+    void setHeight(int height);
 
     std::string getTitle() const;
 
@@ -39,20 +39,20 @@ class Window
     bool shouldClose() const;
 
     void getFrameBufferSize(int& width, int& height) const;
-    int getKeyboardKey(const int key) const;
-    int getMouseButtonState(const int button) const;
+    int getKeyboardKey(int key) const;
+    int getMouseButtonState(int button) const;
     void getCursorPosition(double& x, double& y) const;
 
-    int getInputMode(const int mode) const;
-    void setInputMode(const int mode, const int value);
+    int getInputMode(int mode) const;
+    void setInputMode(int mode, int value);
 
     SubscriberId addResizeCallback(const std::function<void()>& callback);
     SubscriberId addKeyCallback(const std::function<void(int, int, int, int)>& callback);
     SubscriberId addMouseButtonCallback(const std::function<void(int, int, int)>& callback);
 
     void runResizeCallbacks();
-    void runKeyCallbacks(const int key, const int scancode, const int action, const int mods);
-    void runMouseButtonCallbacks(const int button, const int action, const int mods);
+    void runKeyCallbacks(int key, int scancode, int action, int mods);
+    void runMouseButtonCallbacks(int button, int action, int mods);
 
   private:
     static constexpr int DEFAULT_WIDTH = 800;

@@ -16,6 +16,17 @@ class Player
         Survival,
     };
 
+    const Block* activeBlock = nullptr;
+
+    Player(Window& window, World& world, const glm::vec3& pos, float speed, unsigned render_distance);
+
+    void update(double delta);
+
+    const Camera& getCamera() const;
+    const glm::vec3 getPosition() const;
+    const unsigned getRenderDistance() const;
+    const Ray& getRay() const;
+
   private:
     static constexpr float DEFAULT_SPRINT_MULTIPLIER = 3.0f;
     static constexpr float DEFAULT_PLAYER_HEIGHT = 1.8f;
@@ -47,23 +58,11 @@ class Player
 
     void updatePosition();
 
-    int getKeyState(const int key) const;
-    bool isKeyPressed(const int key_state) const;
+    int getKeyState(int key) const;
+    bool isKeyPressed(int key_state) const;
 
-    void pollKeyboardControls(const double delta);
-    void eventKeyboardControls(const int key, const int scancode, const int action, const int mods);
+    void pollKeyboardControls(double delta);
+    void eventKeyboardControls(int key, int scancode, int action, int mods);
 
-    void eventMouseControls(const int button, const int action, const int mods);
-
-  public:
-    const Block* activeBlock = nullptr;
-
-    Player(Window& window, World& world, const glm::vec3& pos, const float speed, const unsigned render_distance);
-
-    void update(const double delta);
-
-    const Camera& getCamera() const;
-    const glm::vec3 getPosition() const;
-    const unsigned getRenderDistance() const;
-    const Ray& getRay() const;
+    void eventMouseControls(int button, int action, int mods);
 };

@@ -20,16 +20,17 @@ void Texture::createImage(const std::string& texture_file_path)
 
     if (!pixels)
     {
-        throw std::runtime_error("failed to load texture image!");
+        throw std::runtime_error("Failed to load texture image!");
     }
 
     // Staging phase.
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = image_size;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    const VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = image_size,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer staging_buffer(
         device,
         create_info,
@@ -43,33 +44,34 @@ void Texture::createImage(const std::string& texture_file_path)
 
     stbi_image_free(pixels);
 
-    VmaAllocationCreateInfo alloc_info{};
-    alloc_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-    alloc_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    const VmaAllocationCreateInfo alloc_info{
+        .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+        .usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
+    };
 
     // Create texture image.
-    VkImageCreateInfo image_info{};
-    image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    image_info.imageType = VK_IMAGE_TYPE_2D;
-    image_info.extent.width = tex_width;
-    image_info.extent.height = tex_height;
-    image_info.extent.depth = 1;
-    image_info.mipLevels = mipLevels;
-    image_info.arrayLayers = 1;
-    image_info.format = VK_FORMAT_R8G8B8A8_SRGB;
-    image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
-    image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    image_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-    image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-    image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    const VkImageCreateInfo image_info{
 
-    const VkResult res = vmaCreateImage(device.getAllocator(), &image_info, &alloc_info, &image, &allocation, nullptr);
-    if (res != VK_SUCCESS)
-    {
-        std::stringstream err;
-        err << "failed to create image! code: " << res;
-        throw std::runtime_error(err.str());
-    }
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = VK_FORMAT_R8G8B8A8_SRGB,
+        .extent{
+            .width = static_cast<uint32_t>(tex_width),
+            .height = static_cast<uint32_t>(tex_height),
+            .depth = 1,
+        },
+        .mipLevels = mipLevels,
+        .arrayLayers = 1,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = VK_IMAGE_TILING_OPTIMAL,
+        .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    checkVkResult(
+        vmaCreateImage(device.getAllocator(), &image_info, &alloc_info, &image, &allocation, nullptr),
+        "Failed to create texture image!");
 
     // Prepare image for copying into.
     device.transitionImageLayout(
@@ -88,60 +90,65 @@ void Texture::createImage(const std::string& texture_file_path)
 
 void Texture::createImageView()
 {
-    VkImageViewCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    create_info.image = image;
+    const VkImageViewCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .image = image,
 
-    // Interpretation.
-    create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    create_info.format = VK_FORMAT_R8G8B8A8_SRGB;
+        // Interpretation.
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = VK_FORMAT_R8G8B8A8_SRGB,
 
-    // Color channels.
-    create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        // Color channels.
+        .components{
+            .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+            .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+        },
 
-    // Purpose and which part of the image should be accessed.
-    create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    create_info.subresourceRange.baseMipLevel = 0;
-    create_info.subresourceRange.levelCount = mipLevels;
-    create_info.subresourceRange.baseArrayLayer = 0;
-    create_info.subresourceRange.layerCount = 1;
+        // Purpose and which part of the image should be accessed.
+        .subresourceRange{
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = mipLevels,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        },
+    };
 
     // Create the image view.
-    if (vkCreateImageView(device.getLogicalDevice(), &create_info, nullptr, &imageView) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create image view!");
-    }
+    checkVkResult(
+        vkCreateImageView(device.getLogicalDevice(), &create_info, nullptr, &imageView),
+        "Failed to create texture image view!");
 }
 
 void Texture::createSampler()
 {
-    VkPhysicalDeviceProperties properties = device.getPhysicalDeviceProperties();
+    const VkPhysicalDeviceProperties properties = device.getPhysicalDeviceProperties();
 
-    VkSamplerCreateInfo sampler_info{};
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    sampler_info.magFilter = VK_FILTER_LINEAR;
-    sampler_info.minFilter = VK_FILTER_LINEAR;
-    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    sampler_info.anisotropyEnable = VK_TRUE;
-    sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    sampler_info.unnormalizedCoordinates = VK_FALSE;
-    sampler_info.compareEnable = VK_FALSE;
-    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler_info.mipLodBias = 0.0f;
-    sampler_info.minLod = 0.0f;
-    sampler_info.maxLod = static_cast<float>(mipLevels);
+    const VkSamplerCreateInfo sampler_info{
 
-    if (vkCreateSampler(device.getLogicalDevice(), &sampler_info, nullptr, &sampler) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
+        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .magFilter = VK_FILTER_LINEAR,
+        .minFilter = VK_FILTER_LINEAR,
+        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mipLodBias = 0.0f,
+        .anisotropyEnable = VK_TRUE,
+        .maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+        .compareEnable = VK_FALSE,
+        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .minLod = 0.0f,
+        .maxLod = static_cast<float>(mipLevels),
+        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
+
+    checkVkResult(
+        vkCreateSampler(device.getLogicalDevice(), &sampler_info, nullptr, &sampler),
+        "Failed to create texture sampler!");
 }
 
 Texture::Texture(const Device& device, const std::string& texture_file_path) : device(device)

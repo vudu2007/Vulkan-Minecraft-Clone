@@ -6,19 +6,11 @@
 
 class Ray : public Geometry
 {
-  private:
-    Geometry::Type type = Geometry::Type::RAY;
-
-    glm::vec3 origin;
-    glm::vec3 direction;
-    float min;
-    float max;
-
   public:
-    Ray(const glm::vec3 origin,
-        const glm::vec3 direction,
-        const float min = 0.0f,
-        const float max = std::numeric_limits<float>::infinity());
+    Ray(const glm::vec3& origin,
+        const glm::vec3& direction,
+        float min = 0.0f,
+        float max = std::numeric_limits<float>::infinity());
 
     Geometry::Type getGeometryType() const;
 
@@ -29,4 +21,12 @@ class Ray : public Geometry
     glm::vec3 getDirection() const;
     float getMin() const;
     float getMax() const;
+
+  private:
+    Geometry::Type type = Geometry::Type::RAY;
+
+    glm::vec3 origin;
+    glm::vec3 direction;
+    float min;
+    float max;
 };

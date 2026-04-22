@@ -6,6 +6,7 @@
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 {
     Window* container = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+
     container->isResized = true;
     container->setWidth(width);
     container->setHeight(height);
@@ -34,11 +35,9 @@ Window::Window(const VkInstance instance, const int width, const int height, con
     }
 
     // Create the Vulkan surface.
-    VkResult res = glfwCreateWindowSurface(instance, pWindow, nullptr, &surface);
-    if (res != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to create a window surface!");
-    }
+    checkVkResult(
+        glfwCreateWindowSurface(instance, pWindow, nullptr, &surface),
+        "Failed to create a GLFW window surface!");
 
     glfwSetWindowUserPointer(pWindow, this);
     glfwSetFramebufferSizeCallback(pWindow, framebufferResizeCallback);

@@ -13,6 +13,7 @@
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
+// TODO: need to simplify; need flexibility.
 class Renderer
 {
   public:

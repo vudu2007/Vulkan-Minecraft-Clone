@@ -38,12 +38,13 @@ void Renderer::createDescriptorSets()
     createDescriptorPool();
 
     // TODO: will need to test
-    std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pDescriptorSetLayout->getLayout());
-    VkDescriptorSetAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    alloc_info.descriptorPool = pDescriptorPool->getPool();
-    alloc_info.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-    alloc_info.pSetLayouts = layouts.data();
+    const std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, pDescriptorSetLayout->getLayout());
+    const VkDescriptorSetAllocateInfo alloc_info{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool = pDescriptorPool->getPool(),
+        .descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT),
+        .pSetLayouts = layouts.data(),
+    };
 
     descriptorSets = pDescriptorPool->allocateDescriptorSets(*pDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT);
 
@@ -56,12 +57,13 @@ void Renderer::createDescriptorSets()
         std::vector<VkDescriptorBufferInfo> buffer_infos_per_frame;
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
         {
-            VkDescriptorBufferInfo buffer_info_per_frame{};
-            buffer_info_per_frame.buffer = uniformBuffers[i].bufferPtrPerFrame[j]->getBuffer();
-            buffer_info_per_frame.range = uniformBuffers[i].bufferPtrPerFrame[j]->getSize();
+            const VkDescriptorBufferInfo buffer_info_per_frame{
+                .buffer = uniformBuffers[i].bufferPtrPerFrame[j]->getBuffer(),
+                .range = uniformBuffers[i].bufferPtrPerFrame[j]->getSize(),
+            };
             buffer_infos_per_frame.push_back(buffer_info_per_frame);
         }
-        buffer_infos.push_back(std::make_pair(uniformBuffers[i].binding, buffer_infos_per_frame));
+        buffer_infos.push_back({uniformBuffers[i].binding, buffer_infos_per_frame});
     }
 
     const size_t num_images = combinedImageSamplers.size();
@@ -73,48 +75,49 @@ void Renderer::createDescriptorSets()
         std::vector<VkDescriptorImageInfo> image_infos_per_frame{};
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; ++j)
         {
-            VkDescriptorImageInfo image_info{};
-            image_info.sampler = combinedImageSamplers[i].texture->getSampler();
-            image_info.imageView = combinedImageSamplers[i].texture->getImageView();
-            image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            const VkDescriptorImageInfo image_info{
+                .sampler = combinedImageSamplers[i].texture->getSampler(),
+                .imageView = combinedImageSamplers[i].texture->getImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            };
             image_infos_per_frame.push_back(image_info);
         }
-        image_infos.push_back(std::make_pair(combinedImageSamplers[i].binding, image_infos_per_frame));
+        image_infos.push_back({combinedImageSamplers[i].binding, image_infos_per_frame});
     }
 
     // Update the descriptor sets.
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        size_t offset = 0;
-        std::vector<VkWriteDescriptorSet> descriptor_writes(num_images + num_buffers);
+        std::vector<VkWriteDescriptorSet> descriptor_writes;
+        descriptor_writes.reserve(num_images + num_buffers);
 
         for (size_t j = 0; j < image_infos.size(); ++j)
         {
-            const auto binding = image_infos[j].first;
-            const auto& sampler_info = image_infos[j].second[i];
-            descriptor_writes[j + offset].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptor_writes[j + offset].dstSet = descriptorSets[i];
-            descriptor_writes[j + offset].dstBinding = binding;
-            descriptor_writes[j + offset].dstArrayElement = 0;
-            descriptor_writes[j + offset].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptor_writes[j + offset].descriptorCount = 1;
-            descriptor_writes[j + offset].pImageInfo = &sampler_info;
+            const auto& [binding, sampler_info] = image_infos[j];
+            descriptor_writes.push_back({
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &sampler_info[i],
+            });
         }
-        offset += image_infos.size();
 
         for (size_t j = 0; j < buffer_infos.size(); ++j)
         {
-            const auto binding = buffer_infos[j].first;
-            const auto& buffer_info = buffer_infos[j].second[i];
-            descriptor_writes[j + offset].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptor_writes[j + offset].dstSet = descriptorSets[i];
-            descriptor_writes[j + offset].dstBinding = binding;
-            descriptor_writes[j + offset].dstArrayElement = 0;
-            descriptor_writes[j + offset].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            descriptor_writes[j + offset].descriptorCount = 1;
-            descriptor_writes[j + offset].pBufferInfo = &buffer_info;
+            const auto& [binding, buffer_info] = buffer_infos[j];
+            descriptor_writes.push_back({
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = binding,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &buffer_info[i],
+            });
         }
-        offset += buffer_infos.size();
 
         pDescriptorPool->updateDescriptorSets(descriptor_writes);
     }
@@ -144,11 +147,12 @@ bool Renderer::addVertexBuffer(
     size_t num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes_capacity;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes_capacity,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer staging_buffer(
         device,
         create_info,
@@ -225,14 +229,16 @@ bool Renderer::updateVertexBuffer(const unsigned id, const void* data, const siz
         return true;
     }
 
-    size_t num_bytes = data_type_size * count;
+    const size_t num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo create_info{
+
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer staging_buffer(
         device,
         create_info,
@@ -277,11 +283,12 @@ bool Renderer::updateInstanceVertexBuffer(
     const size_t num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer instance_staging_buffer(
         device,
         create_info,
@@ -307,16 +314,16 @@ bool Renderer::updateInstanceVertexBuffer(
 // TODO: look into "VK_KHR_maintenance5" extension; can avoid shader modules and instead do direct passing in pipeline.
 VkShaderModule Renderer::createShaderModule(const std::vector<char>& bytecode) const
 {
-    VkShaderModuleCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.codeSize = bytecode.size();
-    create_info.pCode = reinterpret_cast<const uint32_t*>(bytecode.data());
+    VkShaderModuleCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = bytecode.size(),
+        .pCode = reinterpret_cast<const uint32_t*>(bytecode.data()),
+    };
 
     VkShaderModule shader_module;
-    if (vkCreateShaderModule(device.getLogicalDevice(), &create_info, nullptr, &shader_module))
-    {
-        throw std::runtime_error("failed to create shader module!");
-    }
+    checkVkResult(
+        vkCreateShaderModule(device.getLogicalDevice(), &create_info, nullptr, &shader_module),
+        "Failed to create a shader module!");
 
     return shader_module;
 }
@@ -331,155 +338,166 @@ void Renderer::createGraphicsPipeline()
 
     // Handle programmable shaders for pipeline.
     // Vertex.
-    VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
-    vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vert_shader_stage_info.module = vert_shader_module;
-    vert_shader_stage_info.pName = "main";                // Entrypoint.
-    vert_shader_stage_info.pSpecializationInfo = nullptr; // Optional. Specify shader constants.
+    const VkPipelineShaderStageCreateInfo vert_shader_stage_info{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+        .module = vert_shader_module,
+        .pName = "main",                // Entrypoint.
+        .pSpecializationInfo = nullptr, // Optional. Specify shader constants.
+    };
 
     // Fragment.
-    VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
-    frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    frag_shader_stage_info.module = frag_shader_module;
-    frag_shader_stage_info.pName = "main"; // Entrypoint.
+    const VkPipelineShaderStageCreateInfo frag_shader_stage_info{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .module = frag_shader_module,
+        .pName = "main", // Entrypoint.
+    };
 
-    VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+    const std::vector<VkPipelineShaderStageCreateInfo> shader_stages{
+        vert_shader_stage_info,
+        frag_shader_stage_info,
+    };
 
     // Handle fixed stages and other things.
     // Dynamic states are states that can be changed in the fixed pipeline at
     // draw time.
-    std::vector<VkDynamicState> dynamic_states = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    const std::vector<VkDynamicState> dynamic_states = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+    };
 
-    VkPipelineDynamicStateCreateInfo dynamic_state{};
-    dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
-    dynamic_state.pDynamicStates = dynamic_states.data();
+    const VkPipelineDynamicStateCreateInfo dynamic_state{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount = static_cast<uint32_t>(dynamic_states.size()),
+        .pDynamicStates = dynamic_states.data(),
+    };
 
     // Describe vertex data.
-    std::vector<VkVertexInputBindingDescription> binding_descriptions{
+    const std::vector<VkVertexInputBindingDescription> binding_descriptions{
         Model::Vertex::getBindingDescription(),
     };
     const auto& attribute_description_vertex = Model::Vertex::getAttributeDescriptions();
-    std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
-    attribute_descriptions.insert(
-        attribute_descriptions.end(),
+    const std::vector<VkVertexInputAttributeDescription> attribute_descriptions(
         attribute_description_vertex.begin(),
         attribute_description_vertex.end());
 
-    VkPipelineVertexInputStateCreateInfo vertex_input_info{};
-    vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_info.vertexBindingDescriptionCount = static_cast<uint32_t>(binding_descriptions.size());
-    vertex_input_info.pVertexBindingDescriptions = binding_descriptions.data();
-    vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
-    vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
+    const VkPipelineVertexInputStateCreateInfo vertex_input_info{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = static_cast<uint32_t>(binding_descriptions.size()),
+        .pVertexBindingDescriptions = binding_descriptions.data(),
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size()),
+        .pVertexAttributeDescriptions = attribute_descriptions.data(),
+    };
 
     // Input assembly.
-    VkPipelineInputAssemblyStateCreateInfo input_assembly{};
-    input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    input_assembly.primitiveRestartEnable = VK_FALSE;
+    const VkPipelineInputAssemblyStateCreateInfo input_assembly{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .primitiveRestartEnable = VK_FALSE,
+    };
 
     // Viewport and scissors.
     // Viewport is the transformation from an image to the framebuffer.
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(swapchain.getExtent().width);
-    viewport.height = static_cast<float>(swapchain.getExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    const VkViewport viewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(swapchain.getExtent().width),
+        .height = static_cast<float>(swapchain.getExtent().height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
 
     // Scissor is the crop tool but does not resize the viewport image.
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = swapchain.getExtent();
+    const VkRect2D scissor{
+        .offset = {0, 0},
+        .extent = swapchain.getExtent(),
+    };
 
-    VkPipelineViewportStateCreateInfo viewport_state{};
-    viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewport_state.viewportCount = 1;
-    viewport_state.pViewports = nullptr; // Set only if not dynamic.
-    viewport_state.scissorCount = 1;
-    viewport_state.pScissors = nullptr; // Set only if not dynamic.
+    const VkPipelineViewportStateCreateInfo viewport_state{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .viewportCount = 1,
+        .pViewports = nullptr, // Set only if not dynamic.
+        .scissorCount = 1,
+        .pScissors = nullptr, // Set only if not dynamic.
+    };
 
     // Rasterizer.
-    VkPipelineRasterizationStateCreateInfo rasterizer{};
-    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;        // Clamp fragments beyond planes to planes.
-    rasterizer.rasterizerDiscardEnable = VK_FALSE; // Geometry never passes through rasterizer stage.
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // Detemines how fragments are generated for
-                                                   // geometry.
-    rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer.depthBiasEnable = VK_FALSE; // Alter depth values by bias.
-    rasterizer.depthBiasConstantFactor = 0.0f;
-    rasterizer.depthBiasClamp = 0.0f;
-    rasterizer.depthBiasSlopeFactor = 0.0f;
+    const VkPipelineRasterizationStateCreateInfo rasterizer{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .depthClampEnable = VK_FALSE,        // Clamp fragments beyond planes to planes.
+        .rasterizerDiscardEnable = VK_FALSE, // Geometry never passes through rasterizer stage.
+        .polygonMode = VK_POLYGON_MODE_FILL, // Detemines how fragments are generated for geometry.
+        .cullMode = VK_CULL_MODE_BACK_BIT,
+        .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .depthBiasEnable = VK_FALSE, // Alter depth values by bias.
+        .depthBiasConstantFactor = 0.0f,
+        .depthBiasClamp = 0.0f,
+        .depthBiasSlopeFactor = 0.0f,
+        .lineWidth = 1.0f,
+    };
 
     // Multisampling.
-    VkPipelineMultisampleStateCreateInfo multisampling{};
-    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.rasterizationSamples = device.getMsaaSamples();
-    multisampling.sampleShadingEnable = VK_FALSE; // Enable sample shading feature for the device.
-    multisampling.minSampleShading = 0.2f;        // Min. fraction for sample shading; closer to one is smoother.
-    multisampling.pSampleMask = nullptr;
-    multisampling.alphaToCoverageEnable = VK_FALSE;
-    multisampling.alphaToOneEnable = VK_FALSE;
+    const VkPipelineMultisampleStateCreateInfo multisampling{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .rasterizationSamples = device.getMsaaSamples(),
+        .sampleShadingEnable = VK_FALSE, // Enable sample shading feature for the device.
+        .minSampleShading = 0.2f,        // Min. fraction for sample shading; closer to one is smoother.
+        .pSampleMask = nullptr,
+        .alphaToCoverageEnable = VK_FALSE,
+        .alphaToOneEnable = VK_FALSE,
+    };
 
     // Depth and stencil testing.
-    VkPipelineDepthStencilStateCreateInfo depth_stencil{};
-    depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth_stencil.depthTestEnable = VK_TRUE;
-    depth_stencil.depthWriteEnable = VK_TRUE;
-    depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-    depth_stencil.depthBoundsTestEnable = VK_FALSE;
-    depth_stencil.minDepthBounds = 0.0f; // Optional.
-    depth_stencil.maxDepthBounds = 1.0f; // Optional.
-    depth_stencil.stencilTestEnable = VK_FALSE;
-    depth_stencil.front = {}; // Optional.
-    depth_stencil.back = {};  // Optional.
+    const VkPipelineDepthStencilStateCreateInfo depth_stencil{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .depthTestEnable = VK_TRUE,
+        .depthWriteEnable = VK_TRUE,
+        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable = VK_FALSE,
+        .front = {},            // Optional.
+        .back = {},             // Optional.
+        .minDepthBounds = 0.0f, // Optional.
+        .maxDepthBounds = 1.0f, // Optional.
+    };
 
     // Color blending.
-    // Attachment is config per attached framebuffer while create info is
-    // global.
-    VkPipelineColorBlendAttachmentState color_blend_attachment{};
-    color_blend_attachment.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment.blendEnable = VK_FALSE;
-    color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional.
-    color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional.
-    color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;             // Optional.
-    color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional.
-    color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional.
-    color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;             // Optional.
+    // Attachment is config per attached framebuffer while create info is global.
+    const VkPipelineColorBlendAttachmentState color_blend_attachment{
+        .blendEnable = VK_FALSE,
+        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,  // Optional.
+        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO, // Optional.
+        .colorBlendOp = VK_BLEND_OP_ADD,             // Optional.
+        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,  // Optional.
+        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO, // Optional.
+        .alphaBlendOp = VK_BLEND_OP_ADD,             // Optional.
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    };
 
-    VkPipelineColorBlendStateCreateInfo color_blending{};
-    color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    color_blending.logicOpEnable = VK_FALSE;
-    color_blending.logicOp = VK_LOGIC_OP_COPY; // Optional.
-    color_blending.attachmentCount = 1;
-    color_blending.pAttachments = &color_blend_attachment;
-    color_blending.blendConstants[0] = 0.0f; // Optional.
-    color_blending.blendConstants[1] = 0.0f; // Optional.
-    color_blending.blendConstants[2] = 0.0f; // Optional.
-    color_blending.blendConstants[3] = 0.0f; // Optional.
+    const VkPipelineColorBlendStateCreateInfo color_blending{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .logicOpEnable = VK_FALSE,
+        .logicOp = VK_LOGIC_OP_COPY, // Optional.
+        .attachmentCount = 1,
+        .pAttachments = &color_blend_attachment,
+        .blendConstants{0.0f, 0.0f, 0.0f, 0.0f}, // Optional.
+    };
 
     // Pipeline layout (+ uniforms).
-    VkPipelineLayoutCreateInfo pipeline_layout_info{};
-    VkDescriptorSetLayout descriptor_set_layout = pDescriptorSetLayout->getLayout();
-    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_info.setLayoutCount = 1;                   // Optional.
-    pipeline_layout_info.pSetLayouts = &descriptor_set_layout; // Optional.
-    pipeline_layout_info.pushConstantRangeCount = 0;           // Optional.
-    pipeline_layout_info.pPushConstantRanges = nullptr;        // Optional.
+    const VkDescriptorSetLayout descriptor_set_layout = pDescriptorSetLayout->getLayout();
+    const VkPipelineLayoutCreateInfo pipeline_layout_info{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount = 1,                   // Optional.
+        .pSetLayouts = &descriptor_set_layout, // Optional.
+        .pushConstantRangeCount = 0,           // Optional.
+        .pPushConstantRanges = nullptr,        // Optional.
+    };
 
-    if (vkCreatePipelineLayout(device.getLogicalDevice(), &pipeline_layout_info, nullptr, &pipelineLayout) !=
-        VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to create pipeline layout!");
-    }
+    checkVkResult(
+        vkCreatePipelineLayout(device.getLogicalDevice(), &pipeline_layout_info, nullptr, &pipelineLayout),
+        "Failed to create pipeline layout!");
 
     // Dynamic rendering.
     const VkPipelineRenderingCreateInfo rendering_create_info{
@@ -490,33 +508,33 @@ void Renderer::createGraphicsPipeline()
     };
 
     // Create the graphics pipeline.
-    VkGraphicsPipelineCreateInfo pipeline_info{
+    const VkGraphicsPipelineCreateInfo pipeline_info{
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext = &rendering_create_info, // Use dynamic rendering.
+
+        // Shader stages.
+        .stageCount = 2,
+        .pStages = shader_stages.data(),
+
+        // Fixed stages.
+        .pVertexInputState = &vertex_input_info,
+        .pInputAssemblyState = &input_assembly,
+        .pViewportState = &viewport_state,
+        .pRasterizationState = &rasterizer,
+        .pMultisampleState = &multisampling,
+        .pDepthStencilState = &depth_stencil,
+        .pColorBlendState = &color_blending,
+        .pDynamicState = &dynamic_state,
+
+        // Layout.
+        .layout = pipelineLayout,
+
+        // Pipeline derivative.
+        // "These values are only used if the `VK_PIPELINE_CREATE_DERIVATIVE_BIT` flag is also specified in the flags
+        // field of `VkGraphicsPipelineCreateInfo`."
+        .basePipelineHandle = VK_NULL_HANDLE, // Optional.
+        .basePipelineIndex = -1,              // Optional.
     };
-
-    // Shader stages.
-    pipeline_info.stageCount = 2;
-    pipeline_info.pStages = shader_stages;
-
-    // Fixed stages.
-    pipeline_info.pVertexInputState = &vertex_input_info;
-    pipeline_info.pInputAssemblyState = &input_assembly;
-    pipeline_info.pViewportState = &viewport_state;
-    pipeline_info.pRasterizationState = &rasterizer;
-    pipeline_info.pMultisampleState = &multisampling;
-    pipeline_info.pDepthStencilState = &depth_stencil;
-    pipeline_info.pColorBlendState = &color_blending;
-    pipeline_info.pDynamicState = &dynamic_state;
-
-    // Layout.
-    pipeline_info.layout = pipelineLayout;
-
-    // Pipeline derivative.
-    // "These values are only used if the `VK_PIPELINE_CREATE_DERIVATIVE_BIT` flag is also specified in the flags
-    // field of `VkGraphicsPipelineCreateInfo`."
-    pipeline_info.basePipelineHandle = VK_NULL_HANDLE; // Optional.
-    pipeline_info.basePipelineIndex = -1;              // Optional.
 
     pGraphicsPipeline = std::make_unique<GraphicsPipeline>(device, pipeline_info);
 
@@ -554,11 +572,12 @@ bool Renderer::addIndexBuffer(
     const VkDeviceSize num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes_capacity;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes_capacity,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer staging_buffer(
         device,
         create_info,
@@ -616,11 +635,12 @@ bool Renderer::updateIndexBuffer(
     const VkDeviceSize num_bytes = data_type_size * count;
 
     // Make a staging buffer so that the host can write to it.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes;
-    create_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes,
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
     Buffer staging_buffer(
         device,
         create_info,
@@ -657,16 +677,16 @@ void Renderer::createCommandBuffers()
 {
     commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
-    VkCommandBufferAllocateInfo alloc_info{};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    alloc_info.commandPool = device.getCommandPool();
-    alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
+    const VkCommandBufferAllocateInfo alloc_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = device.getCommandPool(),
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = static_cast<uint32_t>(commandBuffers.size()),
+    };
 
-    if (vkAllocateCommandBuffers(device.getLogicalDevice(), &alloc_info, commandBuffers.data()) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to allocate command buffers!");
-    }
+    checkVkResult(
+        vkAllocateCommandBuffers(device.getLogicalDevice(), &alloc_info, commandBuffers.data()),
+        "Failed to allocate command buffers!");
 }
 
 void Renderer::createSyncObjects()
@@ -675,31 +695,31 @@ void Renderer::createSyncObjects()
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-    VkSemaphoreCreateInfo semaphore_info{};
-    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    const VkSemaphoreCreateInfo semaphore_info{
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    };
 
-    VkFenceCreateInfo fence_info{};
-    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    const VkFenceCreateInfo fence_info{
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+    };
 
     const VkDevice& logical_device = device.getLogicalDevice();
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
-        if ((vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS) ||
-            (vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) ||
-            (vkCreateFence(logical_device, &fence_info, nullptr, &inFlightFences[i]) != VK_SUCCESS))
-        {
-            throw std::runtime_error("Failed to create synchronization objects!");
-        }
+        checkVkResult(vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &imageAvailableSemaphores[i]));
+        checkVkResult(vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &renderFinishedSemaphores[i]));
+        checkVkResult(vkCreateFence(logical_device, &fence_info, nullptr, &inFlightFences[i]));
     }
 }
 
 void Renderer::recordCommandBuffer(VkCommandBuffer command_buffer, const uint32_t image_index)
 {
-    VkCommandBufferBeginInfo begin_info{};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = 0;                  // Optional.
-    begin_info.pInheritanceInfo = nullptr; // Optional.
+    const VkCommandBufferBeginInfo begin_info{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = 0,                  // Optional.
+        .pInheritanceInfo = nullptr, // Optional.
+    };
 
     checkVkResult(vkBeginCommandBuffer(command_buffer, &begin_info), "Failed to begin recording command buffer!");
 
@@ -749,18 +769,20 @@ void Renderer::recordCommandBuffer(VkCommandBuffer command_buffer, const uint32_
 
     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pGraphicsPipeline->getPipeline());
 
-    VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = static_cast<float>(swapchain.getExtent().width);
-    viewport.height = static_cast<float>(swapchain.getExtent().height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
+    const VkViewport viewport{
+        .x = 0.0f,
+        .y = 0.0f,
+        .width = static_cast<float>(swapchain.getExtent().width),
+        .height = static_cast<float>(swapchain.getExtent().height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
     vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
-    VkRect2D scissor{};
-    scissor.offset = {0, 0};
-    scissor.extent = swapchain.getExtent();
+    const VkRect2D scissor{
+        .offset = {0, 0},
+        .extent = swapchain.getExtent(),
+    };
     vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
     for (const auto& vert_to_index_buffers_entry : vertToIndexBuffers)
@@ -812,10 +834,7 @@ void Renderer::recordCommandBuffer(VkCommandBuffer command_buffer, const uint32_
     // Transition layout to presentation ready.
     swapchain.transitionImageLayoutToPresent(command_buffer, image_index);
 
-    if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS)
-    {
-        throw std::runtime_error("failed to record command buffer!");
-    }
+    checkVkResult(vkEndCommandBuffer(command_buffer), "Failed to record command buffer!");
 }
 
 Renderer::Renderer(const VkInstance instance, Window& window)
@@ -846,19 +865,21 @@ unsigned Renderer::addUniformBuffer(
     const uint32_t array_size)
 {
     // 1. Create descriptor set layout binding.
-    VkDescriptorSetLayoutBinding layout_binding{};
-    layout_binding.binding = binding;
-    layout_binding.descriptorCount = array_size;
-    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layout_binding.stageFlags = stage_flags;
+    const VkDescriptorSetLayoutBinding layout_binding{
+        .binding = binding,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = array_size,
+        .stageFlags = static_cast<VkShaderStageFlags>(stage_flags),
+    };
     descriptorSetLayoutBindings.push_back(layout_binding);
 
     // 2. Create buffer.
-    VkBufferCreateInfo create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    create_info.size = num_bytes;
-    create_info.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    const VkBufferCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = num_bytes,
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
 
     std::vector<std::unique_ptr<Buffer>> bufferPtrsPerFrame(MAX_FRAMES_IN_FLIGHT);
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -889,12 +910,13 @@ void Renderer::addCombinedImageSampler(
     const VkSampler* immutable_samplers)
 {
     // 1. Create descriptor set layout binding.
-    VkDescriptorSetLayoutBinding layout_binding{};
-    layout_binding.binding = binding;
-    layout_binding.descriptorCount = array_size;
-    layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    layout_binding.stageFlags = stage_flags;
-    layout_binding.pImmutableSamplers = immutable_samplers;
+    const VkDescriptorSetLayoutBinding layout_binding{
+        .binding = binding,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = array_size,
+        .stageFlags = static_cast<VkShaderStageFlags>(stage_flags),
+        .pImmutableSamplers = immutable_samplers,
+    };
     descriptorSetLayoutBindings.push_back(layout_binding);
 
     // 2. Save texture for creating descriptor sets.
@@ -903,17 +925,10 @@ void Renderer::addCombinedImageSampler(
 
 void Renderer::drawFrame()
 {
-    // Common outline of rendering a frame:
-    //     1. Wait for the previous frame to finish
-    //     2. Acquire an image from the swap chain
-    //     3. Record a command buffer which draws the scene onto that image
-    //     4. Submit the recorded command buffer
-    //     5. Present the swap chain image
-
-    // 1.
+    // 1. Wait for the previous frame to finish.
     vkWaitForFences(device.getLogicalDevice(), 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
-    // 2.
+    // 2. Acquire an image from the swap chain.
     uint32_t image_index = 0;
     VkResult result = vkAcquireNextImageKHR(
         device.getLogicalDevice(),
@@ -935,47 +950,44 @@ void Renderer::drawFrame()
     // Only reset the fence if we are submitting work.
     vkResetFences(device.getLogicalDevice(), 1, &inFlightFences[currentFrame]);
 
-    // 3.
+    // 3. Record a command buffer which draws the scene onto that image.
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], image_index);
 
-    // 4.
-    VkSubmitInfo submit_info{};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    // 4. Submit the recorded command buffer.
+    const std::vector<VkSemaphore> wait_semaphores{imageAvailableSemaphores[currentFrame]};
+    const std::vector<VkPipelineStageFlags> wait_stages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    const std::vector<VkSemaphore> signal_semaphores{renderFinishedSemaphores[currentFrame]};
+    const VkSubmitInfo submit_info{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 
-    VkSemaphore wait_semaphores[] = {imageAvailableSemaphores[currentFrame]};
-    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submit_info.waitSemaphoreCount = 1;
-    submit_info.pWaitSemaphores = wait_semaphores;
-    submit_info.pWaitDstStageMask = wait_stages;
+        .waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size()),
+        .pWaitSemaphores = wait_semaphores.data(),
+        .pWaitDstStageMask = wait_stages.data(),
 
-    submit_info.commandBufferCount = 1;
-    submit_info.pCommandBuffers = &commandBuffers[currentFrame];
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffers[currentFrame],
 
-    VkSemaphore signal_semaphores[] = {renderFinishedSemaphores[currentFrame]};
-    submit_info.signalSemaphoreCount = 1;
-    submit_info.pSignalSemaphores = signal_semaphores;
+        .signalSemaphoreCount = static_cast<uint32_t>(signal_semaphores.size()),
+        .pSignalSemaphores = signal_semaphores.data(),
+    };
 
-    const VkResult queue_submit_res =
-        vkQueueSubmit(device.getGraphicsQueue(), 1, &submit_info, inFlightFences[currentFrame]);
-    if (queue_submit_res != VK_SUCCESS)
-    {
-        std::stringstream err;
-        err << "failed to submit draw command buffer! VkResult = " << queue_submit_res;
-        throw std::runtime_error(err.str());
-    }
+    checkVkResult(
+        vkQueueSubmit(device.getGraphicsQueue(), 1, &submit_info, inFlightFences[currentFrame]),
+        "Failed to submit draw command buffer!");
 
-    // 5.
-    VkPresentInfoKHR present_info{};
-    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    // 5. Present the swap chain image.
+    const std::vector<VkSwapchainKHR> swapchains{swapchain.getSwapchain()};
+    VkPresentInfoKHR present_info{
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 
-    present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores = signal_semaphores;
+        .waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size()),
+        .pWaitSemaphores = signal_semaphores.data(),
 
-    VkSwapchainKHR swap_chains[] = {swapchain.getSwapchain()};
-    present_info.swapchainCount = 1;
-    present_info.pSwapchains = swap_chains;
-    present_info.pImageIndices = &image_index;
+        .swapchainCount = static_cast<uint32_t>(swapchains.size()),
+        .pSwapchains = swapchains.data(),
+        .pImageIndices = &image_index,
+    };
 
     present_info.pResults = nullptr; // Optional: good for more than 1 swap chain.
 
@@ -987,7 +999,7 @@ void Renderer::drawFrame()
     }
     else if (result != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to present swap chain image!");
+        throw std::runtime_error("Failed to present swap chain image!");
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

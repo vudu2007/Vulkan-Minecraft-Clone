@@ -1,5 +1,4 @@
-#ifndef VMC_SRC_ENGINE_RENDERER_TEXTURE_HPP
-#define VMC_SRC_ENGINE_RENDERER_TEXTURE_HPP
+#pragma once
 
 #include "device.hpp"
 
@@ -7,6 +6,18 @@
 
 class Texture
 {
+  public:
+    Texture(const Device& device, const std::string& texture_file_path);
+    Texture(const Texture& other) = delete;
+    Texture(Texture&& other) = delete;
+    ~Texture();
+
+    Texture& operator=(const Texture& other) = delete;
+    Texture& operator=(Texture&& other) = delete;
+
+    const VkImageView getImageView() const;
+    const VkSampler getSampler() const;
+
   private:
     const Device& device;
 
@@ -19,18 +30,4 @@ class Texture
     void createImage(const std::string& texture_file_path);
     void createImageView();
     void createSampler();
-
-  public:
-    Texture(const Device& device, const std::string& texture_file_path);
-    Texture(const Texture& other) = delete;
-    Texture(Texture&& other) = delete;
-    ~Texture();
-
-    Texture& operator=(const Texture& other) = delete;
-    Texture& operator=(Texture&& other) = delete;
-
-    const VkImageView getImageView() const;
-    const VkSampler getSampler() const;
 };
-
-#endif // VMC_SRC_ENGINE_RENDERER_TEXTURE_HPP

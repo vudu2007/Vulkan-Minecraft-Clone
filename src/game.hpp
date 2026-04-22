@@ -10,6 +10,9 @@
 
 class Game
 {
+  public:
+    void run();
+
   private:
     std::mutex updateMutex;
 
@@ -32,7 +35,4 @@ class Game
 
     void loadChunkModel(const Chunk& chunk);
     void unloadChunkModel(const Chunk& chunk);
-
-  public:
-    void run();
 };

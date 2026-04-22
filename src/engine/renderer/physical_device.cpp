@@ -63,7 +63,7 @@ static VkSampleCountFlagBits getMaxUsuableSampleCount(const VkPhysicalDevice dev
                                       physical_device_properties.limits.framebufferDepthSampleCounts;
 
     // Must descend since finding max count.
-    const VkSampleCountFlagBits sample_counts[] = {
+    const std::vector<VkSampleCountFlagBits> sample_counts{
         VK_SAMPLE_COUNT_64_BIT,
         VK_SAMPLE_COUNT_32_BIT,
         VK_SAMPLE_COUNT_16_BIT,
@@ -126,10 +126,12 @@ VkPhysicalDeviceProperties PhysicalDevice::getProperties() const
     return properties;
 }
 
-VkFormatProperties PhysicalDevice::getFormatProperties(const VkFormat format) const
+VkFormatProperties2 PhysicalDevice::getFormatProperties(const VkFormat format) const
 {
-    VkFormatProperties format_properties;
-    vkGetPhysicalDeviceFormatProperties(device, format, &format_properties);
+    VkFormatProperties2 format_properties{
+        .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+    };
+    vkGetPhysicalDeviceFormatProperties2(device, format, &format_properties);
     return format_properties;
 }
 

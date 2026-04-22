@@ -8,9 +8,6 @@
 
 class Shape : public Geometry
 {
-  private:
-    Geometry::Type type = Geometry::Type::SHAPE;
-
   public:
     enum class Type
     {
@@ -18,33 +15,29 @@ class Shape : public Geometry
         PLANE_3D,
     };
 
-    static std::string toString(const Shape::Type& type)
-    {
-        switch (type)
-        {
-        case Type::AABB_3D:
-            return "AABB_3D";
-        case Type::PLANE_3D:
-            return "PLANE_3D";
-        default:
-            return "UNDEFINED";
-        }
-    }
+    virtual ~Shape();
+
+    static std::string toString(Shape::Type type);
 
     Geometry::Type getGeometryType() const;
 
     virtual Shape::Type getShapeType() const = 0;
+
+  private:
+    Geometry::Type type = Geometry::Type::SHAPE;
 };
 
 class Shape3d : public Shape
 {
-  private:
-    Shape::Type type;
-
-  protected:
-    Shape3d(const Shape::Type type);
-
   public:
+    virtual ~Shape3d();
+
     virtual void translate(const glm::vec3& value) = 0;
     Shape::Type getShapeType() const;
+
+  protected:
+    Shape3d(Shape::Type type);
+
+  private:
+    Shape::Type type;
 };

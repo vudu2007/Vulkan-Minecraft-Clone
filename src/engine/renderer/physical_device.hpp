@@ -18,7 +18,7 @@ class PhysicalDevice
 
     VkSampleCountFlagBits getMsaaSamples() const;
     VkPhysicalDeviceProperties getProperties() const;
-    VkFormatProperties getFormatProperties(VkFormat format) const;
+    VkFormatProperties2 getFormatProperties(VkFormat format) const;
     VkPhysicalDeviceMemoryProperties getMemoryProperties() const;
 
   private:

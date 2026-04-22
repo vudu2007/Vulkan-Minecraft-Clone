@@ -10,6 +10,8 @@ ExperimentalAutoDetectBinPacking: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowAllArgumentsOnNextLine: false
 
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+
 AlignAfterOpenBracket: AlwaysBreak
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments: false

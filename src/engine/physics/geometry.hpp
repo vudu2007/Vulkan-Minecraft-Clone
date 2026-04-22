@@ -9,4 +9,5 @@ struct Geometry
     };
 
     virtual Geometry::Type getGeometryType() const = 0;
+    virtual ~Geometry();
 };

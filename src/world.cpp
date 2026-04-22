@@ -51,7 +51,7 @@ std::array<Chunk*, 6> World::getNeighboringChunks(const ChunkCenter& cc) const
     return neighboring_chunks;
 }
 
-void World::editBlock(const glm::vec3 block_pos, const bool should_add)
+void World::editBlock(const glm::vec3& block_pos, const bool should_add)
 {
     const ChunkCenter cc = getPosToChunkCenter(block_pos);
 
@@ -203,13 +203,13 @@ bool World::doesEntityIntersect(
     // TODO: maybe add all chunks relevant to the player's displacement?
     std::unordered_set<ChunkCenter> chunk_centers;
     std::vector<ChunkCenter> offsets = {
-        {0.0f,       0.0f,       0.0f      },
-        {chunkSize,  0.0f,       0.0f      },
-        {-chunkSize, 0.0f,       0.0f      },
-        {0.0f,       chunkSize,  0.0f      },
-        {0.0f,       -chunkSize, 0.0f      },
-        {0.0f,       0.0f,       chunkSize },
-        {0.0f,       0.0f,       -chunkSize},
+        {0.0f, 0.0f, 0.0f},
+        {chunkSize, 0.0f, 0.0f},
+        {-chunkSize, 0.0f, 0.0f},
+        {0.0f, chunkSize, 0.0f},
+        {0.0f, -chunkSize, 0.0f},
+        {0.0f, 0.0f, chunkSize},
+        {0.0f, 0.0f, -chunkSize},
     };
     for (const auto& offset : offsets)
     {
@@ -258,7 +258,7 @@ bool World::doesEntityIntersect(
     return intersected;
 }
 
-void World::addChunk(const std::vector<glm::vec3> chunk_centers)
+void World::addChunk(const std::vector<glm::vec3>& chunk_centers)
 {
     for (const auto& cc : chunk_centers)
     {
@@ -458,12 +458,12 @@ unsigned World::updateChunks(const glm::vec3& origin, const unsigned radius)
     return static_cast<unsigned>(new_chunk_centers.size());
 }
 
-void World::addBlock(const glm::vec3 block_pos)
+void World::addBlock(const glm::vec3& block_pos)
 {
     editBlock(block_pos, true);
 }
 
-void World::removeBlock(const glm::vec3 block_pos)
+void World::removeBlock(const glm::vec3& block_pos)
 {
     editBlock(block_pos, false);
 }
