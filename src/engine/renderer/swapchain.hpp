@@ -29,6 +29,7 @@ class Swapchain
     const std::vector<VkImageView>& getImageViews() const;
     const std::vector<VkImageView>& getColorImageViews() const;
     VkImageView getDepthImageView() const;
+    size_t getImageCount() const;
 
   private:
     const Device& device;

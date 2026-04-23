@@ -98,7 +98,7 @@ void Swapchain::createImageViews()
         // Create the image view.
         if (vkCreateImageView(device.getLogicalDevice(), &view_info, nullptr, &imageViews[i]) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create image view!");
+            throw std::runtime_error("Failed to create image view!");
         }
     }
 }
@@ -269,8 +269,11 @@ Swapchain::Swapchain(const Window& window, const Device& device) : window(window
     const VkExtent2D extent = chooseSwapExtent(window, swap_chain_support.capabilities);
 
     // Request at least 1 more than minimum in case driver is unable to get another image in a timely manner.
-    uint32_t image_count =
-        std::min(swap_chain_support.capabilities.minImageCount + 1, swap_chain_support.capabilities.maxImageCount);
+    // Note: the max image count can be 0, meaning no limit, so set it to the numeric limit.
+    const uint32_t image_count = std::min(
+        swap_chain_support.capabilities.minImageCount + 1,
+        (swap_chain_support.capabilities.maxImageCount == 0) ? std::numeric_limits<uint32_t>::max()
+                                                             : swap_chain_support.capabilities.maxImageCount);
 
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = window.getSurface();
@@ -448,4 +451,9 @@ const std::vector<VkImageView>& Swapchain::getColorImageViews() const
 VkImageView Swapchain::getDepthImageView() const
 {
     return depthImageView;
+}
+
+size_t Swapchain::getImageCount() const
+{
+    return images.size();
 }

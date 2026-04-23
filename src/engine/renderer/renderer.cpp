@@ -691,8 +691,8 @@ void Renderer::createCommandBuffers()
 
 void Renderer::createSyncObjects()
 {
-    imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    imageAvailableSemaphores.resize(swapchain.getImageCount());
+    renderFinishedSemaphores.resize(swapchain.getImageCount());
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     const VkSemaphoreCreateInfo semaphore_info{
@@ -705,10 +705,13 @@ void Renderer::createSyncObjects()
     };
 
     const VkDevice& logical_device = device.getLogicalDevice();
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (size_t i = 0; i < swapchain.getImageCount(); ++i)
     {
         checkVkResult(vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &imageAvailableSemaphores[i]));
         checkVkResult(vkCreateSemaphore(logical_device, &semaphore_info, nullptr, &renderFinishedSemaphores[i]));
+    }
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
         checkVkResult(vkCreateFence(logical_device, &fence_info, nullptr, &inFlightFences[i]));
     }
 }
@@ -850,10 +853,13 @@ Renderer::~Renderer()
 
     vkDestroyPipelineLayout(device.getLogicalDevice(), pipelineLayout, nullptr);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (size_t i = 0; i < swapchain.getImageCount(); ++i)
     {
         vkDestroySemaphore(device.getLogicalDevice(), imageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(device.getLogicalDevice(), renderFinishedSemaphores[i], nullptr);
+    }
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
         vkDestroyFence(device.getLogicalDevice(), inFlightFences[i], nullptr);
     }
 }
@@ -934,7 +940,7 @@ void Renderer::drawFrame()
         device.getLogicalDevice(),
         swapchain.getSwapchain(),
         UINT64_MAX,
-        imageAvailableSemaphores[currentFrame],
+        imageAvailableSemaphores[swapchainImageIndex],
         VK_NULL_HANDLE,
         &image_index);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
@@ -955,9 +961,9 @@ void Renderer::drawFrame()
     recordCommandBuffer(commandBuffers[currentFrame], image_index);
 
     // 4. Submit the recorded command buffer.
-    const std::vector<VkSemaphore> wait_semaphores{imageAvailableSemaphores[currentFrame]};
+    const std::vector<VkSemaphore> wait_semaphores{imageAvailableSemaphores[swapchainImageIndex]};
     const std::vector<VkPipelineStageFlags> wait_stages{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    const std::vector<VkSemaphore> signal_semaphores{renderFinishedSemaphores[currentFrame]};
+    const std::vector<VkSemaphore> signal_semaphores{renderFinishedSemaphores[swapchainImageIndex]};
     const VkSubmitInfo submit_info{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 
@@ -1003,6 +1009,7 @@ void Renderer::drawFrame()
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    swapchainImageIndex = (swapchainImageIndex + 1) % static_cast<uint32_t>(swapchain.getImageCount());
 }
 
 Renderer::IndexBufferInfo::IndexBufferInfo(size_t count, std::unique_ptr<Buffer> p_buffer, VkIndexType type)

@@ -82,6 +82,7 @@ class Renderer
 
   private:
     uint32_t currentFrame = 0;
+    uint32_t swapchainImageIndex = 0;
     Window& window;
 
     Device device;
